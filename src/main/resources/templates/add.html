@@ -1,50 +1,88 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <title>Open Flashcards | Add</title>
-    
-    <!-- Bootstrap 3.3.7 -->
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.min.css}" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"></link>
-  </head>
-  <body>
-  
-    <div class="container">
-      <div class="row">
-        <div class="page-header">
-          <h1><a href="/flashcards">Open Flashcards</a></h1>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <p><a class="btn btn-info btn-lg" href="/flashcards/add/nouns" role="button">Add Nouns</a></p>
-          </div>
-        </div>
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <p><a class="btn btn-info btn-lg" href="/flashcards/add/adjectives" role="button">Add Adjectives</a></p>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <p><a class="btn btn-info btn-lg" href="/flashcards/add/verbs" role="button">Add Verbs</a></p>
-          </div>
-        </div>
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <p><a class="btn btn-info btn-lg" href="/flashcards/add/adverbs" role="button">Add Adverbs</a></p>
-          </div>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add – FlashCards</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <script th:src="@{/js/i18n-loader.js}"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/flashcards}" class="nav-brand">
+      <span data-i18n="nav_brand">🃏 FlashCards</span>
+      <span class="lang-badge" id="targetLangBadge"></span>
+    </a>
+    <div class="nav-links">
+      <a th:href="@{/flashcards/add}"        class="nav-link active" data-i18n="nav_add">➕ Add</a>
+      <a th:href="@{/flashcards/train}"      class="nav-link" data-i18n="nav_train">🎯 Practice</a>
+      <a th:href="@{/flashcards/vocabulary}" class="nav-link" data-i18n="nav_vocab">📚 Vocabulary</a>
+      <a th:href="@{/flashcards/settings}"   class="nav-link" data-i18n="nav_settings">⚙️ Settings</a>
+      <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode"></button>
     </div>
-		
-    <!-- Bootstrap 3.3.7 -->
-    <script th:src="@{/webjars/bootstrap/3.3.7/js/bootstrap.min.js}" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-  </body>
+  </nav>
+
+  <main class="page-content">
+    <div class="form-card">
+      <h1 data-i18n="add_title">➕ Add a word</h1>
+      <p class="subtitle" data-i18n="add_subtitle">Choose the word type, then fill in the fields.</p>
+
+      <div id="feedback" class="feedback hidden"></div>
+
+      <div class="type-selector">
+        <button class="type-btn active" data-type="noun"      data-i18n="add_type_noun">📦 Noun</button>
+        <button class="type-btn"        data-type="verb"      data-i18n="add_type_verb">⚡ Verb</button>
+        <button class="type-btn"        data-type="adjective" data-i18n="add_type_adjective">🎨 Adjective</button>
+        <button class="type-btn"        data-type="adverb"    data-i18n="add_type_adverb">💨 Adverb</button>
+      </div>
+
+      <form id="addWordForm" class="add-form">
+        <input type="hidden" id="wordType" value="noun">
+
+        <!-- Article (nouns only) -->
+        <div class="field-group" id="articleGroup">
+          <label for="article" data-i18n="add_field_article">Article <span class="optional" data-i18n="add_optional">(optional)</span></label>
+          <input type="text" id="article" name="article" data-i18n-ph="add_field_article_ph" autocomplete="off">
+        </div>
+
+        <!-- Infinitive (verbs only) -->
+        <div class="field-group hidden" id="infinitiveGroup">
+          <label for="infinitive" data-i18n="add_field_infinitive">Infinitive <span class="required">*</span></label>
+          <input type="text" id="infinitive" name="infinitive" data-i18n-ph="add_field_inf_ph" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label for="literal" data-i18n="add_field_word">Word <span class="required">*</span></label>
+          <input type="text" id="literal" name="literal" data-i18n-ph="add_field_word_ph" required autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label for="translation" data-i18n="add_field_translation">Translation <span class="required">*</span></label>
+          <input type="text" id="translation" name="translation" data-i18n-ph="add_field_trans_ph" required autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label for="helpPhrase" data-i18n="add_field_hint">Memory phrase <span class="optional" data-i18n="add_optional">(optional)</span></label>
+          <input type="text" id="helpPhrase" name="helpPhrase" data-i18n-ph="add_field_hint_ph" autocomplete="off">
+        </div>
+
+        <!-- Verb conjugation (verbs only) -->
+        <div class="conjugation-section hidden" id="conjugationSection">
+          <div class="section-label" data-i18n="add_verb_conjugation">Conjugation (optional)</div>
+          <div class="conjugation-grid" id="conjugationGrid">
+            <!-- Filled by JS based on target language -->
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="submitBtn" data-i18n="add_btn_submit">
+          Add word
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script th:src="@{/js/app.js}"></script>
+  <script th:src="@{/js/nav.js}"></script>
+  <script th:src="@{/js/add.js}"></script>
+</body>
 </html>

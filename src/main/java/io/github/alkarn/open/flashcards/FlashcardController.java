@@ -54,9 +54,27 @@ public class FlashcardController {
 	    return "index";
 	}
 
+	// ── Unified add page ──────────────────────────────────────
 	@RequestMapping(value="/flashcards/add", method=RequestMethod.GET)
 	public String add(Model model) {
 	    return "add";
+	}
+
+	// ── Training mode (Duolingo-style) ────────────────────────
+	@RequestMapping(value="/flashcards/train", method=RequestMethod.GET)
+	public String train(Model model) {
+	    return "train";
+	}
+
+	// ── Vocabulary list ───────────────────────────────────────
+	@RequestMapping(value="/flashcards/vocabulary", method=RequestMethod.GET)
+	public String vocabulary(Model model) {
+	    return "vocabulary";
+	}
+
+	@RequestMapping(value="/flashcards/settings", method=RequestMethod.GET)
+	public String settings(Model model) {
+	    return "settings";
 	}
 
 	@RequestMapping(value="/flashcards/add/nouns", method=RequestMethod.GET)

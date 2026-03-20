@@ -1,148 +1,84 @@
 package io.github.alkarn.utils;
 
-import java.util.Map;
-import java.util.Optional;
+import io.github.alkarn.open.flashcards.dao.*;
+import io.github.alkarn.open.flashcards.dao.results.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
-import io.github.alkarn.open.flashcards.dao.Adjective;
-import io.github.alkarn.open.flashcards.dao.AdjectiveQuestion;
-import io.github.alkarn.open.flashcards.dao.AdjectiveRepository;
-import io.github.alkarn.open.flashcards.dao.Adverb;
-import io.github.alkarn.open.flashcards.dao.AdverbQuestion;
-import io.github.alkarn.open.flashcards.dao.AdverbRepository;
-import io.github.alkarn.open.flashcards.dao.Noun;
-import io.github.alkarn.open.flashcards.dao.NounDto;
-import io.github.alkarn.open.flashcards.dao.NounQuestion;
-import io.github.alkarn.open.flashcards.dao.NounRepository;
-import io.github.alkarn.open.flashcards.dao.Verb;
-import io.github.alkarn.open.flashcards.dao.VerbDto;
-import io.github.alkarn.open.flashcards.dao.VerbQuestion;
-import io.github.alkarn.open.flashcards.dao.VerbRepository;
-import io.github.alkarn.open.flashcards.dao.WordDto;
-import io.github.alkarn.open.flashcards.dao.results.AdjectiveTestResult;
-import io.github.alkarn.open.flashcards.dao.results.AdverbTestResult;
-import io.github.alkarn.open.flashcards.dao.results.NounTestResult;
-import io.github.alkarn.open.flashcards.dao.results.VerbTestResult;
-
+/**
+ * Evaluates word DTO validity and quiz answers.
+ * Instantiated via FlashcardConfiguration with explicit repository injection.
+ */
 public class EvaluatorImpl implements Evaluator {
 
-    @Autowired
-    private NounRepository nounRepository;
+    private final NounRepository      nounRepository;
+    private final VerbRepository      verbRepository;
+    private final AdjectiveRepository adjectiveRepository;
+    private final AdverbRepository    adverbRepository;
 
-    @Autowired
-    private AdverbRepository adverbRepository;
-
-    @Autowired
-    private AdjectiveRepository adjectiveRepository;
-
-    @Autowired
-    private VerbRepository verbRepository;
-
+    public EvaluatorImpl(NounRepository nounRepository,
+                         VerbRepository verbRepository,
+                         AdjectiveRepository adjectiveRepository,
+                         AdverbRepository adverbRepository) {
+        this.nounRepository      = nounRepository;
+        this.verbRepository      = verbRepository;
+        this.adjectiveRepository = adjectiveRepository;
+        this.adverbRepository    = adverbRepository;
+    }
 
     @Override
     public boolean isValid(WordDto wordDto) {
-        if (wordDto == null || wordDto.getLiteral() == null || wordDto.getLiteral().isEmpty()
-                || wordDto.getTranslation() == null || wordDto.getTranslation().isEmpty()) {
-            return false;
-        }
-        if (wordDto instanceof NounDto) {
-            return (((NounDto) wordDto).getArticle() == null || ((NounDto) wordDto).getArticle().isEmpty()) ? false : true;
-        } else if (wordDto instanceof VerbDto) {
-            Map<String, String> simplePresent = ((VerbDto) wordDto).getSimplePresent();
-            if (simplePresent == null) {
-                return false;
-            }
-            for (String value : simplePresent.values()) {
-                if (value == null || value.isEmpty()) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return true;
-        }
+        if (wordDto == null) return false;
+        return !blank(wordDto.getLiteral()) && !blank(wordDto.getTranslation());
     }
 
     @Override
     public String getSuccessMessage(WordDto wordDto) {
-        if (wordDto instanceof NounDto) {
-            return ((NounDto) wordDto).getArticle() + " " + wordDto.getLiteral() + " successfully added";
-        } else {
-            return wordDto.getLiteral() + " successfully added";
-        }
+        return "\"" + wordDto.getLiteral() + "\" a \u00e9t\u00e9 ajout\u00e9 avec succ\u00e8s !";
     }
 
     @Override
     public String getErrorMessage(WordDto wordDto) {
-        if (wordDto == null) {
-            return "Please insert a new word";
-        } else if (wordDto.getLiteral() == null || wordDto.getLiteral().isEmpty()) {
-            return "Please insert a new word";
-        } else if (wordDto.getTranslation() == null || wordDto.getTranslation().isEmpty()) {
-            return "Plese fill translation";
-        }
-        if (wordDto instanceof NounDto) {
-            if (((NounDto) wordDto).getArticle() == null || ((NounDto) wordDto).getArticle().isEmpty()) {
-                return "Please fill article";
-            }
-        } else if (wordDto instanceof VerbDto) {
-            Map<String, String> simplePresent = ((VerbDto) wordDto).getSimplePresent();
-            if (simplePresent == null) {
-                return "Please fill simple present";
-            }
-            for (String personalPronoun : simplePresent.keySet()) {
-                if (simplePresent.get(personalPronoun) == null || simplePresent.get(personalPronoun).isEmpty()) {
-                    return "Plese fill simple present for " + personalPronoun;
-                }
-            }
-        }
-        return null;
+        if (blank(wordDto.getLiteral()))     return "Le mot ne peut pas \u00eatre vide.";
+        if (blank(wordDto.getTranslation())) return "La traduction ne peut pas \u00eatre vide.";
+        return "Donn\u00e9es invalides.";
     }
 
     @Override
-    public NounTestResult evaluateUserAnswer(NounQuestion nounQuestion) throws Exception {
-        Optional<Noun> noun = nounRepository.findById(nounQuestion.getLiteral());
-        if (noun.isPresent()) {
-            return new NounTestResult(noun.get(), nounQuestion);
-        } else {
-            // TODO This is an extreme case. How do we handle?
-            throw new Exception();
+    public WordTestResult evaluateUserAnswer(WordQuestion wordQuestion) throws Exception {
+        String literal = wordQuestion.getLiteral();
+
+        if (wordQuestion instanceof NounQuestion) {
+            Noun noun = nounRepository.findById(literal)
+                .orElseThrow(new java.util.function.Supplier<Exception>() {
+                    public Exception get() { return new Exception("Noun not found: " + literal); }
+                });
+            return new NounTestResult(noun, (NounQuestion) wordQuestion);
+
+        } else if (wordQuestion instanceof VerbQuestion) {
+            Verb verb = verbRepository.findById(literal)
+                .orElseThrow(new java.util.function.Supplier<Exception>() {
+                    public Exception get() { return new Exception("Verb not found: " + literal); }
+                });
+            return new VerbTestResult(verb, (VerbQuestion) wordQuestion);
+
+        } else if (wordQuestion instanceof AdjectiveQuestion) {
+            Adjective adj = adjectiveRepository.findById(literal)
+                .orElseThrow(new java.util.function.Supplier<Exception>() {
+                    public Exception get() { return new Exception("Adjective not found: " + literal); }
+                });
+            return new AdjectiveTestResult(adj, (AdjectiveQuestion) wordQuestion);
+
+        } else if (wordQuestion instanceof AdverbQuestion) {
+            Adverb adv = adverbRepository.findById(literal)
+                .orElseThrow(new java.util.function.Supplier<Exception>() {
+                    public Exception get() { return new Exception("Adverb not found: " + literal); }
+                });
+            return new AdverbTestResult(adv, (AdverbQuestion) wordQuestion);
         }
 
+        throw new Exception("Unknown question type: " + wordQuestion.getClass().getName());
     }
 
-    @Override
-    public AdverbTestResult evaluateUserAnswer(AdverbQuestion adverbQuestion) throws Exception {
-        Optional<Adverb> adverb = adverbRepository.findById(adverbQuestion.getLiteral());
-        if (adverb.isPresent()) {
-            return new AdverbTestResult(adverb.get(), adverbQuestion);
-        } else {
-            // TODO This is an extreme case. How do we handle?
-            throw new Exception();
-        }
+    private boolean blank(String s) {
+        return s == null || s.trim().isEmpty();
     }
-
-    @Override
-    public AdjectiveTestResult evaluateUserAnswer(AdjectiveQuestion adjectiveQuestion) throws Exception {
-        Optional<Adjective> adjective = adjectiveRepository.findById(adjectiveQuestion.getLiteral());
-        if (adjective.isPresent()) {
-            return new AdjectiveTestResult(adjective.get(), adjectiveQuestion);
-        } else {
-            // TODO This is an extreme case. How do we handle?
-            throw new Exception();
-        }
-    }
-
-    @Override
-    public VerbTestResult evaluateUserAnswer(VerbQuestion verbQuestion) throws Exception {
-        Optional<Verb> verb = verbRepository.findById(verbQuestion.getLiteral());
-        if (verb.isPresent()) {
-            return new VerbTestResult(verb.get(), verbQuestion);
-        } else {
-            // TODO This is an extreme case. How do we handle?
-            throw new Exception();
-        }
-    }
-
 }

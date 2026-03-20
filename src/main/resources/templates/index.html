@@ -1,38 +1,49 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <title>Open Flashcards</title>
-    
-    <!-- Bootstrap 3.3.7 -->
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.7/css/bootstrap.min.css}" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"></link>
-  </head>
-  <body>
-    <div class="container">
-      <div class="row">
-        <div class="page-header">
-          <h1><a href="/flashcards">Open Flashcards</a></h1>
-        </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashCards</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <script th:src="@{/js/i18n-loader.js}"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/flashcards}" class="nav-brand">
+      <span data-i18n="nav_brand">🃏 FlashCards</span>
+      <span class="lang-badge" id="targetLangBadge"></span>
+    </a>
+    <div class="nav-links">
+      <a th:href="@{/flashcards/add}"        class="nav-link" data-i18n="nav_add">➕ Add</a>
+      <a th:href="@{/flashcards/train}"      class="nav-link" data-i18n="nav_train">🎯 Practice</a>
+      <a th:href="@{/flashcards/vocabulary}" class="nav-link" data-i18n="nav_vocab">📚 Vocabulary</a>
+      <a th:href="@{/flashcards/settings}"   class="nav-link" data-i18n="nav_settings">⚙️ Settings</a>
+      <button class="dark-toggle" id="darkToggle" title="Dark mode" aria-label="Toggle dark mode"></button>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="hero-content">
+      <h1 data-i18n="hero_title">Learn your language,\none word at a time.</h1>
+      <p data-i18n="hero_subtitle">Add words, practice with Duolingo-style quizzes, and progress every day.</p>
+      <div class="hero-buttons">
+        <a th:href="@{/flashcards/add}"   class="btn btn-primary"   data-i18n="hero_btn_add">➕ Add words</a>
+        <a th:href="@{/flashcards/train}" class="btn btn-secondary" data-i18n="hero_btn_train">🎯 Practice</a>
       </div>
-      <div class="row">
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <h3 class="text-info">Add words</h3>
-<!--             <p>Here you can add new words and their translation in the database. Later, you can take tests that will ask you to translate these words.</p> -->
-            <p><a class="btn btn-info btn-lg" href="/flashcards/add" role="button">Add</a></p>
-          </div>
-        </div>
-        <div class="col-sm-6">
-          <div class="jumbotron">
-            <h3 class="text-warning">Take a test</h3>
-<!--             <p>You will be asked to translate words that exist in the database. An algorithm will be used to choose the words that will appear, based on you answers.</p> -->
-            <p><a class="btn btn-warning btn-lg" href="/flashcards/test" role="button">Test</a></p>
-          </div>
+    </div>
+    <div class="hero-visual">
+      <div class="card-stack">
+        <div class="demo-card card-back"></div>
+        <div class="demo-card card-mid"></div>
+        <div class="demo-card card-front">
+          <span class="demo-word" id="demoWord">bonjour</span>
+          <span class="demo-hint" id="demoHint">nom · fr</span>
         </div>
       </div>
     </div>
-  </body>
+  </main>
+
+  <script th:src="@{/js/app.js}"></script>
+  <script th:src="@{/js/nav.js}"></script>
+</body>
 </html>

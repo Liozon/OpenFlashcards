@@ -1,34 +1,48 @@
 package io.github.alkarn.utils;
 
-import io.github.alkarn.open.flashcards.dao.Adjective;
-import io.github.alkarn.open.flashcards.dao.AdjectiveDto;
-import io.github.alkarn.open.flashcards.dao.Adverb;
-import io.github.alkarn.open.flashcards.dao.AdverbDto;
-import io.github.alkarn.open.flashcards.dao.Noun;
-import io.github.alkarn.open.flashcards.dao.NounDto;
-import io.github.alkarn.open.flashcards.dao.Verb;
-import io.github.alkarn.open.flashcards.dao.VerbDto;
+import io.github.alkarn.open.flashcards.dao.*;
 
+/**
+ * Converts form DTOs into domain/persistence objects.
+ * Reconstructed from original usage patterns in FlashcardController.
+ */
 public class TransformerImpl implements Transformer {
 
     @Override
-    public Noun transform(NounDto nounDto) {
-        return new Noun(nounDto.getLiteral(), nounDto.getTranslation(), nounDto.getHelpPhrase(), nounDto.getArticle());
+    public Noun transform(NounDto dto) {
+        return new Noun(
+            dto.getLiteral(),
+            dto.getTranslation(),
+            dto.getHelpPhrase(),
+            dto.getArticle() != null ? dto.getArticle() : ""
+        );
     }
 
     @Override
-    public Adverb transform(AdverbDto adverbDto) {
-        return new Adverb(adverbDto.getLiteral(), adverbDto.getTranslation(), adverbDto.getHelpPhrase());
+    public Adverb transform(AdverbDto dto) {
+        return new Adverb(
+            dto.getLiteral(),
+            dto.getTranslation(),
+            dto.getHelpPhrase()
+        );
     }
 
     @Override
-    public Adjective transform(AdjectiveDto adjectiveDto) {
-        return new Adjective(adjectiveDto.getLiteral(), adjectiveDto.getTranslation(), adjectiveDto.getHelpPhrase());
+    public Adjective transform(AdjectiveDto dto) {
+        return new Adjective(
+            dto.getLiteral(),
+            dto.getTranslation(),
+            dto.getHelpPhrase()
+        );
     }
 
     @Override
-    public Verb transform(VerbDto verbDto) {
-        return new Verb(verbDto.getLiteral(), verbDto.getTranslation(), verbDto.getHelpPhrase(), verbDto.getSimplePresent());
+    public Verb transform(VerbDto dto) {
+        return new Verb(
+            dto.getLiteral(),
+            dto.getTranslation(),
+            dto.getHelpPhrase(),
+            dto.getSimplePresent() != null ? dto.getSimplePresent() : new java.util.HashMap<>()
+        );
     }
-
 }

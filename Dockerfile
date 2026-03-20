@@ -5,6 +5,7 @@ WORKDIR /home/open.flashcards
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
+# Build timestamp: 2026-03-20T13:13:25Z
 COPY src ./src
 RUN mvn package -Dmaven.test.skip=true
 

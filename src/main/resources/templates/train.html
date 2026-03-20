@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice – FlashCards</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <script th:src="@{/js/i18n-loader.js}"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/flashcards}" class="nav-brand">
+      <span data-i18n="nav_brand">🃏 FlashCards</span>
+      <span class="lang-badge" id="targetLangBadge"></span>
+    </a>
+    <div class="nav-links">
+      <a th:href="@{/flashcards/add}"        class="nav-link" data-i18n="nav_add">➕ Add</a>
+      <a th:href="@{/flashcards/train}"      class="nav-link active" data-i18n="nav_train">🎯 Practice</a>
+      <a th:href="@{/flashcards/vocabulary}" class="nav-link" data-i18n="nav_vocab">📚 Vocabulary</a>
+      <a th:href="@{/flashcards/settings}"   class="nav-link" data-i18n="nav_settings">⚙️ Settings</a>
+      <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode"></button>
+    </div>
+  </nav>
+
+  <main class="page-content">
+    <div class="score-bar">
+      <div class="score-item"><span class="score-icon">✅</span><span id="correctCount">0</span>&nbsp;<span data-i18n="train_correct">correct</span></div>
+      <div class="score-item"><span class="score-icon">❌</span><span id="wrongCount">0</span>&nbsp;<span data-i18n="train_wrong">incorrect</span></div>
+      <div class="score-item"><span class="score-icon">🔥</span><span id="streak">0</span>&nbsp;<span data-i18n="train_streak">streak</span></div>
+    </div>
+
+    <div class="type-selector filter-selector">
+      <button class="type-btn active" data-type="" data-i18n="train_filter_all">🌍 All</button>
+      <button class="type-btn" data-type="noun"      data-i18n="add_type_noun">📦 Noun</button>
+      <button class="type-btn" data-type="verb"      data-i18n="add_type_verb">⚡ Verb</button>
+      <button class="type-btn" data-type="adjective" data-i18n="add_type_adjective">🎨 Adjective</button>
+      <button class="type-btn" data-type="adverb"    data-i18n="add_type_adverb">💨 Adverb</button>
+    </div>
+
+    <div class="quiz-card" id="quizCard">
+      <div id="loadingState" class="quiz-state">
+        <div class="spinner"></div>
+        <p data-i18n="train_loading">Loading…</p>
+      </div>
+      <div id="errorState" class="quiz-state hidden">
+        <p class="error-emoji">😅</p>
+        <p id="errorMessage"></p>
+        <button class="btn btn-primary" onclick="loadQuestion()">↺</button>
+      </div>
+      <div id="questionState" class="hidden">
+        <div class="word-type-badge" id="wordTypeBadge"></div>
+        <div class="question-word" id="questionWord"></div>
+        <div class="question-hint" id="questionHint"></div>
+        <p class="question-instruction" data-i18n="train_question">What is the translation?</p>
+        <div class="choices-grid" id="choicesGrid"></div>
+      </div>
+      <div id="resultState" class="hidden">
+        <div class="result-icon" id="resultIcon"></div>
+        <div class="result-message" id="resultMessage"></div>
+        <div class="result-answer" id="resultAnswer"></div>
+        <button class="btn btn-primary btn-full" id="nextBtn" onclick="loadQuestion()" data-i18n="train_next">Next question →</button>
+      </div>
+    </div>
+  </main>
+
+  <script th:src="@{/js/app.js}"></script>
+  <script th:src="@{/js/nav.js}"></script>
+  <script th:src="@{/js/train.js}"></script>
+</body>
+</html>
