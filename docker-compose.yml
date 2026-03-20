@@ -1,23 +1,18 @@
-version: '2'
 services:
   flashcards:
     build: .
     ports:
       - "8090:8080"
-    links:
-      - mongo:mongo
     depends_on:
-      - mongo 
+      - mongo
+
   mongo:
-    build:
-      context: .
-      dockerfile: Dockerfile_MongoDB
-    volumes_from:
-      - data-container
-    depends_on:
-      - data-container
-  data-container:
-    image: ubuntu
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
     volumes:
-      - /data/db 
-     
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

@@ -1,8 +1,13 @@
-FROM  maven:3.3.3-jdk-8
-RUN mkdir /home/open.flashcards
+FROM maven:3.9.9-eclipse-temurin-8
+
 WORKDIR /home/open.flashcards
-COPY  pom.xml /home/open.flashcards/pom.xml
-COPY src /home/open.flashcards/src
+
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+COPY src ./src
 RUN mvn package -Dmaven.test.skip=true
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/home/open.flashcards/target/open.flashcards-0.0.1-SNAPSHOT.jar"]
+
+CMD ["java", "-jar", "target/open.flashcards-0.0.1-SNAPSHOT.jar"]
