@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenFlashcards</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- ── LOGIN SCREEN ─────────────────────────────────────── -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">🃏</div>
+      <h1 class="login-title">OpenFlashcards</h1>
+      <p class="login-sub">Sign in to continue</p>
+      <div id="loginError" class="alert alert-danger hidden"></div>
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" id="loginBtn">Sign in →</button>
+    </div>
+  </div>
+
+  <!-- ── APP SHELL ────────────────────────────────────────── -->
+  <div id="appShell" class="hidden">
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+      <a href="#" class="nav-brand" onclick="navigate('home')">
+        🃏 <span>OpenFlashcards</span>
+        <span class="lang-badge" id="navLangBadge"></span>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+      <div class="nav-links" id="navLinks">
+        <a class="nav-link" data-page="home"       href="#">🏠 Home</a>
+        <a class="nav-link" data-page="vocabulary" href="#">📚 Vocabulary</a>
+        <a class="nav-link" data-page="add"        href="#">➕ Add</a>
+        <a class="nav-link" data-page="train"      href="#">🎯 Practice</a>
+        <a class="nav-link" data-page="settings"   href="#">⚙️ Settings</a>
+        <a class="nav-link" id="adminLink" data-page="admin" href="#" style="display:none">🔑 Admin</a>
+        <button class="btn-icon dark-toggle" id="darkToggle" title="Toggle dark mode">🌙</button>
+        <button class="btn-icon" id="logoutBtn" title="Logout">🚪</button>
+      </div>
+    </nav>
+
+    <!-- PAGES -->
+    <main id="pageContent" class="page-content"></main>
+  </div>
+
+  <!-- ── MODAL ────────────────────────────────────────────── -->
+  <div id="modal" class="modal-backdrop hidden">
+    <div class="modal-card" id="modalCard">
+      <div class="modal-header">
+        <h2 id="modalTitle">Modal</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFooter" class="modal-footer"></div>
+    </div>
+  </div>
+
+  <script src="/js/world-languages.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/pages/home.js"></script>
+  <script src="/js/pages/vocabulary.js"></script>
+  <script src="/js/pages/add.js"></script>
+  <script src="/js/pages/train.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script src="/js/pages/admin.js"></script>
+  <script src="/js/tts.js"></script>
+</body>
+</html>

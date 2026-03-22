@@ -1,14 +1,41 @@
-FROM maven:3.9.9-eclipse-temurin-8
+# ── OpenFlashcards – single-container Docker image ──────────────────────────
+# Build:  docker build -t openflashcards .
+# Run:    docker run -d -p 3000:3000 -v /your/data:/app/data --name openflashcards openflashcards
+# Save:   docker save openflashcards | gzip > openflashcards.tar.gz
 
-WORKDIR /home/open.flashcards
+FROM node:20-alpine
 
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Metadata
+LABEL org.opencontainers.image.title="OpenFlashcards"
+LABEL org.opencontainers.image.description="Lightweight language flashcard app"
+LABEL org.opencontainers.image.version="2.0.0"
 
-# Build timestamp: 2026-03-20T13:13:25Z
-COPY src ./src
-RUN mvn package -Dmaven.test.skip=true
+# Working directory
+WORKDIR /app
 
-EXPOSE 8080
+# Install dependencies first (layer cache)
+COPY package.json ./
+RUN npm install --omit=dev && npm cache clean --force
 
-CMD ["java", "-jar", "target/open.flashcards-0.0.1-SNAPSHOT.jar"]
+# Copy application code
+COPY src/     ./src/
+COPY public/  ./public/
+
+# Create persistent data directories inside image
+# (will be overridden by volume mount on real deployments)
+RUN mkdir -p /app/data /app/config
+
+# Environment defaults
+ENV NODE_ENV=production \
+  PORT=3000 \
+  DATA_DIR=/app/data \
+  CONFIG_DIR=/app/config \
+  JWT_SECRET=change_this_secret_in_production
+
+EXPOSE 3000
+
+# Health check
+#HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+#  CMD wget -qO- http://localhost:3000/auth/me || exit 1
+
+CMD ["node", "src/server.js"]
