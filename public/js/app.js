@@ -65,11 +65,14 @@ async function saveConfig(patch) {
 }
 
 function applyTheme() {
-  if (App.config && App.config.darkMode) {
+  const dark = App.config ? App.config.darkMode : true;
+  if (dark) {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
+  const btn = document.getElementById('darkToggle');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
 }
 
 function currentLang() {
@@ -170,6 +173,11 @@ window.toast = function(msg, type = 'success') {
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Detect browser language for login screen before user logs in
+  const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+  window.setUiLang(browserLang);
+  applyLoginLabels();
+
   // Login form
   const loginBtn  = document.getElementById('loginBtn');
   const loginUser = document.getElementById('loginUsername');
@@ -228,17 +236,62 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// I18N HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function applyNavLabels() {
+  const map = {
+    navHome:     'nav_home',
+    navVocab:    'nav_vocabulary',
+    navAdd:      'nav_add',
+    navTrain:    'nav_train',
+    navSettings: 'nav_settings',
+    adminLink:   'nav_admin'
+  };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key);
+  });
+  // Re-show adminLink if admin (textContent reset clears style only if we set display)
+  if (App.user && App.user.role === 'admin') {
+    const al = document.getElementById('adminLink');
+    if (al) al.style.display = '';
+  }
+}
+
+function applyLoginLabels() {
+  const sub = document.getElementById('loginSub');
+  const ul  = document.getElementById('loginUserLabel');
+  const pl  = document.getElementById('loginPassLabel');
+  const btn = document.getElementById('loginBtn');
+  if (sub) sub.textContent = t('login_title');
+  if (ul)  ul.textContent  = t('login_username');
+  if (pl)  pl.textContent  = t('login_password');
+  if (btn) btn.textContent = t('login_btn');
+}
+
 async function bootApp() {
   await loadConfig();
+  // Apply the user's native language to UI
+  if (App.config && App.config.nativeLang) {
+    window.setUiLang(App.config.nativeLang);
+  }
+  applyNavLabels();
   showAppShell();
 
   // Show admin link if admin
   if (App.user.role === 'admin') {
     document.getElementById('adminLink').style.display = '';
   }
-  document.getElementById('darkToggle').textContent = (App.config && App.config.darkMode) ? '☀️' : '🌙';
+  // Admin → direct to admin panel, no onboarding
+  if (App.user.role === 'admin') {
+    document.getElementById('appShell').querySelector('.navbar').style.display = '';
+    navigate('admin');
+    return;
+  }
 
-  // If no languages configured → show onboarding, else → home
+  // Regular user: onboarding if no languages configured yet
   if (!App.config.targetLangs || !App.config.targetLangs.length) {
     renderOnboarding(document.getElementById('pageContent'));
     document.getElementById('appShell').querySelector('.navbar').style.display = 'none';
@@ -257,8 +310,8 @@ function renderOnboarding(el) {
     <div class="onboarding-screen">
       <div class="onboarding-card">
         <div style="font-size:2.5rem;margin-bottom:8px">🃏</div>
-        <h2>Welcome to OpenFlashcards!</h2>
-        <p>Let's set up your profile. First, what is your native language?</p>
+        <h2>${t('onb_welcome')}</h2>
+        <p>${t('onb_native_q')}</p>
 
         <div class="field-group">
           <label>Your native language</label>
@@ -267,7 +320,7 @@ function renderOnboarding(el) {
           <div id="onbNativeChip" style="margin-top:8px"></div>
         </div>
 
-        <p style="margin-top:8px">Which languages do you want to learn?</p>
+        <p style="margin-top:8px">${t('onb_learn_q')}</p>
         <div class="field-group">
           <label>Languages to learn</label>
           <input type="text" id="onbLearnSearch" placeholder="Search…" autocomplete="off">
@@ -276,7 +329,7 @@ function renderOnboarding(el) {
         </div>
 
         <div id="onbError" class="alert alert-danger hidden"></div>
-        <button class="btn btn-primary btn-full" id="onbStartBtn">Start learning! →</button>
+        <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')}</button>
       </div>
     </div>`;
 
@@ -305,6 +358,16 @@ function renderOnboarding(el) {
         nSearch.value = nativeLang.name;
         nResults.style.display = 'none';
         nChip.innerHTML = `<span class="selected-chip">${nativeLang.flag} ${nativeLang.name}</span>`;
+        // Switch UI language immediately
+        window.setUiLang(nativeLang.code);
+        applyLoginLabels();
+        // Re-render onboarding texts in the new language
+        document.querySelector('.onboarding-card h2').textContent   = t('onb_welcome');
+        document.querySelector('.onboarding-card > p').textContent  = t('onb_native_q');
+        const learnP = document.querySelector('.onboarding-card p[style]');
+        if (learnP) learnP.textContent = t('onb_learn_q');
+        const startBtn = document.getElementById('onbStartBtn');
+        if (startBtn) startBtn.textContent = t('onb_start');
       });
     });
   });
@@ -351,8 +414,8 @@ function renderOnboarding(el) {
 
   document.getElementById('onbStartBtn').addEventListener('click', async () => {
     const errEl = document.getElementById('onbError');
-    if (!nativeLang) { errEl.textContent = 'Please select your native language.'; errEl.classList.remove('hidden'); return; }
-    if (!Object.keys(learnLangs).length) { errEl.textContent = 'Please select at least one language to learn.'; errEl.classList.remove('hidden'); return; }
+    if (!nativeLang) { errEl.textContent = t('onb_error_native'); errEl.classList.remove('hidden'); return; }
+    if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
 
     try {
       await saveConfig({ nativeLang: nativeLang.code });
@@ -360,6 +423,8 @@ function renderOnboarding(el) {
         await api('POST', '/api/languages', l);
       }
       await loadConfig();
+      window.setUiLang(nativeLang.code);
+      applyNavLabels();
       document.getElementById('appShell').querySelector('.navbar').style.display = '';
       updateNavLangBadge();
       navigate('home');

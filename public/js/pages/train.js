@@ -1,74 +1,85 @@
 // pages/train.js
 'use strict';
 
-// ── Shared state ─────────────────────────────────────────────────────────────
-let _trainMode    = 'word';   // 'word' | 'phrase'
-let _trainTypes   = [];       // active word type filters (empty = all)
-let _trainCorrect = 0;
-let _trainWrong   = 0;
-let _trainStreak  = 0;
+// ── State ─────────────────────────────────────────────────────────────────────
+let _trainMode      = 'word';   // 'word' | 'phrase'
+let _trainTypes     = [];       // word type filters (empty = all)
+let _trainDirection = 'random'; // 'random' | 'target→native' | 'native→target'
+let _trainCorrect   = 0;
+let _trainWrong     = 0;
+let _trainStreak    = 0;
+let _curPhrase      = null;
 
-// ── Phrase state ─────────────────────────────────────────────────────────────
-let _curPhrase    = null;
-let _answerTokens = [];       // tokens placed in answer zone
-
+// ── Render page ───────────────────────────────────────────────────────────────
 function renderTrain(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
-  _trainTypes = []; _trainMode = 'word';
+  _trainTypes = []; _trainMode = 'word'; _trainDirection = 'random';
 
-  el.innerHTML = `
-    <div class="page-title">🎯 Practice</div>
+  const ld = currentLangData();
+  const nativeLang = (App.config && App.config.nativeLang) || 'en';
+  const targetName = ld ? (ld.flag || '') + ' ' + ld.name : lang.toUpperCase();
 
-    <!-- Score bar -->
-    <div class="score-bar">
-      <div class="score-item">✅ <span id="trCorrect">0</span></div>
-      <div class="score-item">❌ <span id="trWrong">0</span></div>
-      <div class="score-item">🔥 <span id="trStreak">0</span></div>
-    </div>
+  el.innerHTML =
+    '<div class="page-title">' + t('train_title') + '</div>' +
 
-    <!-- Mode selector -->
-    <div class="filter-row">
-      <button class="type-btn active" id="modeWord"   onclick="setTrainMode('word',this)">📝 Words</button>
-      <button class="type-btn"        id="modePhrase" onclick="setTrainMode('phrase',this)">💬 Phrases</button>
-    </div>
+    // Score bar
+    '<div class="score-bar">' +
+      '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
+      '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
+      '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
+    '</div>' +
 
-    <!-- Word type filters (hidden in phrase mode) -->
-    <div class="filter-row" id="typeFilters">
-      <button class="type-btn active" data-type="" onclick="toggleTypeFilter('',this)">🌍 All</button>
-      <button class="type-btn" data-type="noun"      onclick="toggleTypeFilter('noun',this)">📦 Nouns</button>
-      <button class="type-btn" data-type="verb"      onclick="toggleTypeFilter('verb',this)">⚡ Verbs</button>
-      <button class="type-btn" data-type="adjective" onclick="toggleTypeFilter('adjective',this)">🎨 Adj.</button>
-      <button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter('adverb',this)">💨 Adv.</button>
-    </div>
+    // Mode selector
+    '<div class="filter-row">' +
+      '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">'   + t('train_words')   + '</button>' +
+      '<button class="type-btn"        id="modePhrase" onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
+    '</div>' +
 
-    <!-- Quiz area -->
-    <div id="quizArea"></div>`;
+    // Word type filters
+    '<div class="filter-row" id="typeFilters">' +
+      '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">' + t('train_all') + '</button>' +
+      '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ','') + '</button>' +
+      '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ','') + '</button>' +
+      '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ','') + '</button>' +
+      '<button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter(\'adverb\',this)">💨 ' + t('add_type_adv').replace('💨 ','') + '</button>' +
+    '</div>' +
+
+    // Direction selector (word mode only)
+    '<div class="filter-row" id="dirFilters">' +
+      '<button class="type-btn active" data-dir="random"          onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
+      '<button class="type-btn"        data-dir="native→target"   onclick="setTrainDir(\'native→target\',this)">🌐→' + targetName + '</button>' +
+      '<button class="type-btn"        data-dir="target→native"   onclick="setTrainDir(\'target→native\',this)">' + targetName + '→🌐</button>' +
+    '</div>' +
+
+    // Quiz area
+    '<div id="quizArea"></div>';
 
   loadQuestion();
 }
 
-// ── Mode / filter ─────────────────────────────────────────────────────────────
+// ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function(mode, btn) {
   _trainMode = mode;
   document.querySelectorAll('#modeWord,#modePhrase').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = mode === 'word' ? '' : 'none';
+  document.getElementById('dirFilters').style.display  = mode === 'word' ? '' : 'none';
   loadQuestion();
 };
 
 window.toggleTypeFilter = function(type, btn) {
   if (type === '') {
-    // All
     _trainTypes = [];
     document.querySelectorAll('#typeFilters .type-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   } else {
     document.querySelector('#typeFilters .type-btn[data-type=""]').classList.remove('active');
     btn.classList.toggle('active');
-    const active = [...document.querySelectorAll('#typeFilters .type-btn.active')].map(b => b.dataset.type).filter(Boolean);
+    const active = [...document.querySelectorAll('#typeFilters .type-btn.active')]
+      .map(b => b.dataset.type).filter(Boolean);
     _trainTypes = active;
     if (!active.length) {
       _trainTypes = [];
@@ -78,54 +89,77 @@ window.toggleTypeFilter = function(type, btn) {
   loadQuestion();
 };
 
-// ── Load question ─────────────────────────────────────────────────────────────
+window.setTrainDir = function(dir, btn) {
+  _trainDirection = dir;
+  document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadQuestion();
+};
+
+// ── Router ────────────────────────────────────────────────────────────────────
 async function loadQuestion() {
-  if (_trainMode === 'phrase') {
-    await loadPhraseQuestion();
-  } else {
-    await loadWordQuestion();
-  }
+  _trainMode === 'phrase' ? await loadPhraseQuestion() : await loadWordQuestion();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORD QUIZ
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadWordQuestion() {
-  const lang  = currentLang();
-  const area  = document.getElementById('quizArea');
-  area.innerHTML = `<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>`;
+  const lang = currentLang();
+  const area = document.getElementById('quizArea');
+  area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
+  // Map UI direction to API direction param
+  const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
+  const apiDir = dirMap[_trainDirection] || 'random';
   const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+
   try {
-    const q = await api('GET', `/api/quiz?lang=${encodeURIComponent(lang)}&direction=random${typesParam}`);
+    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam);
     renderWordQuiz(q);
   } catch(e) {
-    area.innerHTML = `
-      <div class="quiz-card">
-        <p style="font-size:2rem;margin-bottom:12px">😅</p>
-        <p style="color:var(--text-muted)">${e.error || 'Error loading question.'}</p>
-        <button class="btn btn-primary" style="margin-top:16px" onclick="loadQuestion()">↺ Retry</button>
-      </div>`;
+    area.innerHTML =
+      '<div class="quiz-card">' +
+        '<p style="font-size:2rem;margin-bottom:12px">😅</p>' +
+        '<p style="color:var(--text-muted)">' + (e.error || 'Error loading question.') + '</p>' +
+        '<button class="btn btn-primary" style="margin-top:16px" onclick="loadQuestion()">' + t('train_retry') + '</button>' +
+      '</div>';
   }
 }
 
 function renderWordQuiz(q) {
   const area = document.getElementById('quizArea');
-  const typeLabels = { noun:'📦 Noun', verb:'⚡ Verb', adjective:'🎨 Adj.', adverb:'💨 Adv.' };
+  const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
+  const lang = currentLang();
 
-  area.innerHTML = `
-    <div class="quiz-card" id="wordQuizCard">
-      <div class="badge badge-${q.type}" style="margin-bottom:12px">${typeLabels[q.type]||q.type}</div>
-      <div class="question-word" id="qWord">${esc(q.promptText)}</div>
-      ${q.definition ? `<div class="question-def">${esc(q.definition)}</div>` : ''}
-      <p class="question-instr">What is the translation?</p>
-      <div class="choices-grid" id="choicesGrid"></div>
-    </div>`;
+  // Direction label
+  const nativeLang = (App.config && App.config.nativeLang) || 'en';
+  const dirLabel = q.showNative
+    ? '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>'
+    : '<span style="font-size:.8rem;color:var(--text-faint)">' + lang.toUpperCase() + ' → ' + nativeLang.toUpperCase() + '</span>';
+
+  area.innerHTML =
+    '<div class="quiz-card" id="wordQuizCard">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">' +
+        '<div class="badge badge-' + q.type + '">' + (typeLabels[q.type] || q.type) + '</div>' +
+        dirLabel +
+      '</div>' +
+      '<div class="question-word" id="qWord">' + esc(q.promptText) + '</div>' +
+      (q.definition ? '<div class="question-def">' + esc(q.definition) + '</div>' : '') +
+      '<p class="question-instr">' + t('train_question') + '</p>' +
+      '<div class="choices-grid" id="choicesGrid"></div>' +
+    '</div>';
+
+  // TTS button for the prompt word (always speaks the target-lang word)
+  const wordEl = document.getElementById('qWord');
+  const ttsWord = q.showNative ? q.answerText : q.promptText;
+  wordEl.appendChild(document.createTextNode(' '));
+  wordEl.appendChild(TTS.button(ttsWord, lang));
 
   const grid = document.getElementById('choicesGrid');
   q.choices.forEach(choice => {
     const btn = document.createElement('button');
-    btn.className = 'choice-btn';
+    btn.className   = 'choice-btn';
     btn.textContent = choice;
     btn.addEventListener('click', () => handleWordAnswer(btn, choice, q));
     grid.appendChild(btn);
@@ -133,12 +167,9 @@ function renderWordQuiz(q) {
 }
 
 async function handleWordAnswer(btn, answer, q) {
-  // Disable all buttons
   document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
 
   const correct = answer.trim().toLowerCase() === q.answerText.trim().toLowerCase();
-
-  // Visual feedback
   btn.classList.add(correct ? 'correct' : 'wrong');
   if (!correct) {
     document.querySelectorAll('.choice-btn').forEach(b => {
@@ -147,27 +178,22 @@ async function handleWordAnswer(btn, answer, q) {
     });
   }
 
-  // Submit to server (update difficulty)
-  try {
-    await api('POST', '/api/quiz/answer', {
-      lang: q.langCode, id: q.id, answer, expectedAnswer: q.answerText
-    });
-  } catch {}
+  try { await api('POST', '/api/quiz/answer', { lang: q.langCode, id: q.id, answer, expectedAnswer: q.answerText }); } catch {}
 
-  // Update score
-  if (correct) { _trainCorrect++; _trainStreak++; }
-  else         { _trainWrong++;   _trainStreak = 0; }
+  if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
 
-  // Show next button
-  const card = document.getElementById('wordQuizCard');
+  // Auto-speak correct answer
+  TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode);
+
+  const card    = document.getElementById('wordQuizCard');
   const nextRow = document.createElement('div');
-  nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px';
-  nextRow.innerHTML = `
-    <div style="margin-bottom:12px;font-weight:700;color:${correct?'var(--primary-dk)':'var(--danger-dk)'}">
-      ${correct ? '✓ Correct!' : `✗ The answer was: <em>${esc(q.answerText)}</em>`}
-    </div>
-    <button class="btn btn-primary btn-full" onclick="loadQuestion()">Next →</button>`;
+  nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
+  nextRow.innerHTML =
+    '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +
+      (correct ? t('train_correct_msg') : t('train_wrong_msg') + ' <em>' + esc(q.answerText) + '</em>') +
+    '</div>' +
+    '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + '</button>';
   card.appendChild(nextRow);
 }
 
@@ -177,72 +203,139 @@ async function handleWordAnswer(btn, answer, q) {
 async function loadPhraseQuestion() {
   const lang = currentLang();
   const area = document.getElementById('quizArea');
-  area.innerHTML = `<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>`;
-  _answerTokens = [];
+  area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
+  _curPhrase = null;
 
   try {
-    _curPhrase = await api('GET', `/api/quiz/phrase?lang=${encodeURIComponent(lang)}`);
+    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang));
     renderPhraseQuiz(_curPhrase);
   } catch(e) {
-    area.innerHTML = `
-      <div class="phrase-card" style="text-align:center">
-        <p style="font-size:2rem;margin-bottom:12px">📭</p>
-        <p style="color:var(--text-muted)">${e.error || 'No phrases found.'}</p>
-        <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ Add phrases</button>
-      </div>`;
+    area.innerHTML =
+      '<div class="phrase-card" style="text-align:center">' +
+        '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+        '<p style="color:var(--text-muted)">' + (e.error || t('train_no_phrases')) + '</p>' +
+        '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + t('train_add_phrases') + '</button>' +
+      '</div>';
   }
 }
 
 function renderPhraseQuiz(phrase) {
   const area = document.getElementById('quizArea');
+  const lang = currentLang();
+  const nativeLang = (App.config && App.config.nativeLang) || 'en';
 
-  // Build clickable translation words (each word can reveal its translation from word bank if available)
+  // Clickable words in the translation (native lang sentence shown to user)
   const transWords = phrase.translation.split(/\s+/);
   const clickableTrans = transWords.map(w => {
-    const clean = w.replace(/[^\w]/g,'').toLowerCase();
-    return `<span class="phrase-word-clickable" data-word="${esc(w)}" onclick="showWordTip(this,'${esc(clean)}')" title="Click for translation hint">${esc(w)}</span>`;
+    const clean = w.replace(/[^\wÀ-ÿ]/g, '').toLowerCase();
+    return '<span class="phrase-word-clickable" data-word="' + esc(w) + '" data-clean="' + esc(clean) + '">' + esc(w) + '</span>';
   }).join(' ');
 
-  area.innerHTML = `
-    <div class="phrase-card">
-      <div class="badge badge-phrase" style="margin-bottom:12px">💬 Phrase reconstruction</div>
-      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:8px">Reconstruct this sentence:</p>
-      <div class="phrase-translation" id="phraseTransEl">${clickableTrans}</div>
-      ${phrase.helpNote ? `<p class="phrase-hint">${esc(phrase.helpNote)}</p>` : ''}
+  area.innerHTML =
+    '<div class="phrase-card">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
+        '<div class="badge badge-phrase">💬 ' + t('train_phrases') + '</div>' +
+        '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
+      '</div>' +
+      '<p style="color:var(--text-muted);font-size:.9rem;margin-bottom:8px">' + t('train_reconstruct') + '</p>' +
+      '<div class="phrase-translation" id="phraseTransEl">' + clickableTrans + '</div>' +
+      (phrase.helpNote ? '<p class="phrase-hint">' + esc(phrase.helpNote) + '</p>' : '') +
 
-      <div class="answer-zone" id="answerZone">
-        <span class="answer-zone-placeholder" id="answerPlaceholder">Click words below to build the sentence…</span>
-      </div>
+      '<div class="answer-zone" id="answerZone">' +
+        '<span class="answer-zone-placeholder" id="answerPlaceholder">' + t('train_placeholder') + '</span>' +
+      '</div>' +
+      '<div class="word-bank" id="wordBank"></div>' +
+      '<div id="phraseResultEl" class="phrase-result hidden"></div>' +
+      '<div class="phrase-actions">' +
+        '<button class="btn btn-primary"            id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + '</button>' +
+        '<button class="btn btn-secondary hidden"   id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + '</button>' +
+        '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
+      '</div>' +
+    '</div>';
 
-      <div class="word-bank" id="wordBank"></div>
+  // Wire TTS button next to the translation display
+  const transEl = document.getElementById('phraseTransEl');
+  transEl.appendChild(document.createTextNode(' '));
+  transEl.appendChild(TTS.button(phrase.translation, nativeLang));
 
-      <div id="phraseResultEl" class="phrase-result hidden"></div>
-
-      <div class="phrase-actions">
-        <button class="btn btn-primary"   id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">Check ✓</button>
-        <button class="btn btn-secondary hidden" id="nextPhraseBtn" onclick="loadQuestion()" style="flex:1">Next →</button>
-        <button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">↺</button>
-      </div>
-    </div>`;
+  // Wire tooltip clicks — load words list once
+  loadWordsForTooltips(lang, phrase);
 
   buildWordBank(phrase);
+}
+
+// ── Word tooltips: click a word in the translation to see its target-lang form ──
+async function loadWordsForTooltips(lang, phrase) {
+  let wordBank = [];
+  try { wordBank = await api('GET', '/api/words?lang=' + encodeURIComponent(lang)); } catch {}
+
+  document.querySelectorAll('#phraseTransEl .phrase-word-clickable').forEach(span => {
+    span.title = t('train_click_hint');
+    span.addEventListener('click', () => {
+      // Remove existing tooltips
+      document.querySelectorAll('.word-tooltip').forEach(t => t.remove());
+
+      const clean = span.dataset.clean || span.textContent.replace(/[^\wÀ-ÿ]/g,'').toLowerCase();
+
+      // 1. Try exact match in word bank
+      let found = wordBank.find(w =>
+        w.literal.toLowerCase() === clean ||
+        (w.infinitive && w.infinitive.toLowerCase() === clean)
+      );
+
+      // 2. Try partial / stem match (handles "mange" → "manger")
+      if (!found) {
+        found = wordBank.find(w =>
+          clean.startsWith(w.literal.toLowerCase().slice(0, 4)) ||
+          w.literal.toLowerCase().startsWith(clean.slice(0, 4))
+        );
+      }
+
+      const tipText = found ? found.literal + ' = ' + found.translation : null;
+
+      // 3. Always show Google Translate TTS for the clicked word + tooltip
+      showTooltip(span, tipText, clean, lang);
+    });
+  });
+}
+
+function showTooltip(el, text, word, langCode) {
+  const tip = document.createElement('div');
+  tip.className = 'word-tooltip';
+
+  if (text) {
+    tip.textContent = text;
+  } else {
+    // No match in local bank → show word with TTS and fallback message
+    tip.textContent = '?  (click 🔊)';
+  }
+
+  // TTS button inside tooltip
+  const ttsBtn = TTS.button(word, langCode, 'margin-left:6px;padding:2px 6px;font-size:.8rem;');
+  tip.style.display = 'flex';
+  tip.style.alignItems = 'center';
+  tip.style.gap = '4px';
+  tip.appendChild(ttsBtn);
+
+  el.style.position = 'relative';
+  el.appendChild(tip);
+  setTimeout(() => tip.remove(), 4000);
+
+  // Auto-play TTS for the clicked word
+  TTS.speak(word, langCode);
 }
 
 function buildWordBank(phrase) {
   const words  = phrase.text.trim().split(/\s+/);
   const tokens = words.map((w, i) => ({ word: w, idx: i }));
-
-  // Add 2–3 distractors
   const distractors = getDistr(phrase.langCode, words);
-  distractors.forEach((w, i) => tokens.push({ word: w, idx: 1000 + i, distractor: true }));
-
-  // Shuffle
+  distractors.forEach((w, i) => tokens.push({ word: w, idx: 1000 + i }));
   tokens.sort(() => Math.random() - 0.5);
 
   const bank = document.getElementById('wordBank');
   tokens.forEach(tok => {
     const btn = document.createElement('div');
-    btn.className = 'word-token';
+    btn.className    = 'word-token';
     btn.dataset.idx  = tok.idx;
     btn.dataset.word = tok.word;
     btn.textContent  = tok.word;
@@ -256,28 +349,28 @@ function addTokenToAnswer(btn) {
   btn.classList.add('used');
 
   const zone = document.getElementById('answerZone');
-  document.getElementById('answerPlaceholder')?.classList.add('hidden');
+  document.getElementById('answerPlaceholder').style.display = 'none';
 
   const chip = document.createElement('div');
-  chip.className = 'word-token in-answer';
+  chip.className    = 'word-token in-answer';
   chip.textContent  = btn.dataset.word;
   chip.dataset.idx  = btn.dataset.idx;
   chip.addEventListener('click', () => {
-    // Return to bank
     chip.remove();
     btn.classList.remove('used');
-    if (!document.querySelectorAll('.in-answer').length) {
-      document.getElementById('answerPlaceholder')?.classList.remove('hidden');
-    }
+    const remaining = document.querySelectorAll('#answerZone .in-answer');
+    if (!remaining.length) document.getElementById('answerPlaceholder').style.display = '';
   });
   zone.appendChild(chip);
 }
 
 window.clearPhraseAnswer = function() {
-  document.querySelectorAll('.in-answer').forEach(c => c.remove());
-  document.querySelectorAll('.word-token').forEach(b => b.classList.remove('used'));
-  document.getElementById('answerPlaceholder')?.classList.remove('hidden');
-  document.getElementById('answerZone').className = 'answer-zone';
+  document.querySelectorAll('#answerZone .in-answer').forEach(c => c.remove());
+  document.querySelectorAll('#wordBank .word-token').forEach(b => b.classList.remove('used'));
+  const ph = document.getElementById('answerPlaceholder');
+  if (ph) ph.style.display = '';
+  const zone = document.getElementById('answerZone');
+  if (zone) zone.className = 'answer-zone';
 };
 
 window.checkPhraseAnswer = async function() {
@@ -289,46 +382,25 @@ window.checkPhraseAnswer = async function() {
   const expected = _curPhrase.text.trim();
   const correct  = answer.trim().toLowerCase() === expected.trim().toLowerCase();
 
-  const zone      = document.getElementById('answerZone');
-  const resultEl  = document.getElementById('phraseResultEl');
-  const checkBtn  = document.getElementById('checkPhraseBtn');
-  const nextBtn   = document.getElementById('nextPhraseBtn');
+  document.getElementById('answerZone').className = 'answer-zone ' + (correct ? 'correct' : 'wrong');
 
-  zone.className = 'answer-zone ' + (correct ? 'correct' : 'wrong');
+  const resultEl = document.getElementById('phraseResultEl');
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
-    ? '✓ Correct!'
-    : `✗ The answer was: <strong>${esc(expected)}</strong>`;
+    ? t('train_correct_msg')
+    : t('train_wrong_msg') + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
-  checkBtn.classList.add('hidden');
-  nextBtn.classList.remove('hidden');
 
-  if (correct) { _trainCorrect++; _trainStreak++; }
-  else         { _trainWrong++;   _trainStreak = 0; }
+  document.getElementById('checkPhraseBtn').classList.add('hidden');
+  document.getElementById('nextPhraseBtn').classList.remove('hidden');
+
+  if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
 
-  try {
-    await api('POST', '/api/quiz/phrase/answer', {
-      lang: _curPhrase.langCode, id: _curPhrase.id, correct
-    });
-  } catch {}
-};
+  // Speak the correct answer in the target language
+  TTS.speak(expected, _curPhrase.langCode);
 
-// ── Word tooltip in phrase translation ───────────────────────────────────────
-window.showWordTip = async function(el, word) {
-  // Remove any existing tooltip
-  document.querySelectorAll('.word-tooltip').forEach(t => t.remove());
-  const lang = currentLang();
-  try {
-    const words = await api('GET', `/api/words?lang=${encodeURIComponent(lang)}`);
-    const match = words.find(w => w.literal.toLowerCase() === word.toLowerCase());
-    const tip = document.createElement('div');
-    tip.className = 'word-tooltip';
-    tip.textContent = match ? match.translation : '?';
-    el.style.position = 'relative';
-    el.appendChild(tip);
-    setTimeout(() => tip.remove(), 2500);
-  } catch {}
+  try { await api('POST', '/api/quiz/phrase/answer', { lang: _curPhrase.langCode, id: _curPhrase.id, correct }); } catch {}
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -344,10 +416,11 @@ function getDistr(langCode, words) {
     en: ['the','a','an','and','but','of','is','are','not','I','you','we','they','in','on'],
     de: ['der','die','das','ein','und','ist','nicht','ich','du','wir','sie','es','in','auf'],
     es: ['el','la','los','un','una','y','de','es','no','yo','tú','que','en','se'],
-    it: ['il','la','i','un','e','di','è','non','io','tu','che','in','su','si']
+    it: ['il','la','i','un','e','di','è','non','io','tu','che','in','su','si'],
+    uk: ['я','ти','він','вона','ми','ви','вони','це','та','але','не','в','на','з'],
   }[langCode] || ['the','a','and','of','in'];
   const used = new Set(words.map(w => w.toLowerCase()));
-  return pool.filter(w => !used.has(w)).slice(0, 3);
+  return pool.filter(w => !used.has(w)).sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
 function esc(s) {

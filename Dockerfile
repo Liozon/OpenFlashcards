@@ -29,8 +29,7 @@ RUN mkdir -p /app/data /app/config
 ENV NODE_ENV=production \
   PORT=3000 \
   DATA_DIR=/app/data \
-  CONFIG_DIR=/app/config \
-  JWT_SECRET=change_this_secret_in_production
+  CONFIG_DIR=/app/config
 
 EXPOSE 3000
 

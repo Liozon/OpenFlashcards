@@ -102,43 +102,59 @@ function renderVocabGrid() {
 }
 
 function buildWordCard(w) {
-  const labels = { noun:'📦 Noun', verb:'⚡ Verb', adjective:'🎨 Adj.', adverb:'💨 Adv.' };
+  const labels  = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
   const display = (w.article ? w.article + ' ' : '') + (w.type==='verb'&&w.infinitive ? w.infinitive : w.literal);
   const mastered = (w.difficulty||5000) < 1000;
   const diffPct  = Math.max(5, 100 - Math.round((w.difficulty||5000)/100));
-  return `
-    <div class="word-card" id="wc-${w.id}">
-      <div class="word-card-header">
-        <div>
-          <span class="badge badge-${w.type}">${labels[w.type]||w.type}</span>
-          ${mastered ? '<span style="margin-left:6px;font-size:.8rem" title="Mastered">⭐</span>' : ''}
-        </div>
-        <div class="word-actions">
-          <button class="btn btn-sm btn-secondary" onclick="editWord('${w.id}','${w.langCode}')" title="Edit">✏️</button>
-          <button class="btn btn-sm btn-danger"    onclick="deleteWord('${w.id}','${w.langCode}')" title="Delete">🗑</button>
-        </div>
-      </div>
-      <div class="word-literal">${esc(display)}</div>
-      <div class="word-trans">${esc(w.translation)}</div>
-      ${w.definition ? `<div class="word-def">${esc(w.definition)}</div>` : ''}
-      <div class="difficulty-bar"><div class="difficulty-fill" style="width:${diffPct}%"></div></div>
-    </div>`;
+
+  const div = document.createElement('div');
+  div.className = 'word-card';
+  div.id = 'wc-' + w.id;
+  div.innerHTML =
+    '<div class="word-card-header">' +
+      '<div>' +
+        '<span class="badge badge-' + w.type + '">' + (labels[w.type]||w.type) + '</span>' +
+        (mastered ? '<span style="margin-left:6px;font-size:.8rem" title="Mastered">⭐</span>' : '') +
+      '</div>' +
+      '<div class="word-actions">' +
+        '<span id="tts-' + w.id + '"></span>' +
+        '<button class="btn btn-sm btn-secondary" onclick="editWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="Edit">✏️</button>' +
+        '<button class="btn btn-sm btn-danger"    onclick="deleteWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="Delete">🗑</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="word-literal">' + esc(display) + '</div>' +
+    '<div class="word-trans">'   + esc(w.translation) + '</div>' +
+    (w.definition ? '<div class="word-def">' + esc(w.definition) + '</div>' : '') +
+    '<div class="difficulty-bar"><div class="difficulty-fill" style="width:' + diffPct + '%"></div></div>';
+
+  // Attach TTS button via DOM (avoids HTML injection issues)
+  const ttsSlot = div.querySelector('#tts-' + w.id);
+  if (ttsSlot) ttsSlot.replaceWith(TTS.button(display, w.langCode));
+
+  return div.outerHTML;
 }
 
 function buildPhraseCard(p) {
-  return `
-    <div class="word-card" id="pc-${p.id}">
-      <div class="word-card-header">
-        <span class="badge badge-phrase">💬 Phrase</span>
-        <div class="word-actions">
-          <button class="btn btn-sm btn-secondary" onclick="editPhrase('${p.id}','${p.langCode}')" title="Edit">✏️</button>
-          <button class="btn btn-sm btn-danger"    onclick="deletePhrase('${p.id}','${p.langCode}')" title="Delete">🗑</button>
-        </div>
-      </div>
-      <div class="word-literal" style="font-size:1rem">${esc(p.text)}</div>
-      <div class="word-trans">${esc(p.translation)}</div>
-      ${p.helpNote ? `<div class="word-def">${esc(p.helpNote)}</div>` : ''}
-    </div>`;
+  const div = document.createElement('div');
+  div.className = 'word-card';
+  div.id = 'pc-' + p.id;
+  div.innerHTML =
+    '<div class="word-card-header">' +
+      '<span class="badge badge-phrase">💬 ' + t('vocab_phrase') + '</span>' +
+      '<div class="word-actions">' +
+        '<span id="ptts-' + p.id + '"></span>' +
+        '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="Edit">✏️</button>' +
+        '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="Delete">🗑</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="word-literal" style="font-size:1rem">' + esc(p.text) + '</div>' +
+    '<div class="word-trans">' + esc(p.translation) + '</div>' +
+    (p.helpNote ? '<div class="word-def">' + esc(p.helpNote) + '</div>' : '');
+
+  const ttsSlot = div.querySelector('#ptts-' + p.id);
+  if (ttsSlot) ttsSlot.replaceWith(TTS.button(p.text, p.langCode));
+
+  return div.outerHTML;
 }
 
 window.editWord = function(id, lang) {

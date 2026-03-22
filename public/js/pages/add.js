@@ -27,12 +27,12 @@ function renderAdd(el) {
 
       <div class="card">
         <div id="nounExtras" class="field-group">
-          <label>Article <span class="optional">(optional)</span></label>
+          <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wArticle" placeholder="le, la, der, the…" autocomplete="off">
         </div>
         <div id="verbExtras" class="hidden">
           <div class="field-group">
-            <label>Infinitive <span class="optional">(optional)</span></label>
+            <label>${t('add_infinitive')} <span class="optional">${t('vocab_optional')}</span></label>
             <input type="text" id="wInfinitive" placeholder="aller, sein, to go…" autocomplete="off">
           </div>
           <details style="margin-bottom:16px">
@@ -44,21 +44,21 @@ function renderAdd(el) {
         </div>
 
         <div class="field-group">
-          <label>Word in <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
-          <input type="text" id="wLiteral" autocomplete="off" placeholder="The word to learn">
+          <label>${t('add_word_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
+          <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
         </div>
         <div class="field-group">
-          <label>Translation <span class="required">*</span></label>
-          <input type="text" id="wTranslation" autocomplete="off" placeholder="Translation in your language">
+          <label>${t('add_translation')} <span class="required">*</span></label>
+          <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
         </div>
         <div class="field-group">
           <label>Definition <span class="optional">(optional)</span></label>
-          <input type="text" id="wDefinition" autocomplete="off" placeholder="Reminder of what this means…">
+          <input type="text" id="wDefinition" autocomplete="off" placeholder="${t('add_definition_ph')}">
         </div>
         <div id="wordAddErr" class="alert alert-danger hidden"></div>
         <div id="wordAddOk"  class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">
-          ➕ Add word
+          ${t('add_btn_word')}
         </button>
       </div>
     </div>
@@ -68,11 +68,11 @@ function renderAdd(el) {
       <div class="card">
         <div class="field-group">
           <label>Phrase in <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
-          <textarea id="pText" placeholder="The phrase in the target language…" rows="3"></textarea>
+          <textarea id="pText" placeholder="${t('add_phrase_ph')}" rows="3"></textarea>
         </div>
         <div class="field-group">
           <label>Translation <span class="required">*</span></label>
-          <input type="text" id="pTranslation" autocomplete="off" placeholder="Translation in your language">
+          <input type="text" id="pTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
         </div>
         <div class="field-group">
           <label>Note <span class="optional">(optional)</span></label>
@@ -81,7 +81,7 @@ function renderAdd(el) {
         <div id="phraseAddErr" class="alert alert-danger hidden"></div>
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">
-          ➕ Add phrase
+          ${t('add_btn_phrase')}
         </button>
       </div>
     </div>`;
@@ -137,7 +137,7 @@ window.submitWord = async function() {
   okEl.classList.add('hidden');
 
   if (!literal || !translation) {
-    errEl.textContent = 'Word and translation are required.';
+    errEl.textContent = t('add_err_word');
     errEl.classList.remove('hidden');
     return;
   }
@@ -160,7 +160,7 @@ window.submitWord = async function() {
   btn.disabled = true;
   try {
     await api('POST', '/api/words', body);
-    okEl.textContent = `✓ "${literal}" added!`;
+    okEl.textContent = `${t('add_ok_word').replace('✓','')} "${literal}" ${t('add_ok_word').includes('!') ? '!' : ''}`;
     okEl.classList.remove('hidden');
     // Reset form
     ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
@@ -188,7 +188,7 @@ window.submitPhrase = async function() {
   okEl.classList.add('hidden');
 
   if (!text || !translation) {
-    errEl.textContent = 'Phrase and translation are required.';
+    errEl.textContent = t('add_err_phrase');
     errEl.classList.remove('hidden');
     return;
   }
@@ -197,7 +197,7 @@ window.submitPhrase = async function() {
   btn.disabled = true;
   try {
     await api('POST', '/api/phrases', { lang, text, translation, helpNote });
-    okEl.textContent = '✓ Phrase added!';
+    okEl.textContent = t('add_ok_phrase');
     okEl.classList.remove('hidden');
     document.getElementById('pText').value        = '';
     document.getElementById('pTranslation').value = '';

@@ -87,7 +87,7 @@ async function renderSettings(el) {
       renderLangChips();
       searchEl.value = '';
       selectedNewLang = null;
-      toast('✓ Language added!');
+      toast(t('settings_lang_added'));
     } catch(e) {
       toast(e.error||'Failed.','danger');
       addBtn.disabled = false;
@@ -118,12 +118,12 @@ window.removeLang = async function(code) {
     await loadConfig();
     updateNavLangBadge();
     renderLangChips();
-    toast('Language removed.');
+    toast(t('settings_lang_removed'));
   } catch(e) { toast(e.error||'Failed.','danger'); }
 };
 
 window.showChangePassword = function() {
-  openModal('Change password', `
+  openModal(t('settings_change_pw'), `
     <div class="field-group">
       <label>Current password</label>
       <input type="password" id="cpCurrent" autocomplete="current-password">
@@ -150,7 +150,7 @@ window.submitChangePassword = async function() {
   errEl.classList.add('hidden');
 
   if (!current || !newPass || !confirm) {
-    errEl.textContent = 'All fields are required.'; errEl.classList.remove('hidden'); return;
+    errEl.textContent = t('vocab_required'); errEl.classList.remove('hidden'); return;
   }
   if (newPass !== confirm) {
     errEl.textContent = 'New passwords do not match.'; errEl.classList.remove('hidden'); return;
@@ -161,7 +161,7 @@ window.submitChangePassword = async function() {
   try {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
-    toast('✓ Password changed!');
+    toast(t('settings_pw_ok'));
   } catch(e) {
     errEl.textContent = e.error||'Failed.';
     errEl.classList.remove('hidden');
@@ -171,3 +171,10 @@ window.submitChangePassword = async function() {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Called by app.js after config load — keep UI lang in sync
+window._applySettingsLang = function() {
+  if (App.config && App.config.nativeLang) {
+    window.setUiLang(App.config.nativeLang);
+  }
+};

@@ -134,7 +134,7 @@ window.submitResetPw = async function(id) {
   try {
     await api('PUT', `/admin/users/${id}`, { password: pw });
     closeModal();
-    toast('✓ Password reset!');
+    toast(t('admin_reset_ok'));
   } catch(e) {
     errEl.textContent = e.error||'Failed.';
     errEl.classList.remove('hidden');
@@ -146,7 +146,7 @@ window.deleteUser = async function(id, username) {
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
-    toast('🗑 User deleted.');
+    toast(t('admin_deleted'));
   } catch(e) { toast(e.error||'Failed.','danger'); }
 };
 
