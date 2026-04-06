@@ -1,7 +1,6 @@
-
-.project
-.classpath
-.settings
-bin
-target
-data
+node_modules/
+data/
+config/
+*.tar.gz
+*.log
+.env
