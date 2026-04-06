@@ -8,6 +8,19 @@ function renderAdd(el) {
   const langData = currentLangData();
   const pronouns = (langData && langData.pronouns) ? langData.pronouns
     : ['1sg','2sg','3sg','1pl','2pl','3pl'];
+  const declensions = (langData && langData.declensions) ? langData.declensions : [];
+  const verbGroups  = (langData && langData.verbGroups)  ? langData.verbGroups  : [];
+
+  // Build verb group select options
+  const vgOptions = verbGroups.length
+    ? `<div class="field-group" id="verbGroupField">
+        <label>Verb group <span class="optional">(optional)</span></label>
+        <select id="wVerbGroup" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+          <option value="">— Select a group —</option>
+          ${verbGroups.map(g => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join('')}
+        </select>
+      </div>`
+    : '';
 
   el.innerHTML = `
     <div class="page-title">➕ Add</div>
@@ -35,6 +48,7 @@ function renderAdd(el) {
             <label>${t('add_infinitive')} <span class="optional">${t('vocab_optional')}</span></label>
             <input type="text" id="wInfinitive" placeholder="aller, sein, to go…" autocomplete="off">
           </div>
+          ${vgOptions}
           <details style="margin-bottom:16px">
             <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
               Conjugation <span class="optional">(optional)</span>
@@ -46,7 +60,17 @@ function renderAdd(el) {
         <div class="field-group">
           <label>${t('add_word_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
+          <small style="color:var(--text-faint);font-size:.8rem">Nominative / base form</small>
         </div>
+
+        ${declensions.length ? `
+        <details id="declensionsSection" style="margin-bottom:16px">
+          <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
+            📐 Declensions <span class="optional">(optional)</span>
+          </summary>
+          <div id="declGrid"></div>
+        </details>` : ''}
+
         <div class="field-group">
           <label>${t('add_translation')} <span class="required">*</span></label>
           <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
@@ -88,13 +112,27 @@ function renderAdd(el) {
 
   // Build conjugation grid
   const conjGrid = document.getElementById('conjGrid');
-  pronouns.forEach((p, i) => {
-    conjGrid.innerHTML += `
-      <div class="conj-item field-group">
-        <label>${p}</label>
-        <input type="text" id="conj_${i}" autocomplete="off" placeholder="…">
-      </div>`;
-  });
+  if (conjGrid) {
+    pronouns.forEach((p, i) => {
+      conjGrid.innerHTML += `
+        <div class="conj-item field-group">
+          <label>${p}</label>
+          <input type="text" id="conj_${i}" autocomplete="off" placeholder="…">
+        </div>`;
+    });
+  }
+
+  // Build declensions grid
+  const declGrid = document.getElementById('declGrid');
+  if (declGrid && declensions.length) {
+    declensions.forEach((d, i) => {
+      declGrid.innerHTML += `
+        <div class="field-group" style="margin-bottom:10px">
+          <label style="font-size:.85rem">${esc(d.nativeName)}${d.targetName ? ' <span style="color:var(--text-faint)">/ ' + esc(d.targetName) + '</span>' : ''}</label>
+          <input type="text" id="decl_${i}" autocomplete="off" placeholder="…">
+        </div>`;
+    });
+  }
 
   // Enter key submits
   ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
@@ -146,6 +184,7 @@ window.submitWord = async function() {
   if (type === 'noun') body.article = document.getElementById('wArticle')?.value.trim() || '';
   if (type === 'verb') {
     body.infinitive = document.getElementById('wInfinitive')?.value.trim() || '';
+    body.verbGroup  = document.getElementById('wVerbGroup')?.value || '';
     const conj = {};
     const langData = currentLangData();
     const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg','2sg','3sg','1pl','2pl','3pl'];
@@ -156,11 +195,23 @@ window.submitWord = async function() {
     body.conjugation = conj;
   }
 
+  // Collect declensions
+  const langData = currentLangData();
+  const declensions = (langData && langData.declensions) ? langData.declensions : [];
+  if (declensions.length) {
+    const declObj = {};
+    declensions.forEach((d, i) => {
+      const val = document.getElementById(`decl_${i}`)?.value.trim();
+      if (val) declObj[i] = { nativeName: d.nativeName, targetName: d.targetName, value: val };
+    });
+    if (Object.keys(declObj).length) body.declensions = declObj;
+  }
+
   const btn = document.getElementById('addWordBtn');
   btn.disabled = true;
   try {
     await api('POST', '/api/words', body);
-    okEl.textContent = `${t('add_ok_word').replace('✓','')} "${literal}" ${t('add_ok_word').includes('!') ? '!' : ''}`;
+    okEl.textContent = `✓ "${literal}" added!`;
     okEl.classList.remove('hidden');
     // Reset form
     ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
@@ -168,6 +219,9 @@ window.submitWord = async function() {
       if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"]').forEach(el => el.value = '');
+    document.querySelectorAll('[id^="decl_"]').forEach(el => el.value = '');
+    const vgEl = document.getElementById('wVerbGroup');
+    if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
     setTimeout(() => okEl.classList.add('hidden'), 3000);
   } catch(e) {
@@ -210,3 +264,7 @@ window.submitPhrase = async function() {
   }
   btn.disabled = false;
 };
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}

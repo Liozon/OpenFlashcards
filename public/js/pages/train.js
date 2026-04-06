@@ -138,10 +138,16 @@ function renderWordQuiz(q) {
     ? '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>'
     : '<span style="font-size:.8rem;color:var(--text-faint)">' + lang.toUpperCase() + ' → ' + nativeLang.toUpperCase() + '</span>';
 
+  // Verb group secondary info
+  const verbGroupBadge = (q.type === 'verb' && q.verbGroup)
+    ? '<span style="font-size:.78rem;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-left:4px">📚 ' + esc(q.verbGroup) + '</span>'
+    : '';
+
   area.innerHTML =
     '<div class="quiz-card" id="wordQuizCard">' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">' +
         '<div class="badge badge-' + q.type + '">' + (typeLabels[q.type] || q.type) + '</div>' +
+        verbGroupBadge +
         dirLabel +
       '</div>' +
       '<div class="question-word" id="qWord">' + esc(q.promptText) + '</div>' +
@@ -186,7 +192,31 @@ async function handleWordAnswer(btn, answer, q) {
   // Auto-speak correct answer
   TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode);
 
-  const card    = document.getElementById('wordQuizCard');
+  // Show declensions if available (as a memory aid after answering)
+  const card = document.getElementById('wordQuizCard');
+  if (q.declensions && Object.keys(q.declensions).length > 0) {
+    const langData = (App.config.targetLangs || []).find(l => l.isoCode === q.langCode) || {};
+    const cfgDeclensions = langData.declensions || [];
+    const declRows = Object.entries(q.declensions).map(([i, d]) => {
+      const cfgD = cfgDeclensions[+i] || {};
+      const label = cfgD.nativeName || d.nativeName || ('Case ' + (+i+2));
+      return `<div style="display:flex;gap:10px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-muted);min-width:100px">${esc(label)}</span>
+        <span style="font-weight:600">${esc(d.value)}</span>
+      </div>`;
+    }).join('');
+    const declBox = document.createElement('div');
+    declBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
+    declBox.innerHTML =
+      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📐 Declensions</div>' +
+      '<div style="font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;gap:10px">' +
+        '<span style="color:var(--text-muted);min-width:100px">Nominative</span>' +
+        '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
+      '</div>' +
+      declRows;
+    card.appendChild(declBox);
+  }
+
   const nextRow = document.createElement('div');
   nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
   nextRow.innerHTML =

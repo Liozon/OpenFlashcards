@@ -58,6 +58,44 @@ router.delete('/languages/:code', (req, res) => {
   res.json({ ok: true });
 });
 
+// PUT /api/languages/:code  – update language settings (declensions, verb groups)
+router.put('/languages/:code', (req, res) => {
+  const cfg = getUserConfig(userId(req));
+  const lang = (cfg.targetLangs || []).find(l => l.isoCode === req.params.code);
+  if (!lang) return res.status(404).json({ error: 'Language not found.' });
+
+  // declensions: array of { id, nativeName, targetName }
+  if (req.body.declensions !== undefined) lang.declensions = req.body.declensions;
+  // verbGroups: array of { id, name }
+  if (req.body.verbGroups !== undefined) lang.verbGroups = req.body.verbGroups;
+
+  saveUserConfig(userId(req), cfg);
+  res.json({ ok: true, lang });
+});
+
+// GET /api/tts?lang=uk&q=молоко  – proxy Google TTS to avoid CORS/referer blocks
+router.get('/tts', async (req, res) => {
+  const { lang, q } = req.query;
+  if (!lang || !q) return res.status(400).json({ error: 'lang and q required' });
+  const https = require('https');
+  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob`;
+  const request = https.get(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; OpenFlashcards/1.0)',
+      'Referer': 'https://translate.google.com/'
+    }
+  }, (upstream) => {
+    if (upstream.statusCode !== 200) {
+      res.status(upstream.statusCode).end();
+      return;
+    }
+    res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    upstream.pipe(res);
+  });
+  request.on('error', () => res.status(502).end());
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WORDS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +111,7 @@ router.get('/words', (req, res) => {
 
 // POST /api/words
 router.post('/words', (req, res) => {
-  const { lang, type, literal, translation, definition, article, infinitive, conjugation } = req.body;
+  const { lang, type, literal, translation, definition, article, infinitive, conjugation, declensions, verbGroup } = req.body;
   if (!lang || !type || !literal || !translation)
     return res.status(400).json({ error: 'lang, type, literal, translation required.' });
   if (!TYPES.includes(type))
@@ -97,7 +135,9 @@ router.post('/words', (req, res) => {
   if (type === 'verb') {
     word.infinitive  = infinitive  ? infinitive.trim()  : '';
     word.conjugation = conjugation || {};
+    if (verbGroup !== undefined) word.verbGroup = verbGroup;
   }
+  if (declensions !== undefined) word.declensions = declensions;
 
   words.push(word);
   saveWords(userId(req), lang, words);
@@ -113,7 +153,7 @@ router.put('/words/:id', (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  ['translation','definition','article','infinitive','conjugation'].forEach(k => {
+  ['translation','definition','article','infinitive','conjugation','declensions','verbGroup'].forEach(k => {
     if (req.body[k] !== undefined) w[k] = req.body[k];
   });
   w.updatedAt = new Date().toISOString();
@@ -250,6 +290,8 @@ router.get('/quiz', (req, res) => {
     definition: question.definition || '',
     article:    question.article    || '',
     infinitive: question.infinitive || '',
+    verbGroup:  question.verbGroup  || '',
+    declensions: question.declensions || {},
     langCode:   question.langCode,
     promptText,
     answerText,

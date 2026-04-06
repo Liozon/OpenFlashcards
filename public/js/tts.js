@@ -1,22 +1,17 @@
-// tts.js – TTS via Google Translate (même URL qu'utilisait l'app Java)
+// tts.js – TTS via Google Translate proxied through the app server
 'use strict';
 
 window.TTS = {
 
-  // Joue le texte via Google Translate TTS (fiable, multilingue)
+  // Joue le texte via le proxy serveur → Google Translate TTS
   speak: function(text, langCode) {
     if (!text) return;
     const lang = langCode || 'fr';
-    // Google Translate TTS endpoint (public, pas de clé requise)
-    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl='
-      + encodeURIComponent(lang)
-      + '&q=' + encodeURIComponent(text)
-      + '&client=tw-ob';
-    // Utiliser un Audio element pour éviter les blocages CORS des fetch
+    const url = '/api/tts?lang=' + encodeURIComponent(lang) + '&q=' + encodeURIComponent(text);
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => {
-      // Fallback: Web Speech API si Google bloqué
+      // Fallback: Web Speech API si le proxy échoue
       TTS._webSpeech(text, lang);
     });
   },

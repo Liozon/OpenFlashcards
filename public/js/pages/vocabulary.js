@@ -125,7 +125,9 @@ function buildWordCard(w) {
     '<div class="word-literal">' + esc(display) + '</div>' +
     '<div class="word-trans">'   + esc(w.translation) + '</div>' +
     (w.definition ? '<div class="word-def">' + esc(w.definition) + '</div>' : '') +
-    '<div class="difficulty-bar"><div class="difficulty-fill" style="width:' + diffPct + '%"></div></div>';
+    '<div class="difficulty-bar"><div class="difficulty-fill" style="width:' + diffPct + '%"></div></div>' +
+    (w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
+    (w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + Object.keys(w.declensions).length + ' declension(s)</div>' : '');
 
   // Attach TTS button via DOM (avoids HTML injection issues)
   const ttsSlot = div.querySelector('#tts-' + w.id);
@@ -163,10 +165,38 @@ window.editWord = function(id, lang) {
   const isVerb = w.type === 'verb';
   const isNoun = w.type === 'noun';
 
+  const langData    = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const declensions = langData.declensions || [];
+  const verbGroups  = langData.verbGroups  || [];
+  const existingDecl = w.declensions || {};
+
+  const vgHtml = (isVerb && verbGroups.length)
+    ? `<div class="field-group">
+        <label>Verb group <span class="optional">(optional)</span></label>
+        <select id="meVerbGroup" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+          <option value="">— Select a group —</option>
+          ${verbGroups.map(g => `<option value="${esc(g.name)}" ${(w.verbGroup||'')===(g.name)?'selected':''}>${esc(g.name)}</option>`).join('')}
+        </select>
+      </div>` : '';
+
+  const declHtml = declensions.length
+    ? `<details style="margin-bottom:14px">
+        <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
+          📐 Declensions <span style="font-size:.8rem;font-weight:400">(optional)</span>
+        </summary>
+        ${declensions.map((d, i) => `
+          <div class="field-group" style="margin-bottom:8px">
+            <label style="font-size:.85rem">${esc(d.nativeName)}${d.targetName ? ' <span style="color:var(--text-faint)">/ ' + esc(d.targetName) + '</span>' : ''}</label>
+            <input type="text" id="meDecl_${i}" value="${esc((existingDecl[i]||{}).value||'')}" autocomplete="off" placeholder="…">
+          </div>`).join('')}
+      </details>` : '';
+
   openModal('Edit word', `
     ${isNoun ? `<div class="field-group"><label>Article</label><input id="meArticle" value="${esc(w.article||'')}"></div>` : ''}
     ${isVerb ? `<div class="field-group"><label>Infinitive</label><input id="meInfinitive" value="${esc(w.infinitive||'')}"></div>` : ''}
-    <div class="field-group"><label>Word</label><input id="meLiteral" value="${esc(w.literal)}" readonly style="opacity:.6"></div>
+    ${vgHtml}
+    <div class="field-group"><label>Word (Nominative)</label><input id="meLiteral" value="${esc(w.literal)}" readonly style="opacity:.6"></div>
+    ${declHtml}
     <div class="field-group"><label>Translation <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
     <div class="field-group"><label>Definition <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition||'')}"></div>
     <div id="meErr" class="alert alert-danger hidden"></div>`,
@@ -175,15 +205,29 @@ window.editWord = function(id, lang) {
   );
 };
 
-window.saveWordEdit = async function(id, lang) {
+window.saveWordEdit = async function(id, lang, type) {
   const body = {
     translation: document.getElementById('meTranslation').value.trim(),
     definition:  document.getElementById('meDefinition')?.value?.trim() || ''
   };
   const artEl = document.getElementById('meArticle');
   const infEl = document.getElementById('meInfinitive');
+  const vgEl  = document.getElementById('meVerbGroup');
   if (artEl) body.article    = artEl.value.trim();
   if (infEl) body.infinitive = infEl.value.trim();
+  if (vgEl)  body.verbGroup  = vgEl.value;
+
+  // Collect declensions
+  const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const declensions = langData.declensions || [];
+  if (declensions.length) {
+    const declObj = {};
+    declensions.forEach((d, i) => {
+      const val = document.getElementById(`meDecl_${i}`)?.value?.trim();
+      if (val) declObj[i] = { nativeName: d.nativeName, targetName: d.targetName, value: val };
+    });
+    body.declensions = declObj;
+  }
 
   if (!body.translation) {
     document.getElementById('meErr').textContent = 'Translation required.';
