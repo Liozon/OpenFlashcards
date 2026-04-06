@@ -114,8 +114,8 @@ window.WORLD_LANGUAGES = [
 
 // Pronouns per language (used in verb conjugation)
 window.LANG_PRONOUNS = {
-  fr: ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
-  en: ['I', 'you', 'he/she', 'we', 'you (pl.)', 'they'],
+  fr: ['je', 'tu', 'il/elle/on', 'nous', 'vous', 'ils/elles'],
+  en: ['I', 'you', 'he/she/it', 'we', 'you (pl.)', 'they'],
   de: ['ich', 'du', 'er/sie/es', 'wir', 'ihr', 'sie/Sie'],
   es: ['yo', 'tú', 'él/ella', 'nosotros', 'vosotros', 'ellos'],
   it: ['io', 'tu', 'lui/lei', 'noi', 'voi', 'loro'],
