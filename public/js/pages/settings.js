@@ -5,25 +5,23 @@ async function renderSettings(el) {
   const cfg = App.config;
 
   el.innerHTML = `
-    <div class="page-title">⚙️ Settings</div>
+    <div class="page-title">${t('settings_title')}</div>
 
-    <!-- Languages to learn -->
     <div class="card settings-section">
-      <h2>🌍 Languages to learn</h2>
+      <h2>${t('settings_languages')}</h2>
       <div id="langChips" class="lang-chips"></div>
       <div class="field-group" style="margin-top:12px">
-        <label>Add a language</label>
-        <input type="text" id="settingsLangSearch" placeholder="Search languages…" autocomplete="off">
+        <label>${t('settings_add_lang')}</label>
+        <input type="text" id="settingsLangSearch" placeholder="${t('settings_add_lang_ph')}" autocomplete="off">
         <div id="settingsLangResults" class="lang-results" style="display:none"></div>
       </div>
-      <button class="btn btn-primary btn-sm" id="addLangBtn" disabled onclick="addLangFromSettings()">Add selected →</button>
+      <button class="btn btn-primary btn-sm" id="addLangBtn" disabled onclick="addLangFromSettings()">${t('settings_add_btn')}</button>
     </div>
 
-    <!-- Appearance -->
     <div class="card settings-section">
-      <h2>🎨 Appearance</h2>
+      <h2>${t('settings_appearance')}</h2>
       <div class="toggle-row">
-        <span>Dark mode</span>
+        <span>${t('settings_dark')}</span>
         <label class="toggle-switch">
           <input type="checkbox" id="darkModeToggle" ${cfg.darkMode ? 'checked' : ''}>
           <span class="toggle-slider"></span>
@@ -31,22 +29,19 @@ async function renderSettings(el) {
       </div>
     </div>
 
-    <!-- Account -->
     <div class="card settings-section">
-      <h2>🔐 Account</h2>
-      <p style="color:var(--text-muted);margin-bottom:16px">Logged in as <strong>${esc(App.user.username)}</strong></p>
-      <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">Change password</button>
+      <h2>${t('settings_account')}</h2>
+      <p style="color:var(--text-muted);margin-bottom:16px">${t('settings_logged_as')} <strong>${esc(App.user.username)}</strong></p>
+      <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">${t('settings_change_pw')}</button>
     </div>`;
 
   renderLangChips();
 
-  // Dark mode toggle
   document.getElementById('darkModeToggle').addEventListener('change', async function() {
     await saveConfig({ darkMode: this.checked });
     document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
   });
 
-  // Lang search
   let selectedNewLang = null;
   const searchEl  = document.getElementById('settingsLangSearch');
   const resultsEl = document.getElementById('settingsLangResults');
@@ -88,7 +83,7 @@ async function renderSettings(el) {
       selectedNewLang = null;
       toast(t('settings_lang_added'));
     } catch(e) {
-      toast(e.error||'Failed.','danger');
+      toast(e.error || t('common_error'), 'danger');
       addBtn.disabled = false;
     }
   };
@@ -99,31 +94,31 @@ function renderLangChips() {
   if (!el) return;
   const langs = App.config.targetLangs || [];
   if (!langs.length) {
-    el.innerHTML = '<p style="color:var(--text-faint);font-size:.88rem">No languages yet.</p>';
+    el.innerHTML = `<p style="color:var(--text-faint);font-size:.88rem">${t('settings_no_langs')}</p>`;
     return;
   }
   el.innerHTML = langs.map(l =>
     `<div class="lang-chip">
       ${l.flag||'🌐'} ${l.name}
-      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">⚙️ Configure</button>
-      <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="Remove">✕</span>
+      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">${t('settings_configure')}</button>
+      <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="${t('common_delete')}">✕</span>
     </div>`
   ).join('');
 }
 
 window.removeLang = async function(code) {
-  if (!confirm(`Remove "${code}" language? Your words for this language won't be deleted.`)) return;
+  if (!confirm(t('settings_remove_confirm'))) return;
   try {
     await api('DELETE', '/api/languages/' + encodeURIComponent(code));
     await loadConfig();
     updateNavLangBadge();
     renderLangChips();
     toast(t('settings_lang_removed'));
-  } catch(e) { toast(e.error||'Failed.','danger'); }
+  } catch(e) { toast(e.error || t('common_error'), 'danger'); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LANGUAGE CONFIG (declensions + verb groups)
+// LANGUAGE CONFIG MODAL (declensions + verb groups)
 // ─────────────────────────────────────────────────────────────────────────────
 
 window.openLangConfig = function(isoCode) {
@@ -137,100 +132,83 @@ window.openLangConfig = function(isoCode) {
     const container = document.getElementById('declContainer');
     if (!container) return;
     if (!declensions.length) {
-      container.innerHTML = '<p style="color:var(--text-faint);font-size:.85rem;margin:4px 0">No extra cases added. (Nominative is always the default.)</p>';
+      container.innerHTML = `<p style="color:var(--text-faint);font-size:.85rem;margin:4px 0">${t('settings_decl_empty')}</p>`;
       return;
     }
     container.innerHTML = declensions.map((d, i) => `
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <input type="text" class="decl-native" data-i="${i}" value="${esc(d.nativeName)}" placeholder="Your language (e.g. Génitif)"
+        <input type="text" class="decl-native" data-i="${i}" value="${esc(d.nativeName)}" placeholder="${t('settings_decl_ph_native')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <input type="text" class="decl-target" data-i="${i}" value="${esc(d.targetName)}" placeholder="Target language (e.g. Родовий)"
+        <input type="text" class="decl-target" data-i="${i}" value="${esc(d.targetName)}" placeholder="${t('settings_decl_ph_target')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <button onclick="removeDeclension(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
       </div>`).join('');
-    container.querySelectorAll('.decl-native').forEach(inp => {
-      inp.addEventListener('input', () => { declensions[+inp.dataset.i].nativeName = inp.value; });
-    });
-    container.querySelectorAll('.decl-target').forEach(inp => {
-      inp.addEventListener('input', () => { declensions[+inp.dataset.i].targetName = inp.value; });
-    });
+    container.querySelectorAll('.decl-native').forEach(inp =>
+      inp.addEventListener('input', () => { declensions[+inp.dataset.i].nativeName = inp.value; }));
+    container.querySelectorAll('.decl-target').forEach(inp =>
+      inp.addEventListener('input', () => { declensions[+inp.dataset.i].targetName = inp.value; }));
   }
 
   function renderVerbGroupRows() {
     const container = document.getElementById('vgContainer');
     if (!container) return;
     if (!verbGroups.length) {
-      container.innerHTML = '<p style="color:var(--text-faint);font-size:.85rem;margin:4px 0">No verb groups added.</p>';
+      container.innerHTML = `<p style="color:var(--text-faint);font-size:.85rem;margin:4px 0">${t('settings_vg_empty')}</p>`;
       return;
     }
     container.innerHTML = verbGroups.map((g, i) => `
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <input type="text" class="vg-name" data-i="${i}" value="${esc(g.name)}" placeholder="e.g. 1st group, Exception…"
+        <input type="text" class="vg-name" data-i="${i}" value="${esc(g.name)}" placeholder="${t('settings_vg_ph')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <button onclick="removeVerbGroup(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
       </div>`).join('');
-    container.querySelectorAll('.vg-name').forEach(inp => {
-      inp.addEventListener('input', () => { verbGroups[+inp.dataset.i].name = inp.value; });
-    });
+    container.querySelectorAll('.vg-name').forEach(inp =>
+      inp.addEventListener('input', () => { verbGroups[+inp.dataset.i].name = inp.value; }));
   }
 
-  openModal(`⚙️ Configure: ${lang.flag||'🌐'} ${lang.name}`, `
+  openModal(`${t('settings_lang_config_title')}: ${lang.flag||'🌐'} ${lang.name}`, `
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">📐 Declension cases</h3>
-      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
-        The <strong>Nominative</strong> (base form) is always required. Add extra cases below.
-        Enter the name in your language and in the target language.
-      </p>
+      <h3 style="font-size:1rem;margin-bottom:4px">${t('settings_declensions_title')}</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_declensions_desc')}</p>
       <div id="declContainer"></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addDeclension()">+ Add case</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addDeclension()">${t('settings_decl_add')}</button>
     </div>
     <div>
-      <h3 style="font-size:1rem;margin-bottom:4px">📚 Verb groups</h3>
-      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
-        Define verb groups/classes (e.g. 1st group, irregular, perfective, etc.)
-      </p>
+      <h3 style="font-size:1rem;margin-bottom:4px">${t('settings_vg_title')}</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_vg_desc')}</p>
       <div id="vgContainer"></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addVerbGroup()">+ Add group</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addVerbGroup()">${t('settings_vg_add')}</button>
     </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-primary" onclick="saveLangConfig('${isoCode}')">Save</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
+     <button class="btn btn-primary" onclick="saveLangConfig('${isoCode}')">${t('common_save')}</button>`
   );
 
   renderDeclensionRows();
   renderVerbGroupRows();
 
-  window.addDeclension = function() {
-    declensions.push({ nativeName: '', targetName: '' });
-    renderDeclensionRows();
-  };
-  window.removeDeclension = function(i) {
-    declensions.splice(i, 1);
-    renderDeclensionRows();
-  };
-  window.addVerbGroup = function() {
-    verbGroups.push({ name: '' });
-    renderVerbGroupRows();
-  };
-  window.removeVerbGroup = function(i) {
-    verbGroups.splice(i, 1);
-    renderVerbGroupRows();
-  };
+  window.addDeclension    = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
+  window.removeDeclension = (i) => { declensions.splice(i, 1); renderDeclensionRows(); };
+  window.addVerbGroup     = () => { verbGroups.push({ name: '' }); renderVerbGroupRows(); };
+  window.removeVerbGroup  = (i) => { verbGroups.splice(i, 1); renderVerbGroupRows(); };
+
   window.saveLangConfig = async function(code) {
     const errEl = document.getElementById('lcErr');
     errEl.classList.add('hidden');
-    const emptyDecl = declensions.some(d => !d.nativeName.trim());
-    const emptyVG   = verbGroups.some(g => !g.name.trim());
-    if (emptyDecl) { errEl.textContent = 'All declension names must be filled in.'; errEl.classList.remove('hidden'); return; }
-    if (emptyVG)   { errEl.textContent = 'All verb group names must be filled in.';  errEl.classList.remove('hidden'); return; }
+    if (declensions.some(d => !d.nativeName.trim())) {
+      errEl.textContent = t('settings_decl_err_empty'); errEl.classList.remove('hidden'); return;
+    }
+    if (verbGroups.some(g => !g.name.trim())) {
+      errEl.textContent = t('settings_vg_err_empty'); errEl.classList.remove('hidden'); return;
+    }
     try {
       await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups });
       await loadConfig();
       closeModal();
       renderLangChips();
-      toast('✓ Language configuration saved!');
+      toast(t('settings_config_saved'));
     } catch(e) {
-      errEl.textContent = e.error || 'Failed to save.';
+      errEl.textContent = e.error || t('common_error');
       errEl.classList.remove('hidden');
     }
   };
@@ -243,20 +221,20 @@ window.openLangConfig = function(isoCode) {
 window.showChangePassword = function() {
   openModal(t('settings_change_pw'), `
     <div class="field-group">
-      <label>Current password</label>
+      <label>${t('settings_pw_current')}</label>
       <input type="password" id="cpCurrent" autocomplete="current-password">
     </div>
     <div class="field-group">
-      <label>New password</label>
+      <label>${t('settings_pw_new')}</label>
       <input type="password" id="cpNew" autocomplete="new-password">
     </div>
     <div class="field-group">
-      <label>Confirm new password</label>
+      <label>${t('settings_pw_confirm')}</label>
       <input type="password" id="cpConfirm" autocomplete="new-password">
     </div>
     <div id="cpErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-primary" onclick="submitChangePassword()">Save</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
+     <button class="btn btn-primary" onclick="submitChangePassword()">${t('common_save')}</button>`
   );
 };
 
@@ -266,15 +244,21 @@ window.submitChangePassword = async function() {
   const confirm = document.getElementById('cpConfirm').value;
   const errEl   = document.getElementById('cpErr');
   errEl.classList.add('hidden');
-  if (!current || !newPass || !confirm) { errEl.textContent = t('vocab_required'); errEl.classList.remove('hidden'); return; }
-  if (newPass !== confirm) { errEl.textContent = 'New passwords do not match.'; errEl.classList.remove('hidden'); return; }
-  if (newPass.length < 4) { errEl.textContent = 'Password must be at least 4 characters.'; errEl.classList.remove('hidden'); return; }
+  if (!current || !newPass || !confirm) {
+    errEl.textContent = t('vocab_required'); errEl.classList.remove('hidden'); return;
+  }
+  if (newPass !== confirm) {
+    errEl.textContent = t('settings_pw_mismatch'); errEl.classList.remove('hidden'); return;
+  }
+  if (newPass.length < 4) {
+    errEl.textContent = t('settings_pw_tooshort'); errEl.classList.remove('hidden'); return;
+  }
   try {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
     toast(t('settings_pw_ok'));
   } catch(e) {
-    errEl.textContent = e.error||'Failed.';
+    errEl.textContent = e.error || t('common_error');
     errEl.classList.remove('hidden');
   }
 };

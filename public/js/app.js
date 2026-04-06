@@ -5,22 +5,22 @@
 // STATE
 // ─────────────────────────────────────────────────────────────────────────────
 window.App = {
-  user:       null,   // { id, username, role }
-  config:     null,   // user config from server
+  user: null,   // { id, username, role }
+  config: null,   // user config from server
   currentPage: null
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-window.api = async function(method, path, body) {
+window.api = async function (method, path, body) {
   const opts = {
     method,
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin'
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
-  const res  = await fetch(path, opts);
+  const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw data;
   return data;
@@ -112,7 +112,7 @@ function showAppShell() {
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
-window.navigate = function(page, params) {
+window.navigate = function (page, params) {
   // Close mobile menu
   document.getElementById('navLinks').classList.remove('open');
 
@@ -127,12 +127,12 @@ window.navigate = function(page, params) {
   content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading…</p></div>';
 
   const renderers = {
-    home:       renderHome,
+    home: renderHome,
     vocabulary: renderVocabulary,
-    add:        renderAdd,
-    train:      renderTrain,
-    settings:   renderSettings,
-    admin:      renderAdmin
+    add: renderAdd,
+    train: renderTrain,
+    settings: renderSettings,
+    admin: renderAdmin
   };
 
   (renderers[page] || renderHome)(content, params || {});
@@ -141,14 +141,14 @@ window.navigate = function(page, params) {
 // ─────────────────────────────────────────────────────────────────────────────
 // MODAL HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-window.openModal = function(title, bodyHtml, footerHtml) {
-  document.getElementById('modalTitle').textContent  = title;
-  document.getElementById('modalBody').innerHTML     = bodyHtml;
-  document.getElementById('modalFooter').innerHTML   = footerHtml || '';
+window.openModal = function (title, bodyHtml, footerHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalFooter').innerHTML = footerHtml || '';
   document.getElementById('modal').classList.remove('hidden');
 };
 
-window.closeModal = function() {
+window.closeModal = function () {
   document.getElementById('modal').classList.add('hidden');
 };
 
@@ -160,7 +160,7 @@ document.getElementById('modal').addEventListener('click', e => {
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────────────────────
-window.toast = function(msg, type = 'success') {
+window.toast = function (msg, type = 'success') {
   const el = document.createElement('div');
   el.className = `alert alert-${type}`;
   el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeIn .2s';
@@ -173,16 +173,19 @@ window.toast = function(msg, type = 'success') {
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Wait for English locale to be ready before anything renders
+  await window._i18nReady;
+
   // Detect browser language for login screen before user logs in
   const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-  window.setUiLang(browserLang);
+  await window.setUiLang(browserLang);
   applyLoginLabels();
 
   // Login form
-  const loginBtn  = document.getElementById('loginBtn');
+  const loginBtn = document.getElementById('loginBtn');
   const loginUser = document.getElementById('loginUsername');
   const loginPass = document.getElementById('loginPassword');
-  const loginErr  = document.getElementById('loginError');
+  const loginErr = document.getElementById('loginError');
 
   async function attemptLogin() {
     loginErr.classList.add('hidden');
@@ -191,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await doLogin(loginUser.value.trim(), loginPass.value);
       await bootApp();
-    } catch(e) {
+    } catch (e) {
       loginErr.textContent = e.error || 'Login failed.';
       loginErr.classList.remove('hidden');
       loginBtn.disabled = false;
@@ -242,12 +245,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 function applyNavLabels() {
   const map = {
-    navHome:     'nav_home',
-    navVocab:    'nav_vocabulary',
-    navAdd:      'nav_add',
-    navTrain:    'nav_train',
+    navHome: 'nav_home',
+    navVocab: 'nav_vocabulary',
+    navAdd: 'nav_add',
+    navTrain: 'nav_train',
     navSettings: 'nav_settings',
-    adminLink:   'nav_admin'
+    adminLink: 'nav_admin'
   };
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
@@ -262,20 +265,20 @@ function applyNavLabels() {
 
 function applyLoginLabels() {
   const sub = document.getElementById('loginSub');
-  const ul  = document.getElementById('loginUserLabel');
-  const pl  = document.getElementById('loginPassLabel');
+  const ul = document.getElementById('loginUserLabel');
+  const pl = document.getElementById('loginPassLabel');
   const btn = document.getElementById('loginBtn');
   if (sub) sub.textContent = t('login_title');
-  if (ul)  ul.textContent  = t('login_username');
-  if (pl)  pl.textContent  = t('login_password');
+  if (ul) ul.textContent = t('login_username');
+  if (pl) pl.textContent = t('login_password');
   if (btn) btn.textContent = t('login_btn');
 }
 
 async function bootApp() {
   await loadConfig();
-  // Apply the user's native language to UI
+  // Apply the user's native language to UI (await so t() keys are ready before render)
   if (App.config && App.config.nativeLang) {
-    window.setUiLang(App.config.nativeLang);
+    await window.setUiLang(App.config.nativeLang);
   }
   applyNavLabels();
   showAppShell();
@@ -337,19 +340,19 @@ function renderOnboarding(el) {
   const learnLangs = {};
 
   // Native search
-  const nSearch  = document.getElementById('onbNativeSearch');
+  const nSearch = document.getElementById('onbNativeSearch');
   const nResults = document.getElementById('onbNativeResults');
-  const nChip    = document.getElementById('onbNativeChip');
+  const nChip = document.getElementById('onbNativeChip');
 
   nSearch.addEventListener('input', () => {
     const q = nSearch.value.trim().toLowerCase();
     const list = (window.WORLD_LANGUAGES || []).filter(l =>
-      l.name.toLowerCase().includes(q) || (l.native||'').toLowerCase().includes(q) || l.code.includes(q)
+      l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
     ).slice(0, 40);
     nResults.style.display = list.length ? '' : 'none';
     nResults.innerHTML = list.map(l =>
-      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag||'🌐'}" data-native="${l.native||l.name}">
-        <span>${l.flag||'🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
+      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}" data-native="${l.native || l.name}">
+        <span>${l.flag || '🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
       </div>`
     ).join('');
     nResults.querySelectorAll('.lang-result-item').forEach(item => {
@@ -358,79 +361,80 @@ function renderOnboarding(el) {
         nSearch.value = nativeLang.name;
         nResults.style.display = 'none';
         nChip.innerHTML = `<span class="selected-chip">${nativeLang.flag} ${nativeLang.name}</span>`;
-        // Switch UI language immediately
-        window.setUiLang(nativeLang.code);
-        applyLoginLabels();
-        // Re-render onboarding texts in the new language
-        document.querySelector('.onboarding-card h2').textContent   = t('onb_welcome');
-        document.querySelector('.onboarding-card > p').textContent  = t('onb_native_q');
-        const learnP = document.querySelector('.onboarding-card p[style]');
-        if (learnP) learnP.textContent = t('onb_learn_q');
-        const startBtn = document.getElementById('onbStartBtn');
-        if (startBtn) startBtn.textContent = t('onb_start');
+        // Switch UI language immediately (async — re-render after load)
+        window.setUiLang(nativeLang.code).then(() => {
+          applyLoginLabels();
+          // Re-render onboarding texts in the new language
+          document.querySelector('.onboarding-card h2').textContent = t('onb_welcome');
+          document.querySelector('.onboarding-card > p').textContent = t('onb_native_q');
+          const learnP = document.querySelector('.onboarding-card p[style]');
+          if (learnP) learnP.textContent = t('onb_learn_q');
+          const startBtn = document.getElementById('onbStartBtn');
+          if (startBtn) startBtn.textContent = t('onb_start');
+        });
       });
     });
-  });
 
-  // Learn search
-  const lSearch  = document.getElementById('onbLearnSearch');
-  const lResults = document.getElementById('onbLearnResults');
-  const lChips   = document.getElementById('onbLearnChips');
+    // Learn search
+    const lSearch = document.getElementById('onbLearnSearch');
+    const lResults = document.getElementById('onbLearnResults');
+    const lChips = document.getElementById('onbLearnChips');
 
-  lSearch.addEventListener('input', () => {
-    const q = lSearch.value.trim().toLowerCase();
-    const list = (window.WORLD_LANGUAGES || []).filter(l =>
-      l.name.toLowerCase().includes(q) || (l.native||'').toLowerCase().includes(q) || l.code.includes(q)
-    ).slice(0, 40);
-    lResults.style.display = list.length ? '' : 'none';
-    lResults.innerHTML = list.map(l =>
-      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag||'🌐'}" data-native="${l.native||l.name}">
-        <span>${l.flag||'🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
+    lSearch.addEventListener('input', () => {
+      const q = lSearch.value.trim().toLowerCase();
+      const list = (window.WORLD_LANGUAGES || []).filter(l =>
+        l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
+      ).slice(0, 40);
+      lResults.style.display = list.length ? '' : 'none';
+      lResults.innerHTML = list.map(l =>
+        `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}" data-native="${l.native || l.name}">
+        <span>${l.flag || '🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
       </div>`
-    ).join('');
-    lResults.querySelectorAll('.lang-result-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const code = item.dataset.code;
-        if (learnLangs[code]) return;
-        learnLangs[code] = { isoCode: code, name: item.dataset.name, flag: item.dataset.flag, nativeName: item.dataset.native };
-        lSearch.value = '';
-        lResults.style.display = 'none';
-        renderLearnChips();
+      ).join('');
+      lResults.querySelectorAll('.lang-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const code = item.dataset.code;
+          if (learnLangs[code]) return;
+          learnLangs[code] = { isoCode: code, name: item.dataset.name, flag: item.dataset.flag, nativeName: item.dataset.native };
+          lSearch.value = '';
+          lResults.style.display = 'none';
+          renderLearnChips();
+        });
       });
     });
-  });
 
-  function renderLearnChips() {
-    lChips.innerHTML = Object.values(learnLangs).map(l =>
-      `<span class="selected-chip" data-code="${l.isoCode}" title="Click to remove">${l.flag} ${l.name}</span>`
-    ).join('');
-    lChips.querySelectorAll('.selected-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        delete learnLangs[chip.dataset.code];
-        renderLearnChips();
+    function renderLearnChips() {
+      lChips.innerHTML = Object.values(learnLangs).map(l =>
+        `<span class="selected-chip" data-code="${l.isoCode}" title="Click to remove">${l.flag} ${l.name}</span>`
+      ).join('');
+      lChips.querySelectorAll('.selected-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          delete learnLangs[chip.dataset.code];
+          renderLearnChips();
+        });
       });
-    });
-  }
-
-  document.getElementById('onbStartBtn').addEventListener('click', async () => {
-    const errEl = document.getElementById('onbError');
-    if (!nativeLang) { errEl.textContent = t('onb_error_native'); errEl.classList.remove('hidden'); return; }
-    if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
-
-    try {
-      await saveConfig({ nativeLang: nativeLang.code });
-      for (const l of Object.values(learnLangs)) {
-        await api('POST', '/api/languages', l);
-      }
-      await loadConfig();
-      window.setUiLang(nativeLang.code);
-      applyNavLabels();
-      document.getElementById('appShell').querySelector('.navbar').style.display = '';
-      updateNavLangBadge();
-      navigate('home');
-    } catch(e) {
-      errEl.textContent = e.error || 'Setup failed.';
-      errEl.classList.remove('hidden');
     }
+
+    document.getElementById('onbStartBtn').addEventListener('click', async () => {
+      const errEl = document.getElementById('onbError');
+      if (!nativeLang) { errEl.textContent = t('onb_error_native'); errEl.classList.remove('hidden'); return; }
+      if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
+
+      try {
+        await saveConfig({ nativeLang: nativeLang.code });
+        for (const l of Object.values(learnLangs)) {
+          await api('POST', '/api/languages', l);
+        }
+        await loadConfig();
+        await window.setUiLang(nativeLang.code);
+        applyNavLabels();
+        document.getElementById('appShell').querySelector('.navbar').style.display = '';
+        updateNavLangBadge();
+        navigate('home');
+      } catch (e) {
+        errEl.textContent = e.error || 'Setup failed.';
+        errEl.classList.remove('hidden');
+      }
+    });
   });
 }

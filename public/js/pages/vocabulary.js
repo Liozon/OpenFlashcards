@@ -230,14 +230,14 @@ window.saveWordEdit = async function(id, lang, type) {
   }
 
   if (!body.translation) {
-    document.getElementById('meErr').textContent = 'Translation required.';
+    document.getElementById('meErr').textContent = 'Translation required. Provide a translation.';
     document.getElementById('meErr').classList.remove('hidden');
     return;
   }
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast('✓ Word updated!');
+    toast(t('vocab_updated'));
     const idx = _vocabWords.findIndex(w => w.id === id);
     if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
   } catch(e) {
@@ -252,7 +252,7 @@ window.deleteWord = async function(id, lang) {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
     renderVocabGrid();
-    toast('🗑 Deleted.');
+    toast(t('vocab_deleted'));
   } catch(e) { toast(e.error||'Failed to delete.','danger'); }
 };
 
@@ -286,7 +286,7 @@ window.savePhraseEdit = async function(id, lang) {
   try {
     await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast('✓ Phrase updated!');
+    toast(t('vocab_phrase_updated'));
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch(e) {
@@ -301,7 +301,7 @@ window.deletePhrase = async function(id, lang) {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
     renderVocabGrid();
-    toast('🗑 Deleted.');
+    toast(t('vocab_deleted'));
   } catch(e) { toast(e.error||'Failed to delete.','danger'); }
 };
 

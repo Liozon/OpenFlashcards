@@ -5,53 +5,51 @@ function renderAdd(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
-  const langData = currentLangData();
-  const pronouns = (langData && langData.pronouns) ? langData.pronouns
-    : ['1sg','2sg','3sg','1pl','2pl','3pl'];
+  const langData    = currentLangData();
+  const pronouns    = (langData && langData.pronouns)    ? langData.pronouns    : ['1sg','2sg','3sg','1pl','2pl','3pl'];
   const declensions = (langData && langData.declensions) ? langData.declensions : [];
   const verbGroups  = (langData && langData.verbGroups)  ? langData.verbGroups  : [];
 
-  // Build verb group select options
   const vgOptions = verbGroups.length
     ? `<div class="field-group" id="verbGroupField">
-        <label>Verb group <span class="optional">(optional)</span></label>
+        <label>${t('add_verb_group')} <span class="optional">${t('vocab_optional')}</span></label>
         <select id="wVerbGroup" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-          <option value="">— Select a group —</option>
+          <option value="">—</option>
           ${verbGroups.map(g => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join('')}
         </select>
       </div>`
     : '';
 
   el.innerHTML = `
-    <div class="page-title">➕ Add</div>
+    <div class="page-title">${t('add_title')}</div>
     <div class="add-tabs">
-      <button class="add-tab active" data-tab="word" onclick="switchAddTab('word',this)">📝 Word</button>
-      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">💬 Phrase</button>
+      <button class="add-tab active" data-tab="word"   onclick="switchAddTab('word',this)">${t('add_tab_word')}</button>
+      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">${t('add_tab_phrase')}</button>
     </div>
 
     <!-- WORD FORM -->
     <div id="tabWord">
       <div class="type-selector" id="wordTypeSelector">
-        <button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">📦 Noun</button>
-        <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">⚡ Verb</button>
-        <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">🎨 Adjective</button>
-        <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">💨 Adverb</button>
+        <button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">${t('add_type_noun')}</button>
+        <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">${t('add_type_verb')}</button>
+        <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">${t('add_type_adj')}</button>
+        <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">${t('add_type_adv')}</button>
       </div>
 
       <div class="card">
         <div id="nounExtras" class="field-group">
           <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
-          <input type="text" id="wArticle" placeholder="le, la, der, the…" autocomplete="off">
+          <input type="text" id="wArticle" placeholder="${t('add_article_ph')}" autocomplete="off">
         </div>
         <div id="verbExtras" class="hidden">
           <div class="field-group">
             <label>${t('add_infinitive')} <span class="optional">${t('vocab_optional')}</span></label>
-            <input type="text" id="wInfinitive" placeholder="aller, sein, to go…" autocomplete="off">
+            <input type="text" id="wInfinitive" placeholder="${t('add_infinitive_ph')}" autocomplete="off">
           </div>
           ${vgOptions}
           <details style="margin-bottom:16px">
             <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-              Conjugation <span class="optional">(optional)</span>
+              ${t('add_conjugation')} <span class="optional">${t('vocab_optional')}</span>
             </summary>
             <div class="conjugation-grid" id="conjGrid"></div>
           </details>
@@ -60,13 +58,13 @@ function renderAdd(el) {
         <div class="field-group">
           <label>${t('add_word_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
-          <small style="color:var(--text-faint);font-size:.8rem">Nominative / base form</small>
+          <small style="color:var(--text-faint);font-size:.8rem">${t('add_nominative_hint')}</small>
         </div>
 
         ${declensions.length ? `
         <details id="declensionsSection" style="margin-bottom:16px">
           <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-            📐 Declensions <span class="optional">(optional)</span>
+            ${t('add_declensions')} <span class="optional">${t('vocab_optional')}</span>
           </summary>
           <div id="declGrid"></div>
         </details>` : ''}
@@ -76,14 +74,12 @@ function renderAdd(el) {
           <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
         </div>
         <div class="field-group">
-          <label>Definition <span class="optional">(optional)</span></label>
+          <label>${t('add_definition')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wDefinition" autocomplete="off" placeholder="${t('add_definition_ph')}">
         </div>
         <div id="wordAddErr" class="alert alert-danger hidden"></div>
         <div id="wordAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">
-          ${t('add_btn_word')}
-        </button>
+        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">${t('add_btn_word')}</button>
       </div>
     </div>
 
@@ -91,22 +87,20 @@ function renderAdd(el) {
     <div id="tabPhrase" class="hidden">
       <div class="card">
         <div class="field-group">
-          <label>Phrase in <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
+          <label>${t('add_phrase_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <textarea id="pText" placeholder="${t('add_phrase_ph')}" rows="3"></textarea>
         </div>
         <div class="field-group">
-          <label>Translation <span class="required">*</span></label>
+          <label>${t('add_translation')} <span class="required">*</span></label>
           <input type="text" id="pTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
         </div>
         <div class="field-group">
-          <label>Note <span class="optional">(optional)</span></label>
-          <input type="text" id="pNote" autocomplete="off" placeholder="Context or memory aid…">
+          <label>${t('add_phrase_note')} <span class="optional">${t('vocab_optional')}</span></label>
+          <input type="text" id="pNote" autocomplete="off" placeholder="${t('add_phrase_note_ph')}">
         </div>
         <div id="phraseAddErr" class="alert alert-danger hidden"></div>
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">
-          ${t('add_btn_phrase')}
-        </button>
+        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">${t('add_btn_phrase')}</button>
       </div>
     </div>`;
 
@@ -134,7 +128,6 @@ function renderAdd(el) {
     });
   }
 
-  // Enter key submits
   ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
@@ -165,7 +158,6 @@ window.switchAddTab = function(tab, btn) {
 window.submitWord = async function() {
   const lang = currentLang();
   const type = window._addWordType;
-
   const literal     = document.getElementById('wLiteral')?.value.trim();
   const translation = document.getElementById('wTranslation')?.value.trim();
   const definition  = document.getElementById('wDefinition')?.value.trim();
@@ -175,9 +167,7 @@ window.submitWord = async function() {
   okEl.classList.add('hidden');
 
   if (!literal || !translation) {
-    errEl.textContent = t('add_err_word');
-    errEl.classList.remove('hidden');
-    return;
+    errEl.textContent = t('add_err_word'); errEl.classList.remove('hidden'); return;
   }
 
   const body = { lang, type, literal, translation, definition };
@@ -195,7 +185,6 @@ window.submitWord = async function() {
     body.conjugation = conj;
   }
 
-  // Collect declensions
   const langData = currentLangData();
   const declensions = (langData && langData.declensions) ? langData.declensions : [];
   if (declensions.length) {
@@ -211,12 +200,10 @@ window.submitWord = async function() {
   btn.disabled = true;
   try {
     await api('POST', '/api/words', body);
-    okEl.textContent = `✓ "${literal}" added!`;
+    okEl.textContent = `${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
-    // Reset form
     ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
+      const el = document.getElementById(id); if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"]').forEach(el => el.value = '');
     document.querySelectorAll('[id^="decl_"]').forEach(el => el.value = '');
@@ -225,8 +212,7 @@ window.submitWord = async function() {
     document.getElementById('wLiteral')?.focus();
     setTimeout(() => okEl.classList.add('hidden'), 3000);
   } catch(e) {
-    errEl.textContent = e.error || 'Failed to add word.';
-    errEl.classList.remove('hidden');
+    errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
   }
   btn.disabled = false;
 };
@@ -242,9 +228,7 @@ window.submitPhrase = async function() {
   okEl.classList.add('hidden');
 
   if (!text || !translation) {
-    errEl.textContent = t('add_err_phrase');
-    errEl.classList.remove('hidden');
-    return;
+    errEl.textContent = t('add_err_phrase'); errEl.classList.remove('hidden'); return;
   }
 
   const btn = document.getElementById('addPhraseBtn');
@@ -259,8 +243,7 @@ window.submitPhrase = async function() {
     document.getElementById('pText').focus();
     setTimeout(() => okEl.classList.add('hidden'), 3000);
   } catch(e) {
-    errEl.textContent = e.error || 'Failed to add phrase.';
-    errEl.classList.remove('hidden');
+    errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
   }
   btn.disabled = false;
 };

@@ -1,379 +1,81 @@
-// i18n.js – UI translations for OpenFlashcards
+// i18n.js – Dynamic locale loader for OpenFlashcards
 'use strict';
 
-window.I18N = {
+// In-memory cache of loaded locales: { langCode: { key: value, … } }
+window._i18nCache = {};
 
-  en: {
-    // Nav
-    nav_home:       '🏠 Home',
-    nav_vocabulary: '📚 Vocabulary',
-    nav_add:        '➕ Add',
-    nav_train:      '🎯 Practice',
-    nav_settings:   '⚙️ Settings',
-    nav_admin:      '🔑 Admin',
+// Currently active locale object
+window._i18nStrings = {};
 
-    // Login
-    login_title:    'Sign in to continue',
-    login_username: 'Username',
-    login_password: 'Password',
-    login_btn:      'Sign in →',
-    login_error:    'Invalid credentials.',
+// Active language code
+window._uiLang = 'en';
 
-    // Onboarding
-    onb_welcome:    'Welcome to OpenFlashcards!',
-    onb_native_q:   'What is your native language?',
-    onb_native_ph:  'Search…',
-    onb_learn_q:    'Which languages do you want to learn?',
-    onb_learn_ph:   'Search…',
-    onb_error_native: 'Please select your native language.',
-    onb_error_learn:  'Please select at least one language to learn.',
-    onb_start:      'Start learning! →',
+// ─────────────────────────────────────────────────────────────────────────────
+// t() — translate a key, fallback to key itself
+// ─────────────────────────────────────────────────────────────────────────────
+window.t = function(key) {
+  return window._i18nStrings[key] || key;
+};
 
-    // Home
-    home_title:       '🏠 Home',
-    home_total_words: 'Total words',
-    home_phrases:     'Phrases',
-    home_mastered:    'Mastered',
-    home_nouns:       'Nouns',
-    home_verbs:       'Verbs',
-    home_adj:         'Adj.',
-    home_add_words:   '➕ Add words',
-    home_practice:    '🎯 Practice',
-    home_vocabulary:  '📚 Vocabulary',
-    home_active_lang: 'Active language',
-    home_more:        '+ More',
+// ─────────────────────────────────────────────────────────────────────────────
+// loadLocale(langCode) — fetch locale from server (with cache)
+// Returns a Promise that resolves when the locale is loaded and active.
+// ─────────────────────────────────────────────────────────────────────────────
+window.loadLocale = async function(langCode) {
+  if (!langCode) langCode = 'en';
+  const code = langCode.toLowerCase();
 
-    // Vocabulary
-    vocab_title:      '📚 Vocabulary',
-    vocab_search:     'Search…',
-    vocab_all:        'All',
-    vocab_nouns:      '📦 Nouns',
-    vocab_verbs:      '⚡ Verbs',
-    vocab_adj:        '🎨 Adj.',
-    vocab_adv:        '💨 Adv.',
-    vocab_phrases:    '💬 Phrases',
-    vocab_empty:      '📭 No entries found.',
-    vocab_add_first:  '➕ Add your first word',
-    vocab_mastered:   'Mastered',
-    vocab_noun:       '📦 Noun',
-    vocab_verb:       '⚡ Verb',
-    vocab_adjective:  '🎨 Adj.',
-    vocab_adverb:     '💨 Adv.',
-    vocab_phrase:     '💬 Phrase',
-    vocab_edit:       'Edit',
-    vocab_delete:     'Delete',
-    vocab_edit_word:  'Edit word',
-    vocab_edit_phrase:'Edit phrase',
-    vocab_article:    'Article',
-    vocab_infinitive: 'Infinitive',
-    vocab_word:       'Word',
-    vocab_translation:'Translation',
-    vocab_definition: 'Definition',
-    vocab_note:       'Note',
-    vocab_optional:   '(optional)',
-    vocab_required:   '* required',
-    vocab_cancel:     'Cancel',
-    vocab_save:       'Save changes',
-    vocab_updated:    '✓ Word updated!',
-    vocab_deleted:    '🗑 Deleted.',
-    vocab_phrase_target: 'Phrase (target language)',
+  // Already cached?
+  if (window._i18nCache[code]) {
+    window._i18nStrings = window._i18nCache[code];
+    window._uiLang = code;
+    return;
+  }
 
-    // Add
-    add_title:        '➕ Add',
-    add_tab_word:     '📝 Word',
-    add_tab_phrase:   '💬 Phrase',
-    add_type_noun:    '📦 Noun',
-    add_type_verb:    '⚡ Verb',
-    add_type_adj:     '🎨 Adjective',
-    add_type_adv:     '💨 Adverb',
-    add_article:      'Article',
-    add_article_ph:   'le, la, der, the…',
-    add_infinitive:   'Infinitive',
-    add_infinitive_ph:'aller, sein, to go…',
-    add_conjugation:  'Conjugation',
-    add_word_label:   'Word in',
-    add_word_ph:      'The word to learn',
-    add_translation:  'Translation',
-    add_translation_ph:'Translation in your language',
-    add_definition:   'Definition',
-    add_definition_ph:'Reminder of what this means…',
-    add_btn_word:     '➕ Add word',
-    add_phrase_label: 'Phrase in',
-    add_phrase_ph:    'The phrase in the target language…',
-    add_phrase_note:  'Note',
-    add_phrase_note_ph:'Context or memory aid…',
-    add_btn_phrase:   '➕ Add phrase',
-    add_err_word:     'Word and translation are required.',
-    add_err_phrase:   'Phrase and translation are required.',
-    add_ok_word:      '✓ added!',
-    add_ok_phrase:    '✓ Phrase added!',
+  try {
+    const res  = await fetch('/i18n/' + encodeURIComponent(code));
+    const data = await res.json();
+    const locale = data.locale || {};
 
-    // Train
-    train_title:      '🎯 Practice',
-    train_words:      '📝 Words',
-    train_phrases:    '💬 Phrases',
-    train_all:        '🌍 All',
-    train_correct:    '✅',
-    train_wrong:      '❌',
-    train_streak:     '🔥',
-    train_question:   'What is the translation?',
-    train_next:       'Next →',
-    train_retry:      '↺ Retry',
-    train_no_phrases: 'No phrases found.',
-    train_add_phrases:'➕ Add phrases',
-    train_reconstruct:'Reconstruct this sentence:',
-    train_placeholder:'Click words below to build the sentence…',
-    train_check:      'Check ✓',
-    train_correct_msg:'✓ Correct!',
-    train_wrong_msg:  '✗ The answer was:',
-    train_clear:      '↺',
+    // Cache under both the returned lang and the requested code
+    window._i18nCache[code]      = locale;
+    window._i18nCache[data.lang] = locale;
 
-    // Settings
-    settings_title:       '⚙️ Settings',
-    settings_languages:   '🌍 Languages to learn',
-    settings_add_lang:    'Add a language',
-    settings_add_lang_ph: 'Search languages…',
-    settings_add_btn:     'Add selected →',
-    settings_appearance:  '🎨 Appearance',
-    settings_dark:        'Dark mode',
-    settings_account:     '🔐 Account',
-    settings_logged_as:   'Logged in as',
-    settings_change_pw:   'Change password',
-    settings_saved:       '✓ Saved!',
-    settings_lang_removed:'Language removed.',
-    settings_lang_added:  '✓ Language added!',
-    settings_remove_confirm: 'Remove this language? Your words won\'t be deleted.',
-    settings_pw_title:    'Change password',
-    settings_pw_current:  'Current password',
-    settings_pw_new:      'New password',
-    settings_pw_confirm:  'Confirm new password',
-    settings_pw_ok:       '✓ Password changed!',
+    window._i18nStrings = locale;
+    window._uiLang = data.lang || code;
 
-
-    // Train - direction
-    train_dir_random:    'Random',
-    train_dir_n2t:       'Native → Target',
-    train_dir_t2n:       'Target → Native',
-    train_click_hint:    'Click to see translation',
-
-    // Admin
-    admin_title:      '🔑 Admin – User Management',
-    admin_create:     '➕ Create user',
-    admin_username:   'Username',
-    admin_password:   'Password',
-    admin_role:       'Role',
-    admin_role_user:  'User',
-    admin_role_admin: 'Admin',
-    admin_create_btn: 'Create →',
-    admin_users:      '👥 Users',
-    admin_col_user:   'Username',
-    admin_col_role:   'Role',
-    admin_col_created:'Created',
-    admin_col_actions:'Actions',
-    admin_reset_pw:   '🔑 Reset pw',
-    admin_delete:     '🗑',
-    admin_created_ok: '✓ User created!',
-    admin_deleted:    '🗑 User deleted.',
-    admin_reset_title:'Reset password',
-    admin_reset_new:  'New password',
-    admin_reset_ok:   '✓ Password reset!',
-    admin_delete_confirm: 'Delete user? This cannot be undone.',
-  },
-
-  fr: {
-    // Nav
-    nav_home:       '🏠 Accueil',
-    nav_vocabulary: '📚 Vocabulaire',
-    nav_add:        '➕ Ajouter',
-    nav_train:      '🎯 S\'entraîner',
-    nav_settings:   '⚙️ Paramètres',
-    nav_admin:      '🔑 Admin',
-
-    // Login
-    login_title:    'Connexion',
-    login_username: 'Nom d\'utilisateur',
-    login_password: 'Mot de passe',
-    login_btn:      'Se connecter →',
-    login_error:    'Identifiants invalides.',
-
-    // Onboarding
-    onb_welcome:    'Bienvenue sur OpenFlashcards !',
-    onb_native_q:   'Quelle est votre langue maternelle ?',
-    onb_native_ph:  'Rechercher…',
-    onb_learn_q:    'Quelles langues voulez-vous apprendre ?',
-    onb_learn_ph:   'Rechercher…',
-    onb_error_native: 'Veuillez sélectionner votre langue maternelle.',
-    onb_error_learn:  'Veuillez sélectionner au moins une langue à apprendre.',
-    onb_start:      'Commencer ! →',
-
-    // Home
-    home_title:       '🏠 Accueil',
-    home_total_words: 'Mots au total',
-    home_phrases:     'Phrases',
-    home_mastered:    'Maîtrisés',
-    home_nouns:       'Noms',
-    home_verbs:       'Verbes',
-    home_adj:         'Adj.',
-    home_add_words:   '➕ Ajouter des mots',
-    home_practice:    '🎯 S\'entraîner',
-    home_vocabulary:  '📚 Vocabulaire',
-    home_active_lang: 'Langue active',
-    home_more:        '+ Autres',
-
-    // Vocabulary
-    vocab_title:      '📚 Vocabulaire',
-    vocab_search:     'Rechercher…',
-    vocab_all:        'Tout',
-    vocab_nouns:      '📦 Noms',
-    vocab_verbs:      '⚡ Verbes',
-    vocab_adj:        '🎨 Adj.',
-    vocab_adv:        '💨 Adv.',
-    vocab_phrases:    '💬 Phrases',
-    vocab_empty:      '📭 Aucun résultat.',
-    vocab_add_first:  '➕ Ajouter votre premier mot',
-    vocab_mastered:   'Maîtrisé',
-    vocab_noun:       '📦 Nom',
-    vocab_verb:       '⚡ Verbe',
-    vocab_adjective:  '🎨 Adj.',
-    vocab_adverb:     '💨 Adv.',
-    vocab_phrase:     '💬 Phrase',
-    vocab_edit:       'Modifier',
-    vocab_delete:     'Supprimer',
-    vocab_edit_word:  'Modifier le mot',
-    vocab_edit_phrase:'Modifier la phrase',
-    vocab_article:    'Article',
-    vocab_infinitive: 'Infinitif',
-    vocab_word:       'Mot',
-    vocab_translation:'Traduction',
-    vocab_definition: 'Définition',
-    vocab_note:       'Note',
-    vocab_optional:   '(optionnel)',
-    vocab_required:   '* obligatoire',
-    vocab_cancel:     'Annuler',
-    vocab_save:       'Enregistrer',
-    vocab_updated:    '✓ Mot mis à jour !',
-    vocab_deleted:    '🗑 Supprimé.',
-    vocab_phrase_target: 'Phrase (langue cible)',
-
-    // Add
-    add_title:        '➕ Ajouter',
-    add_tab_word:     '📝 Mot',
-    add_tab_phrase:   '💬 Phrase',
-    add_type_noun:    '📦 Nom',
-    add_type_verb:    '⚡ Verbe',
-    add_type_adj:     '🎨 Adjectif',
-    add_type_adv:     '💨 Adverbe',
-    add_article:      'Article',
-    add_article_ph:   'le, la, der, the…',
-    add_infinitive:   'Infinitif',
-    add_infinitive_ph:'aller, sein, to go…',
-    add_conjugation:  'Conjugaison',
-    add_word_label:   'Mot en',
-    add_word_ph:      'Le mot à apprendre',
-    add_translation:  'Traduction',
-    add_translation_ph:'Traduction dans votre langue',
-    add_definition:   'Définition',
-    add_definition_ph:'Aide-mémoire…',
-    add_btn_word:     '➕ Ajouter le mot',
-    add_phrase_label: 'Phrase en',
-    add_phrase_ph:    'La phrase dans la langue cible…',
-    add_phrase_note:  'Note',
-    add_phrase_note_ph:'Contexte ou aide…',
-    add_btn_phrase:   '➕ Ajouter la phrase',
-    add_err_word:     'Le mot et la traduction sont requis.',
-    add_err_phrase:   'La phrase et la traduction sont requises.',
-    add_ok_word:      '✓ ajouté !',
-    add_ok_phrase:    '✓ Phrase ajoutée !',
-
-    // Train
-    train_title:      '🎯 S\'entraîner',
-    train_words:      '📝 Mots',
-    train_phrases:    '💬 Phrases',
-    train_all:        '🌍 Tout',
-    train_correct:    '✅',
-    train_wrong:      '❌',
-    train_streak:     '🔥',
-    train_question:   'Quelle est la traduction ?',
-    train_next:       'Suivant →',
-    train_retry:      '↺ Réessayer',
-    train_no_phrases: 'Aucune phrase trouvée.',
-    train_add_phrases:'➕ Ajouter des phrases',
-    train_reconstruct:'Reconstruisez cette phrase :',
-    train_placeholder:'Cliquez sur les mots ci-dessous…',
-    train_check:      'Vérifier ✓',
-    train_correct_msg:'✓ Correct !',
-    train_wrong_msg:  '✗ La réponse était :',
-    train_clear:      '↺',
-
-    // Settings
-    settings_title:       '⚙️ Paramètres',
-    settings_languages:   '🌍 Langues à apprendre',
-    settings_add_lang:    'Ajouter une langue',
-    settings_add_lang_ph: 'Rechercher une langue…',
-    settings_add_btn:     'Ajouter →',
-    settings_appearance:  '🎨 Apparence',
-    settings_dark:        'Mode sombre',
-    settings_account:     '🔐 Compte',
-    settings_logged_as:   'Connecté en tant que',
-    settings_change_pw:   'Changer le mot de passe',
-    settings_saved:       '✓ Enregistré !',
-    settings_lang_removed:'Langue supprimée.',
-    settings_lang_added:  '✓ Langue ajoutée !',
-    settings_remove_confirm: 'Supprimer cette langue ? Vos mots ne seront pas effacés.',
-    settings_pw_title:    'Changer le mot de passe',
-    settings_pw_current:  'Mot de passe actuel',
-    settings_pw_new:      'Nouveau mot de passe',
-    settings_pw_confirm:  'Confirmer le nouveau mot de passe',
-    settings_pw_ok:       '✓ Mot de passe changé !',
-
-
-    // Train - direction
-    train_dir_random:    'Aléatoire',
-    train_dir_n2t:       'Maternelle → Cible',
-    train_dir_t2n:       'Cible → Maternelle',
-    train_click_hint:    'Cliquez pour voir la traduction',
-
-    // Admin
-    admin_title:      '🔑 Admin – Gestion des utilisateurs',
-    admin_create:     '➕ Créer un utilisateur',
-    admin_username:   'Nom d\'utilisateur',
-    admin_password:   'Mot de passe',
-    admin_role:       'Rôle',
-    admin_role_user:  'Utilisateur',
-    admin_role_admin: 'Admin',
-    admin_create_btn: 'Créer →',
-    admin_users:      '👥 Utilisateurs',
-    admin_col_user:   'Utilisateur',
-    admin_col_role:   'Rôle',
-    admin_col_created:'Créé le',
-    admin_col_actions:'Actions',
-    admin_reset_pw:   '🔑 Réinit. mdp',
-    admin_delete:     '🗑',
-    admin_created_ok: '✓ Utilisateur créé !',
-    admin_deleted:    '🗑 Utilisateur supprimé.',
-    admin_reset_title:'Réinitialiser le mot de passe',
-    admin_reset_new:  'Nouveau mot de passe',
-    admin_reset_ok:   '✓ Mot de passe réinitialisé !',
-    admin_delete_confirm: 'Supprimer cet utilisateur ? Cette action est irréversible.',
+    if (data.generated) {
+      console.log('[i18n] Auto-generated locale for:', code);
+    }
+    if (data.fallback) {
+      console.warn('[i18n] Locale generation failed, using English fallback for:', code);
+    }
+  } catch(e) {
+    console.error('[i18n] Failed to load locale:', code, e);
+    // If we have English already, use it as fallback
+    if (window._i18nCache['en']) {
+      window._i18nStrings = window._i18nCache['en'];
+      window._uiLang = 'en';
+    }
   }
 };
 
-// Active language (default EN)
-window._uiLang = 'en';
-
-// t() — translate a key, fallback to EN then the key itself
-window.t = function(key) {
-  const lang = window._uiLang || 'en';
-  return (window.I18N[lang] && window.I18N[lang][key])
-      || (window.I18N['en'] && window.I18N['en'][key])
-      || key;
+// ─────────────────────────────────────────────────────────────────────────────
+// setUiLang(langCode) — switch active language (loads if needed)
+// Returns a Promise — callers should await it before re-rendering UI.
+// ─────────────────────────────────────────────────────────────────────────────
+window.setUiLang = async function(langCode) {
+  if (!langCode) return;
+  // Normalize sub-codes: "fr-CH" → "fr", "en-US" → "en"
+  const base = langCode.toLowerCase().split('-')[0];
+  await window.loadLocale(base);
 };
 
-// Set UI language (only if we have translations for it)
-window.setUiLang = function(langCode) {
-  // Map common codes to our supported langs
-  const map = { fr:'fr', en:'en', 'fr-FR':'fr', 'fr-BE':'fr', 'fr-CH':'fr',
-                'en-US':'en', 'en-GB':'en', 'en-AU':'en' };
-  const code = map[langCode] || 'en';
-  window._uiLang = window.I18N[code] ? code : 'en';
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Bootstrap: load English immediately (synchronous-looking via inline fetch)
+// This is called before app.js runs, so t() is available right away.
+// ─────────────────────────────────────────────────────────────────────────────
+(function bootstrap() {
+  // Kick off English load immediately — we'll await it in app.js boot
+  window._i18nReady = window.loadLocale('en');
+})();
