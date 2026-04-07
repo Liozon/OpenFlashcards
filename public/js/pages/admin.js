@@ -77,17 +77,17 @@ async function loadUserTable() {
           </tbody>
         </table>
       </div>`;
-  } catch(e) {
-    wrap.innerHTML = `<p style="color:var(--danger)">${e.error||'Failed to load users.'}</p>`;
+  } catch (e) {
+    wrap.innerHTML = `<p style="color:var(--danger)">${e.error || 'Failed to load users.'}</p>`;
   }
 }
 
-window.createUser = async function() {
+window.createUser = async function () {
   const username = document.getElementById('nuUsername').value.trim();
   const password = document.getElementById('nuPassword').value;
-  const role     = document.getElementById('nuRole').value;
-  const errEl    = document.getElementById('nuErr');
-  const okEl     = document.getElementById('nuOk');
+  const role = document.getElementById('nuRole').value;
+  const errEl = document.getElementById('nuErr');
+  const okEl = document.getElementById('nuOk');
   errEl.classList.add('hidden');
   okEl.classList.add('hidden');
 
@@ -102,15 +102,15 @@ window.createUser = async function() {
     okEl.classList.remove('hidden');
     document.getElementById('nuUsername').value = '';
     document.getElementById('nuPassword').value = '';
-    setTimeout(() => okEl.classList.add('hidden'), 3000);
+    setTimeout(() => okEl.classList.add('hidden'), 8000);
     loadUserTable();
-  } catch(e) {
+  } catch (e) {
     errEl.textContent = e.error || 'Failed to create user.';
     errEl.classList.remove('hidden');
   }
 };
 
-window.resetPassword = function(id, username) {
+window.resetPassword = function (id, username) {
   openModal(`Reset password – ${username}`, `
     <div class="field-group">
       <label>New password</label>
@@ -122,8 +122,8 @@ window.resetPassword = function(id, username) {
   );
 };
 
-window.submitResetPw = async function(id) {
-  const pw    = document.getElementById('rpNew').value;
+window.submitResetPw = async function (id) {
+  const pw = document.getElementById('rpNew').value;
   const errEl = document.getElementById('rpErr');
   errEl.classList.add('hidden');
   if (!pw || pw.length < 4) {
@@ -135,21 +135,21 @@ window.submitResetPw = async function(id) {
     await api('PUT', `/admin/users/${id}`, { password: pw });
     closeModal();
     toast(t('admin_reset_ok'));
-  } catch(e) {
-    errEl.textContent = e.error||'Failed.';
+  } catch (e) {
+    errEl.textContent = e.error || 'Failed.';
     errEl.classList.remove('hidden');
   }
 };
 
-window.deleteUser = async function(id, username) {
+window.deleteUser = async function (id, username) {
   if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
     toast(t('admin_deleted'));
-  } catch(e) { toast(e.error||'Failed.','danger'); }
+  } catch (e) { toast(e.error || 'Failed.', 'danger'); }
 };
 
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

@@ -5,10 +5,10 @@ function renderAdd(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
-  const langData    = currentLangData();
-  const pronouns    = (langData && langData.pronouns)    ? langData.pronouns    : ['1sg','2sg','3sg','1pl','2pl','3pl'];
+  const langData = currentLangData();
+  const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
   const declensions = (langData && langData.declensions) ? langData.declensions : [];
-  const verbGroups  = (langData && langData.verbGroups)  ? langData.verbGroups  : [];
+  const verbGroups = (langData && langData.verbGroups) ? langData.verbGroups : [];
 
   const vgOptions = verbGroups.length
     ? `<div class="field-group" id="verbGroupField">
@@ -56,7 +56,7 @@ function renderAdd(el) {
         </div>
 
         <div class="field-group">
-          <label>${t('add_word_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
+          <label>${t('add_word_label')} <strong>${langData ? (langData.flag || '') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
           <small style="color:var(--text-faint);font-size:.8rem">${t('add_nominative_hint')}</small>
         </div>
@@ -87,7 +87,7 @@ function renderAdd(el) {
     <div id="tabPhrase" class="hidden">
       <div class="card">
         <div class="field-group">
-          <label>${t('add_phrase_label')} <strong>${langData ? (langData.flag||'') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
+          <label>${t('add_phrase_label')} <strong>${langData ? (langData.flag || '') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <textarea id="pText" placeholder="${t('add_phrase_ph')}" rows="3"></textarea>
         </div>
         <div class="field-group">
@@ -128,11 +128,11 @@ function renderAdd(el) {
     });
   }
 
-  ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
+  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
   });
-  ['pTranslation','pNote'].forEach(id => {
+  ['pTranslation', 'pNote'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitPhrase(); });
   });
@@ -140,7 +140,7 @@ function renderAdd(el) {
 
 window._addWordType = 'noun';
 
-window.selectWordType = function(type, btn) {
+window.selectWordType = function (type, btn) {
   window._addWordType = type;
   document.querySelectorAll('#wordTypeSelector .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -148,21 +148,21 @@ window.selectWordType = function(type, btn) {
   document.getElementById('verbExtras').classList.toggle('hidden', type !== 'verb');
 };
 
-window.switchAddTab = function(tab, btn) {
+window.switchAddTab = function (tab, btn) {
   document.querySelectorAll('.add-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('tabWord').classList.toggle('hidden',   tab !== 'word');
+  document.getElementById('tabWord').classList.toggle('hidden', tab !== 'word');
   document.getElementById('tabPhrase').classList.toggle('hidden', tab !== 'phrase');
 };
 
-window.submitWord = async function() {
+window.submitWord = async function () {
   const lang = currentLang();
   const type = window._addWordType;
-  const literal     = document.getElementById('wLiteral')?.value.trim();
+  const literal = document.getElementById('wLiteral')?.value.trim();
   const translation = document.getElementById('wTranslation')?.value.trim();
-  const definition  = document.getElementById('wDefinition')?.value.trim();
+  const definition = document.getElementById('wDefinition')?.value.trim();
   const errEl = document.getElementById('wordAddErr');
-  const okEl  = document.getElementById('wordAddOk');
+  const okEl = document.getElementById('wordAddOk');
   errEl.classList.add('hidden');
   okEl.classList.add('hidden');
 
@@ -174,10 +174,10 @@ window.submitWord = async function() {
   if (type === 'noun') body.article = document.getElementById('wArticle')?.value.trim() || '';
   if (type === 'verb') {
     body.infinitive = document.getElementById('wInfinitive')?.value.trim() || '';
-    body.verbGroup  = document.getElementById('wVerbGroup')?.value || '';
+    body.verbGroup = document.getElementById('wVerbGroup')?.value || '';
     const conj = {};
     const langData = currentLangData();
-    const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg','2sg','3sg','1pl','2pl','3pl'];
+    const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
     pronouns.forEach((p, i) => {
       const val = document.getElementById(`conj_${i}`)?.value.trim();
       if (val) conj[p] = val;
@@ -202,7 +202,7 @@ window.submitWord = async function() {
     await api('POST', '/api/words', body);
     okEl.textContent = `${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
-    ['wLiteral','wTranslation','wDefinition','wArticle','wInfinitive'].forEach(id => {
+    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"]').forEach(el => el.value = '');
@@ -210,20 +210,20 @@ window.submitWord = async function() {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
-    setTimeout(() => okEl.classList.add('hidden'), 3000);
-  } catch(e) {
+    setTimeout(() => okEl.classList.add('hidden'), 8000);
+  } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
   }
   btn.disabled = false;
 };
 
-window.submitPhrase = async function() {
-  const lang        = currentLang();
-  const text        = document.getElementById('pText')?.value.trim();
+window.submitPhrase = async function () {
+  const lang = currentLang();
+  const text = document.getElementById('pText')?.value.trim();
   const translation = document.getElementById('pTranslation')?.value.trim();
-  const helpNote    = document.getElementById('pNote')?.value.trim();
+  const helpNote = document.getElementById('pNote')?.value.trim();
   const errEl = document.getElementById('phraseAddErr');
-  const okEl  = document.getElementById('phraseAddOk');
+  const okEl = document.getElementById('phraseAddOk');
   errEl.classList.add('hidden');
   okEl.classList.add('hidden');
 
@@ -237,17 +237,17 @@ window.submitPhrase = async function() {
     await api('POST', '/api/phrases', { lang, text, translation, helpNote });
     okEl.textContent = t('add_ok_phrase');
     okEl.classList.remove('hidden');
-    document.getElementById('pText').value        = '';
+    document.getElementById('pText').value = '';
     document.getElementById('pTranslation').value = '';
-    document.getElementById('pNote').value        = '';
+    document.getElementById('pNote').value = '';
     document.getElementById('pText').focus();
-    setTimeout(() => okEl.classList.add('hidden'), 3000);
-  } catch(e) {
+    setTimeout(() => okEl.classList.add('hidden'), 8000);
+  } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
   }
   btn.disabled = false;
 };
 
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

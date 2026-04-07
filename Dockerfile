@@ -1,6 +1,6 @@
 # ── OpenFlashcards – single-container Docker image ──────────────────────────
 # Build:  docker build -t openflashcards .
-# Run:    docker run -d -p 3000:3000 -v /your/data:/app/data --name openflashcards openflashcards
+# Run:    docker run -d -p 8000:8000 -v /your/data:/app/data --name openflashcards openflashcards
 # Save:   docker save openflashcards | gzip > openflashcards.tar.gz
 
 FROM node:20-alpine
@@ -8,7 +8,7 @@ FROM node:20-alpine
 # Metadata
 LABEL org.opencontainers.image.title="OpenFlashcards"
 LABEL org.opencontainers.image.description="Lightweight language flashcard app"
-LABEL org.opencontainers.image.version="2.0.0"
+LABEL org.opencontainers.image.version="2.1"
 
 # Working directory
 WORKDIR /app
@@ -27,14 +27,14 @@ RUN mkdir -p /app/data /app/config
 
 # Environment defaults
 ENV NODE_ENV=production \
-  PORT=3000 \
+  PORT=8000 \
   DATA_DIR=/app/data \
   CONFIG_DIR=/app/config
 
-EXPOSE 3000
+EXPOSE 8000
 
 # Health check
 #HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-#  CMD wget -qO- http://localhost:3000/auth/me || exit 1
+#  CMD wget -qO- http://localhost:8000/auth/me || exit 1
 
 CMD ["node", "src/server.js"]

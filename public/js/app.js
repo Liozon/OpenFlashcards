@@ -166,7 +166,7 @@ window.toast = function (msg, type = 'success') {
   el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeIn .2s';
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(() => el.remove(), 8000);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

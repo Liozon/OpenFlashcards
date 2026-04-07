@@ -5,14 +5,14 @@ const path = require('path');
 const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
-const apiRoutes  = require('./routes/api');
+const apiRoutes = require('./routes/api');
 const adminRoutes = require('./routes/admin');
-const i18nRoutes  = require('./routes/i18n');
+const i18nRoutes = require('./routes/i18n');
 const { requireAuth } = require('./middleware/auth');
 const { ensureDataDirs } = require('./utils/storage');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 // ── Boot: ensure data dirs & default admin ──────────────────────────────────
 ensureDataDirs();
@@ -24,9 +24,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ── Routes ──────────────────────────────────────────────────────────────────
-app.use('/auth',  authRoutes);
-app.use('/i18n',  i18nRoutes);          // public – no auth needed
-app.use('/api',   requireAuth, apiRoutes);
+app.use('/auth', authRoutes);
+app.use('/i18n', i18nRoutes);          // public – no auth needed
+app.use('/api', requireAuth, apiRoutes);
 app.use('/admin', requireAuth, adminRoutes);
 
 // ── SPA catch-all: serve index.html for all non-API routes ─────────────────

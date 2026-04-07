@@ -10,8 +10,8 @@ const {
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const uid  = () => req => req.user.id;
-const TYPES = ['noun','verb','adjective','adverb'];
+const uid = () => req => req.user.id;
+const TYPES = ['noun', 'verb', 'adjective', 'adverb'];
 
 function userId(req) { return req.user.id; }
 
@@ -27,7 +27,7 @@ router.get('/config', (req, res) => {
 // PUT /api/config
 router.put('/config', (req, res) => {
   const cfg = getUserConfig(userId(req));
-  const allowed = ['nativeLang','targetLangs','currentLang','uiLang','darkMode'];
+  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode'];
   allowed.forEach(k => { if (req.body[k] !== undefined) cfg[k] = req.body[k]; });
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
@@ -41,7 +41,7 @@ router.post('/languages', (req, res) => {
   const cfg = getUserConfig(userId(req));
   if (!cfg.targetLangs) cfg.targetLangs = [];
   if (!cfg.targetLangs.find(l => l.isoCode === isoCode)) {
-    cfg.targetLangs.push({ isoCode, name, flag: flag||'🌐', nativeName: nativeName||name });
+    cfg.targetLangs.push({ isoCode, name, flag: flag || '🌐', nativeName: nativeName || name });
   }
   if (!cfg.currentLang) cfg.currentLang = isoCode;
   saveUserConfig(userId(req), cfg);
@@ -133,7 +133,7 @@ router.post('/words', (req, res) => {
   };
   if (type === 'noun') word.article = article ? article.trim() : '';
   if (type === 'verb') {
-    word.infinitive  = infinitive  ? infinitive.trim()  : '';
+    word.infinitive = infinitive ? infinitive.trim() : '';
     word.conjugation = conjugation || {};
     if (verbGroup !== undefined) word.verbGroup = verbGroup;
   }
@@ -149,11 +149,11 @@ router.put('/words/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
   const words = getWords(userId(req), lang);
-  const idx   = words.findIndex(w => w.id === req.params.id);
+  const idx = words.findIndex(w => w.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  ['translation','definition','article','infinitive','conjugation','declensions','verbGroup'].forEach(k => {
+  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup'].forEach(k => {
     if (req.body[k] !== undefined) w[k] = req.body[k];
   });
   w.updatedAt = new Date().toISOString();
@@ -219,10 +219,10 @@ router.put('/phrases/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
   const phrases = getPhrases(userId(req), lang);
-  const idx     = phrases.findIndex(p => p.id === req.params.id);
+  const idx = phrases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
-  ['text','translation','helpNote'].forEach(k => {
+  ['text', 'translation', 'helpNote'].forEach(k => {
     if (req.body[k] !== undefined) phrases[idx][k] = req.body[k];
   });
   phrases[idx].updatedAt = new Date().toISOString();
@@ -258,46 +258,46 @@ router.get('/quiz', (req, res) => {
   // Sort by difficulty desc (harder words appear more often → weighted shuffle)
   pool.sort((a, b) => (b.difficulty || 0) - (a.difficulty || 0));
   // Weighted random pick from first 60% of sorted pool
-  const topN    = Math.max(2, Math.ceil(pool.length * 0.6));
+  const topN = Math.max(2, Math.ceil(pool.length * 0.6));
   const topPool = pool.slice(0, topN);
   const question = topPool[Math.floor(Math.random() * topPool.length)];
 
   const showNative = direction === 'native' ? true
-                   : direction === 'target' ? false
-                   : Math.random() < 0.5;
+    : direction === 'target' ? false
+      : Math.random() < 0.5;
 
   const display = (question.article && question.article.trim())
     ? `${question.article} ${question.literal}`
     : (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
-  const promptText  = showNative ? question.translation : display;
-  const answerText  = showNative ? display : question.translation;
+  const promptText = showNative ? question.translation : display;
+  const answerText = showNative ? display : question.translation;
 
   // Build 3 decoys
   const others = pool.filter(w => w.id !== question.id);
   shuffle(others);
   const decoys = others.slice(0, 3).map(w => showNative
-    ? ((w.article ? w.article + ' ' : '') + (w.type==='verb'&&w.infinitive ? w.infinitive : w.literal))
+    ? ((w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal))
     : w.translation
   );
 
   const choices = shuffle([answerText, ...decoys]);
 
   res.json({
-    id:         question.id,
-    type:       question.type,
-    literal:    question.literal,
+    id: question.id,
+    type: question.type,
+    literal: question.literal,
     definition: question.definition || '',
-    article:    question.article    || '',
+    article: question.article || '',
     infinitive: question.infinitive || '',
-    verbGroup:  question.verbGroup  || '',
+    verbGroup: question.verbGroup || '',
     declensions: question.declensions || {},
-    langCode:   question.langCode,
+    langCode: question.langCode,
     promptText,
     answerText,
     choices,
     showNative,
-    helpNote:   question.helpNote || ''
+    helpNote: question.helpNote || ''
   });
 });
 
@@ -307,19 +307,19 @@ router.post('/quiz/answer', (req, res) => {
   if (!lang || !id) return res.status(400).json({ error: 'lang and id required.' });
 
   const words = getWords(userId(req), lang);
-  const idx   = words.findIndex(w => w.id === id);
+  const idx = words.findIndex(w => w.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
-  const w       = words[idx];
-  const display = (w.article ? w.article + ' ' : '') + (w.type==='verb'&&w.infinitive ? w.infinitive : w.literal);
+  const w = words[idx];
+  const display = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const correct = answer && (
     w.translation.trim().toLowerCase() === answer.trim().toLowerCase() ||
-    display.trim().toLowerCase()        === answer.trim().toLowerCase()
+    display.trim().toLowerCase() === answer.trim().toLowerCase()
   );
 
   w.difficulty = correct
-    ? Math.max(0,    (w.difficulty || 5000) - 3000)
-    : Math.min(10000,(w.difficulty || 5000) + 1000);
+    ? Math.max(0, (w.difficulty || 5000) - 8000)
+    : Math.min(10000, (w.difficulty || 5000) + 1000);
   saveWords(userId(req), lang, words);
 
   res.json({
@@ -348,12 +348,12 @@ router.post('/quiz/phrase/answer', (req, res) => {
   const { lang, id, correct } = req.body;
   if (!lang || !id) return res.status(400).json({ error: 'lang and id required.' });
   const phrases = getPhrases(userId(req), lang);
-  const idx     = phrases.findIndex(p => p.id === id);
+  const idx = phrases.findIndex(p => p.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
   phrases[idx].difficulty = correct
-    ? Math.max(0,    (phrases[idx].difficulty || 5000) - 3000)
-    : Math.min(10000,(phrases[idx].difficulty || 5000) + 1000);
+    ? Math.max(0, (phrases[idx].difficulty || 5000) - 8000)
+    : Math.min(10000, (phrases[idx].difficulty || 5000) + 1000);
   savePhrases(userId(req), lang, phrases);
   res.json({ ok: true });
 });
@@ -367,18 +367,18 @@ router.get('/stats', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
 
-  const words   = getWords(userId(req), lang);
+  const words = getWords(userId(req), lang);
   const phrases = getPhrases(userId(req), lang);
 
   const byType = {};
   TYPES.forEach(t => { byType[t] = words.filter(w => w.type === t).length; });
 
   res.json({
-    totalWords:   words.length,
+    totalWords: words.length,
     totalPhrases: phrases.length,
     byType,
-    mastered:     words.filter(w => (w.difficulty || 5000) < 1000).length,
-    learning:     words.filter(w => (w.difficulty || 5000) >= 1000).length
+    mastered: words.filter(w => (w.difficulty || 5000) < 1000).length,
+    learning: words.filter(w => (w.difficulty || 5000) >= 1000).length
   });
 });
 
