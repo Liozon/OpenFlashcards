@@ -1,4 +1,12 @@
 'use strict';
+
+// Normalize a conjugation entry: string → {form, translation}
+function normConj(entry) {
+  if (!entry) return { form: '', translation: '' };
+  if (typeof entry === 'string') return { form: entry, translation: '' };
+  return { form: entry.form || '', translation: entry.translation || '' };
+}
+
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
 const {
@@ -68,6 +76,7 @@ router.put('/languages/:code', (req, res) => {
   if (req.body.declensions !== undefined) lang.declensions = req.body.declensions;
   // verbGroups: array of { id, name }
   if (req.body.verbGroups !== undefined) lang.verbGroups = req.body.verbGroups;
+  if (req.body.labels !== undefined) lang.labels = req.body.labels;
 
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, lang });
@@ -111,7 +120,7 @@ router.get('/words', (req, res) => {
 
 // POST /api/words
 router.post('/words', (req, res) => {
-  const { lang, type, literal, translation, definition, article, infinitive, conjugation, declensions, verbGroup } = req.body;
+  const { lang, type, literal, translation, definition, article, infinitive, conjugation, declensions, verbGroup, labels, verbConjugationTranslation } = req.body;
   if (!lang || !type || !literal || !translation)
     return res.status(400).json({ error: 'lang, type, literal, translation required.' });
   if (!TYPES.includes(type))
@@ -138,6 +147,8 @@ router.post('/words', (req, res) => {
     if (verbGroup !== undefined) word.verbGroup = verbGroup;
   }
   if (declensions !== undefined) word.declensions = declensions;
+  if (labels !== undefined) word.labels = labels;
+  if (verbConjugationTranslation !== undefined) word.verbConjugationTranslation = verbConjugationTranslation;
 
   words.push(word);
   saveWords(userId(req), lang, words);
@@ -153,7 +164,7 @@ router.put('/words/:id', (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup'].forEach(k => {
+  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup', 'literal', 'labels', 'verbConjugationTranslation'].forEach(k => {
     if (req.body[k] !== undefined) w[k] = req.body[k];
   });
   w.updatedAt = new Date().toISOString();
@@ -195,7 +206,7 @@ router.get('/phrases/random', (req, res) => {
 
 // POST /api/phrases
 router.post('/phrases', (req, res) => {
-  const { lang, text, translation, helpNote } = req.body;
+  const { lang, text, translation, helpNote, labels } = req.body;
   if (!lang || !text || !translation)
     return res.status(400).json({ error: 'lang, text, translation required.' });
 
@@ -206,6 +217,7 @@ router.post('/phrases', (req, res) => {
     text: text.trim(),
     translation: translation.trim(),
     helpNote: helpNote ? helpNote.trim() : '',
+    labels: labels || [],
     difficulty: 5000,
     createdAt: new Date().toISOString()
   };
@@ -222,7 +234,7 @@ router.put('/phrases/:id', (req, res) => {
   const idx = phrases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
-  ['text', 'translation', 'helpNote'].forEach(k => {
+  ['text', 'translation', 'helpNote', 'labels'].forEach(k => {
     if (req.body[k] !== undefined) phrases[idx][k] = req.body[k];
   });
   phrases[idx].updatedAt = new Date().toISOString();
@@ -266,31 +278,60 @@ router.get('/quiz', (req, res) => {
     : direction === 'target' ? false
       : Math.random() < 0.5;
 
-  const display = (question.article && question.article.trim())
+  // For verbs with conjugation: randomly decide to quiz on a specific conjugated form
+  let display = (question.article && question.article.trim())
     ? `${question.article} ${question.literal}`
     : (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
-  const promptText = showNative ? question.translation : display;
-  const answerText = showNative ? display : question.translation;
+  let promptText, answerText;
+  let quizPronoun = null;  // set if quizzing on a specific conjugated form
+
+  const conjEntries = question.type === 'verb'
+    ? Object.entries(question.conjugation || {}).filter(([, e]) => normConj(e).form)
+    : [];
+
+  // 30% chance to quiz on a conjugated form (when verb has conjugations AND translations)
+  const conjWithTranslation = conjEntries.filter(([, e]) => normConj(e).translation);
+  const useConjForm = conjWithTranslation.length > 0 && Math.random() < 0.30;
+
+  if (useConjForm) {
+    const [pronoun, entry] = conjWithTranslation[Math.floor(Math.random() * conjWithTranslation.length)];
+    const e = normConj(entry);
+    quizPronoun = pronoun;
+    // Show: native translation → target conjugated form, or vice versa
+    if (showNative) {
+      promptText = e.translation;
+      answerText = `${pronoun} ${e.form}`;
+    } else {
+      promptText = `${pronoun} ${e.form}`;
+      answerText = e.translation;
+    }
+  } else {
+    promptText = showNative ? question.translation : display;
+    answerText = showNative ? display : question.translation;
+  }
 
   // Build 3 decoys
   const others = pool.filter(w => w.id !== question.id);
   shuffle(others);
-  const decoys = others.slice(0, 3).map(w => showNative
-    ? ((w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal))
-    : w.translation
-  );
+  const decoys = others.slice(0, 3).map(w => {
+    const wDisplay = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+    return showNative ? wDisplay : w.translation;
+  });
 
   const choices = shuffle([answerText, ...decoys]);
 
   res.json({
     id: question.id,
     type: question.type,
+    quizPronoun: quizPronoun,
     literal: question.literal,
     definition: question.definition || '',
     article: question.article || '',
     infinitive: question.infinitive || '',
     verbGroup: question.verbGroup || '',
+    conjugation: question.conjugation || {},
+    verbConjugationTranslation: question.verbConjugationTranslation || '',
     declensions: question.declensions || {},
     langCode: question.langCode,
     promptText,
@@ -390,5 +431,72 @@ function shuffle(arr) {
   }
   return arr;
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LABELS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/labels?lang=fr  – list all user labels for a language
+router.get('/labels', (req, res) => {
+  const { lang } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  const cfg = getUserConfig(userId(req));
+  const langData = (cfg.targetLangs || []).find(l => l.isoCode === lang) || {};
+  res.json(langData.labels || []);
+});
+
+// POST /api/labels  – create a label
+router.post('/labels', (req, res) => {
+  const { lang, name, color } = req.body;
+  if (!lang || !name) return res.status(400).json({ error: 'lang and name required' });
+  const cfg = getUserConfig(userId(req));
+  const langData = (cfg.targetLangs || []).find(l => l.isoCode === lang);
+  if (!langData) return res.status(404).json({ error: 'Language not found.' });
+  if (!langData.labels) langData.labels = [];
+  if (langData.labels.find(lb => lb.name.toLowerCase() === name.toLowerCase()))
+    return res.status(409).json({ error: 'Label already exists.' });
+  const label = { id: uuidv4(), name: name.trim(), color: color || '#6c757d' };
+  langData.labels.push(label);
+  saveUserConfig(userId(req), cfg);
+  res.status(201).json({ ok: true, label });
+});
+
+// PUT /api/labels/:id  – rename / recolor a label
+router.put('/labels/:id', (req, res) => {
+  const { lang } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  const cfg = getUserConfig(userId(req));
+  const langData = (cfg.targetLangs || []).find(l => l.isoCode === lang);
+  if (!langData) return res.status(404).json({ error: 'Language not found.' });
+  const label = (langData.labels || []).find(lb => lb.id === req.params.id);
+  if (!label) return res.status(404).json({ error: 'Label not found.' });
+  if (req.body.name !== undefined) label.name = req.body.name.trim();
+  if (req.body.color !== undefined) label.color = req.body.color;
+  saveUserConfig(userId(req), cfg);
+  res.json({ ok: true, label });
+});
+
+// DELETE /api/labels/:id  – delete a label and remove it from all words
+router.delete('/labels/:id', (req, res) => {
+  const { lang } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  const cfg = getUserConfig(userId(req));
+  const langData = (cfg.targetLangs || []).find(l => l.isoCode === lang);
+  if (!langData) return res.status(404).json({ error: 'Language not found.' });
+  const before = (langData.labels || []).length;
+  langData.labels = (langData.labels || []).filter(lb => lb.id !== req.params.id);
+  if (langData.labels.length === before) return res.status(404).json({ error: 'Label not found.' });
+  saveUserConfig(userId(req), cfg);
+
+  // Remove label from all words
+  const words = getWords(userId(req), lang);
+  words.forEach(w => {
+    if (w.labels) w.labels = w.labels.filter(lid => lid !== req.params.id);
+  });
+  saveWords(userId(req), lang, words);
+
+  res.json({ ok: true });
+});
 
 module.exports = router;

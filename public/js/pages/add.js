@@ -51,7 +51,16 @@ function renderAdd(el) {
             <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
               ${t('add_conjugation')} <span class="optional">${t('vocab_optional')}</span>
             </summary>
+            <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
+              <span style="font-weight:600">${t('add_conj_pronoun')}</span>
+              <span>${t('add_conj_form')}</span>
+              <span>${t('add_conj_translation_ph')}</span>
+            </div>
             <div class="conjugation-grid" id="conjGrid"></div>
+            <div class="field-group" style="margin-top:8px">
+              <label style="font-size:.88rem">${t('add_verb_conjugation_translation')} <span class="optional">${t('common_optional')}</span></label>
+              <input type="text" id="wConjTranslation" autocomplete="off" placeholder="${t('add_verb_conjugation_translation_ph')}">
+            </div>
           </details>
         </div>
 
@@ -77,6 +86,7 @@ function renderAdd(el) {
           <label>${t('add_definition')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wDefinition" autocomplete="off" placeholder="${t('add_definition_ph')}">
         </div>
+        <div id="wordLabelPickerContainer"></div>
         <div id="wordAddErr" class="alert alert-danger hidden"></div>
         <div id="wordAddOk"  class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">${t('add_btn_word')}</button>
@@ -98,6 +108,7 @@ function renderAdd(el) {
           <label>${t('add_phrase_note')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="pNote" autocomplete="off" placeholder="${t('add_phrase_note_ph')}">
         </div>
+        <div id="phraseLabelPickerContainer"></div>
         <div id="phraseAddErr" class="alert alert-danger hidden"></div>
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">${t('add_btn_phrase')}</button>
@@ -110,8 +121,11 @@ function renderAdd(el) {
     pronouns.forEach((p, i) => {
       conjGrid.innerHTML += `
         <div class="conj-item field-group">
-          <label>${p}</label>
-          <input type="text" id="conj_${i}" autocomplete="off" placeholder="…">
+          <label style="font-size:.82rem;font-weight:600">${p}</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="conj_${i}" autocomplete="off" placeholder="…" style="flex:1">
+            <input type="text" id="conjtr_${i}" autocomplete="off" placeholder="${t('add_conj_translation_ph')}" style="flex:1;font-size:.85rem;color:var(--text-muted)">
+          </div>
         </div>`;
     });
   }
@@ -127,6 +141,40 @@ function renderAdd(el) {
         </div>`;
     });
   }
+
+
+  // Build label pickers
+  const lang_ = currentLang();
+  const langData_ = currentLangData();
+  const allLabels_ = (langData_ && langData_.labels) ? langData_.labels : [];
+
+  function buildAddPageLabelPicker(containerId, trackKey) {
+    const container = document.getElementById(containerId);
+    if (!container || !allLabels_.length) return;
+    container.innerHTML =
+      '<div style="margin-bottom:14px">' +
+        '<label style="font-size:.88rem;font-weight:600;color:var(--text-muted)">' + t('labels_assign') + ' <span class="optional">' + t('common_optional') + '</span></label>' +
+        '<div id="' + containerId + '-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
+          allLabels_.map(lb =>
+            '<button type="button" class="label-pick-btn" data-lid="' + lb.id + '"' +
+            ' style="padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:transparent;border:1.5px solid ' + lb.color + ';color:' + lb.color + ';transition:.15s"' +
+            ' onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'' + lb.color + '33\':\'transparent\'">' + lb.name + '</button>'
+          ).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  buildAddPageLabelPicker('wordLabelPickerContainer', 'word');
+  buildAddPageLabelPicker('phraseLabelPickerContainer', 'phrase');
+
+  window.getAddPageSelectedLabels = function() {
+    const chips = document.getElementById('wordLabelPickerContainer-chips');
+    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
+  };
+  window.getAddPagePhraseSelectedLabels = function() {
+    const chips = document.getElementById('phraseLabelPickerContainer-chips');
+    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
+  };
 
   ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
     const el2 = document.getElementById(id);
@@ -146,6 +194,8 @@ window.selectWordType = function (type, btn) {
   btn.classList.add('active');
   document.getElementById('nounExtras').classList.toggle('hidden', type !== 'noun');
   document.getElementById('verbExtras').classList.toggle('hidden', type !== 'verb');
+  const declSect = document.getElementById('declensionsSection');
+  if (declSect) declSect.style.display = type === 'verb' ? 'none' : '';
 };
 
 window.switchAddTab = function (tab, btn) {
@@ -179,10 +229,12 @@ window.submitWord = async function () {
     const langData = currentLangData();
     const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
     pronouns.forEach((p, i) => {
-      const val = document.getElementById(`conj_${i}`)?.value.trim();
-      if (val) conj[p] = val;
+      const form = document.getElementById(`conj_${i}`)?.value.trim();
+      const tr   = document.getElementById(`conjtr_${i}`)?.value.trim();
+      if (form || tr) conj[p] = { form: form || '', translation: tr || '' };
     });
     body.conjugation = conj;
+    body.verbConjugationTranslation = document.getElementById('wConjTranslation')?.value.trim() || '';
   }
 
   const langData = currentLangData();
@@ -202,10 +254,44 @@ window.submitWord = async function () {
     await api('POST', '/api/words', body);
     okEl.textContent = `${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
-    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
+  
+  // Build label pickers
+  const lang_ = currentLang();
+  const langData_ = currentLangData();
+  const allLabels_ = (langData_ && langData_.labels) ? langData_.labels : [];
+
+  function buildAddPageLabelPicker(containerId, trackKey) {
+    const container = document.getElementById(containerId);
+    if (!container || !allLabels_.length) return;
+    container.innerHTML =
+      '<div style="margin-bottom:14px">' +
+        '<label style="font-size:.88rem;font-weight:600;color:var(--text-muted)">' + t('labels_assign') + ' <span class="optional">' + t('common_optional') + '</span></label>' +
+        '<div id="' + containerId + '-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
+          allLabels_.map(lb =>
+            '<button type="button" class="label-pick-btn" data-lid="' + lb.id + '"' +
+            ' style="padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:transparent;border:1.5px solid ' + lb.color + ';color:' + lb.color + ';transition:.15s"' +
+            ' onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'' + lb.color + '33\':\'transparent\'">' + lb.name + '</button>'
+          ).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  buildAddPageLabelPicker('wordLabelPickerContainer', 'word');
+  buildAddPageLabelPicker('phraseLabelPickerContainer', 'phrase');
+
+  window.getAddPageSelectedLabels = function() {
+    const chips = document.getElementById('wordLabelPickerContainer-chips');
+    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
+  };
+  window.getAddPagePhraseSelectedLabels = function() {
+    const chips = document.getElementById('phraseLabelPickerContainer-chips');
+    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
+  };
+
+  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
-    document.querySelectorAll('[id^="conj_"]').forEach(el => el.value = '');
+    document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => el.value = '');
     document.querySelectorAll('[id^="decl_"]').forEach(el => el.value = '');
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';

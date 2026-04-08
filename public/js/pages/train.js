@@ -1,10 +1,18 @@
+
+// Normalize conjugation entry: old string → {form, translation}
+function normConj(entry) {
+  if (!entry) return { form: '', translation: '' };
+  if (typeof entry === 'string') return { form: entry, translation: '' };
+  return { form: entry.form || '', translation: entry.translation || '' };
+}
+
 // pages/train.js
 'use strict';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let _trainMode = 'word';   // 'word' | 'phrase'
-let _trainTypes = [];       // word type filters (empty = all)
-let _trainDirection = 'random'; // 'random' | 'target→native' | 'native→target'
+let _trainMode = 'word';
+let _trainTypes = [];
+let _trainDirection = 'random';
 let _trainCorrect = 0;
 let _trainWrong = 0;
 let _trainStreak = 0;
@@ -25,36 +33,31 @@ function renderTrain(el) {
   el.innerHTML =
     '<div class="page-title">' + t('train_title') + '</div>' +
 
-    // Score bar
     '<div class="score-bar">' +
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
     '</div>' +
 
-    // Mode selector
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">' + t('train_words') + '</button>' +
+    '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">'   + t('train_words')   + '</button>' +
     '<button class="type-btn"        id="modePhrase" onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
     '</div>' +
 
-    // Word type filters
     '<div class="filter-row" id="typeFilters">' +
-    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">' + t('train_all') + '</button>' +
+    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">'          + t('train_all') + '</button>' +
     '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
     '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ', '') + '</button>' +
     '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ', '') + '</button>' +
     '<button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter(\'adverb\',this)">💨 ' + t('add_type_adv').replace('💨 ', '') + '</button>' +
     '</div>' +
 
-    // Direction selector (word mode only)
     '<div class="filter-row" id="dirFilters">' +
-    '<button class="type-btn active" data-dir="random"          onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
-    '<button class="type-btn"        data-dir="native→target"   onclick="setTrainDir(\'native→target\',this)">🌐→' + targetName + '</button>' +
-    '<button class="type-btn"        data-dir="target→native"   onclick="setTrainDir(\'target→native\',this)">' + targetName + '→🌐</button>' +
+    '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
+    '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">🌐→' + targetName + '</button>' +
+    '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetName + '→🌐</button>' +
     '</div>' +
 
-    // Quiz area
     '<div id="quizArea"></div>';
 
   loadQuestion();
@@ -66,7 +69,7 @@ window.setTrainMode = function (mode, btn) {
   document.querySelectorAll('#modeWord,#modePhrase').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = mode === 'word' ? '' : 'none';
-  document.getElementById('dirFilters').style.display = mode === 'word' ? '' : 'none';
+  document.getElementById('dirFilters').style.display  = mode === 'word' ? '' : 'none';
   loadQuestion();
 };
 
@@ -96,7 +99,6 @@ window.setTrainDir = function (dir, btn) {
   loadQuestion();
 };
 
-// ── Router ────────────────────────────────────────────────────────────────────
 async function loadQuestion() {
   _trainMode === 'phrase' ? await loadPhraseQuestion() : await loadWordQuestion();
 }
@@ -109,7 +111,6 @@ async function loadWordQuestion() {
   const area = document.getElementById('quizArea');
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
-  // Map UI direction to API direction param
   const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
   const apiDir = dirMap[_trainDirection] || 'random';
   const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
@@ -131,14 +132,12 @@ function renderWordQuiz(q) {
   const area = document.getElementById('quizArea');
   const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
   const lang = currentLang();
-
-  // Direction label
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
+
   const dirLabel = q.showNative
     ? '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>'
     : '<span style="font-size:.8rem;color:var(--text-faint)">' + lang.toUpperCase() + ' → ' + nativeLang.toUpperCase() + '</span>';
 
-  // Verb group secondary info
   const verbGroupBadge = (q.type === 'verb' && q.verbGroup)
     ? '<span style="font-size:.78rem;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-left:4px">📚 ' + esc(q.verbGroup) + '</span>'
     : '';
@@ -156,7 +155,6 @@ function renderWordQuiz(q) {
     '<div class="choices-grid" id="choicesGrid"></div>' +
     '</div>';
 
-  // TTS button for the prompt word (always speaks the target-lang word)
   const wordEl = document.getElementById('qWord');
   const ttsWord = q.showNative ? q.answerText : q.promptText;
   wordEl.appendChild(document.createTextNode(' '));
@@ -189,28 +187,50 @@ async function handleWordAnswer(btn, answer, q) {
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
 
-  // Auto-speak correct answer
   TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode);
 
-  // Show declensions if available (as a memory aid after answering)
   const card = document.getElementById('wordQuizCard');
-  if (q.declensions && Object.keys(q.declensions).length > 0) {
+
+  // ── Verb conjugation display (after answer) ──
+  if (q.type === 'verb' && q.conjugation && Object.keys(q.conjugation).length) {
+    const conjBox = document.createElement('div');
+    conjBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
+
+    const headerRow = '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' +
+      t('train_conjugation') + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+
+    const conjRows = Object.entries(q.conjugation).map(([pronoun, entry]) => {
+      const e = normConj(entry);
+      return '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
+      '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+      '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+      (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
+      '</div>';
+    }).join('');
+
+    conjBox.innerHTML = headerRow + conjRows;
+    card.appendChild(conjBox);
+  }
+
+  // ── Declensions (non-verbs only) ──
+  if (q.type !== 'verb' && q.declensions && Object.keys(q.declensions).length > 0) {
     const langData = (App.config.targetLangs || []).find(l => l.isoCode === q.langCode) || {};
     const cfgDeclensions = langData.declensions || [];
     const declRows = Object.entries(q.declensions).map(([i, d]) => {
       const cfgD = cfgDeclensions[+i] || {};
       const label = cfgD.nativeName || d.nativeName || ('Case ' + (+i + 2));
-      return `<div style="display:flex;gap:10px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--text-muted);min-width:100px">${esc(label)}</span>
-        <span style="font-weight:600">${esc(d.value)}</span>
-      </div>`;
+      return '<div style="display:flex;gap:10px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border)">' +
+        '<span style="color:var(--text-muted);min-width:100px">' + esc(label) + '</span>' +
+        '<span style="font-weight:600">' + esc(d.value) + '</span>' +
+        '</div>';
     }).join('');
+
     const declBox = document.createElement('div');
     declBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
     declBox.innerHTML =
-      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📐 Declensions</div>' +
+      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' + t('train_declensions') + '</div>' +
       '<div style="font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;gap:10px">' +
-      '<span style="color:var(--text-muted);min-width:100px">Nominative</span>' +
+      '<span style="color:var(--text-muted);min-width:100px">' + t('common_nominative') + '</span>' +
       '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
       '</div>' +
       declRows;
@@ -254,7 +274,6 @@ function renderPhraseQuiz(phrase) {
   const lang = currentLang();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
 
-  // Clickable words in the translation (native lang sentence shown to user)
   const transWords = phrase.translation.split(/\s+/);
   const clickableTrans = transWords.map(w => {
     const clean = w.replace(/[^\wÀ-ÿ]/g, '').toLowerCase();
@@ -277,24 +296,23 @@ function renderPhraseQuiz(phrase) {
     '<div class="word-bank" id="wordBank"></div>' +
     '<div id="phraseResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions">' +
-    '<button class="btn btn-primary"            id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + '</button>' +
-    '<button class="btn btn-secondary hidden"   id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + '</button>' +
+    '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + '</button>' +
+    '<button class="btn btn-secondary hidden" id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + '</button>' +
     '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
     '</div>' +
     '</div>';
 
-  // Wire TTS button next to the translation display
+  // TTS for the translation (native lang)
   const transEl = document.getElementById('phraseTransEl');
   transEl.appendChild(document.createTextNode(' '));
   transEl.appendChild(TTS.button(phrase.translation, nativeLang));
 
-  // Wire tooltip clicks — load words list once
+  // Wire tooltip/TTS clicks
   loadWordsForTooltips(lang, phrase);
 
   buildWordBank(phrase);
 }
 
-// ── Word tooltips: click a word in the translation to see its target-lang form ──
 async function loadWordsForTooltips(lang, phrase) {
   let wordBank = [];
   try { wordBank = await api('GET', '/api/words?lang=' + encodeURIComponent(lang)); } catch { }
@@ -302,18 +320,14 @@ async function loadWordsForTooltips(lang, phrase) {
   document.querySelectorAll('#phraseTransEl .phrase-word-clickable').forEach(span => {
     span.title = t('train_click_hint');
     span.addEventListener('click', () => {
-      // Remove existing tooltips
       document.querySelectorAll('.word-tooltip').forEach(t => t.remove());
 
       const clean = span.dataset.clean || span.textContent.replace(/[^\wÀ-ÿ]/g, '').toLowerCase();
 
-      // 1. Try exact match in word bank
       let found = wordBank.find(w =>
         w.literal.toLowerCase() === clean ||
         (w.infinitive && w.infinitive.toLowerCase() === clean)
       );
-
-      // 2. Try partial / stem match (handles "mange" → "manger")
       if (!found) {
         found = wordBank.find(w =>
           clean.startsWith(w.literal.toLowerCase().slice(0, 4)) ||
@@ -322,8 +336,6 @@ async function loadWordsForTooltips(lang, phrase) {
       }
 
       const tipText = found ? found.literal + ' = ' + found.translation : null;
-
-      // 3. Always show Google Translate TTS for the clicked word + tooltip
       showTooltip(span, tipText, clean, lang);
     });
   });
@@ -332,26 +344,15 @@ async function loadWordsForTooltips(lang, phrase) {
 function showTooltip(el, text, word, langCode) {
   const tip = document.createElement('div');
   tip.className = 'word-tooltip';
-
-  if (text) {
-    tip.textContent = text;
-  } else {
-    // No match in local bank → show word with TTS and fallback message
-    tip.textContent = '?  (click 🔊)';
-  }
-
-  // TTS button inside tooltip
+  tip.textContent = text || '? (click 🔊)';
   const ttsBtn = TTS.button(word, langCode, 'margin-left:6px;padding:2px 6px;font-size:.8rem;');
   tip.style.display = 'flex';
   tip.style.alignItems = 'center';
   tip.style.gap = '4px';
   tip.appendChild(ttsBtn);
-
   el.style.position = 'relative';
   el.appendChild(tip);
   setTimeout(() => tip.remove(), 4000);
-
-  // Auto-play TTS for the clicked word
   TTS.speak(word, langCode);
 }
 
@@ -366,9 +367,9 @@ function buildWordBank(phrase) {
   tokens.forEach(tok => {
     const btn = document.createElement('div');
     btn.className = 'word-token';
-    btn.dataset.idx = tok.idx;
+    btn.dataset.idx  = tok.idx;
     btn.dataset.word = tok.word;
-    btn.textContent = tok.word;
+    btn.textContent  = tok.word;
     btn.addEventListener('click', () => addTokenToAnswer(btn));
     bank.appendChild(btn);
   });
@@ -378,13 +379,17 @@ function addTokenToAnswer(btn) {
   if (btn.classList.contains('used')) return;
   btn.classList.add('used');
 
+  // TTS: speak the selected word
+  const lang = currentLang();
+  if (lang) TTS.speak(btn.dataset.word, lang);
+
   const zone = document.getElementById('answerZone');
   document.getElementById('answerPlaceholder').style.display = 'none';
 
   const chip = document.createElement('div');
   chip.className = 'word-token in-answer';
   chip.textContent = btn.dataset.word;
-  chip.dataset.idx = btn.dataset.idx;
+  chip.dataset.idx  = btn.dataset.idx;
   chip.addEventListener('click', () => {
     chip.remove();
     btn.classList.remove('used');
@@ -408,9 +413,9 @@ window.checkPhraseAnswer = async function () {
   const chips = [...document.querySelectorAll('#answerZone .in-answer')];
   if (!chips.length) return;
 
-  const answer = chips.map(c => c.textContent).join(' ');
+  const answer   = chips.map(c => c.textContent).join(' ');
   const expected = _curPhrase.text.trim();
-  const correct = answer.trim().toLowerCase() === expected.trim().toLowerCase();
+  const correct  = answer.trim().toLowerCase() === expected.trim().toLowerCase();
 
   document.getElementById('answerZone').className = 'answer-zone ' + (correct ? 'correct' : 'wrong');
 
@@ -427,17 +432,16 @@ window.checkPhraseAnswer = async function () {
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
 
-  // Speak the correct answer in the target language
+  // Speak the whole sentence
   TTS.speak(expected, _curPhrase.langCode);
 
   try { await api('POST', '/api/quiz/phrase/answer', { lang: _curPhrase.langCode, id: _curPhrase.id, correct }); } catch { }
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function updateScore() {
   document.getElementById('trCorrect').textContent = _trainCorrect;
-  document.getElementById('trWrong').textContent = _trainWrong;
-  document.getElementById('trStreak').textContent = _trainStreak;
+  document.getElementById('trWrong').textContent   = _trainWrong;
+  document.getElementById('trStreak').textContent  = _trainStreak;
 }
 
 function getDistr(langCode, words) {

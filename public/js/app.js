@@ -256,11 +256,20 @@ function applyNavLabels() {
     const el = document.getElementById(id);
     if (el) el.textContent = t(key);
   });
-  // Re-show adminLink if admin (textContent reset clears style only if we set display)
-  if (App.user && App.user.role === 'admin') {
-    const al = document.getElementById('adminLink');
-    if (al) al.style.display = '';
-  }
+
+  // Admin link: only visible to admins. Always enforce this after any textContent reset.
+  const al = document.getElementById('adminLink');
+  if (al) al.style.display = (App.user && App.user.role === 'admin') ? '' : 'none';
+
+  // Language tools: hidden for admin users (admins only manage users)
+  const isAdmin = App.user && App.user.role === 'admin';
+  ['navHome','navVocab','navAdd','navTrain'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? 'none' : '';
+  });
+  // Settings also hidden for admin (no languages to configure)
+  const navSettings = document.getElementById('navSettings');
+  if (navSettings) navSettings.style.display = isAdmin ? 'none' : '';
 }
 
 function applyLoginLabels() {
@@ -276,18 +285,15 @@ function applyLoginLabels() {
 
 async function bootApp() {
   await loadConfig();
-  // Apply the user's native language to UI (await so t() keys are ready before render)
-  if (App.config && App.config.nativeLang) {
-    await window.setUiLang(App.config.nativeLang);
+  // Apply the user's preferred UI language (uiLang takes precedence over nativeLang)
+  const preferredUiLang = (App.config && App.config.uiLang) || (App.config && App.config.nativeLang);
+  if (preferredUiLang) {
+    await window.setUiLang(preferredUiLang);
   }
   applyNavLabels();
   showAppShell();
 
-  // Show admin link if admin
-  if (App.user.role === 'admin') {
-    document.getElementById('adminLink').style.display = '';
-  }
-  // Admin → direct to admin panel, no onboarding
+  // Admin → direct to admin panel, no language tools
   if (App.user.role === 'admin') {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     navigate('admin');
