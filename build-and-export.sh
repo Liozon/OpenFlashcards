@@ -12,7 +12,7 @@
 #   docker run -d \
 #     --name openflashcards \
 #     --restart unless-stopped \
-#     -p 3000:3000 \
+#     -p 8000:8000 \
 #     -v /volume1/docker/openflashcards/data:/app/data \
 #     -v /volume1/docker/openflashcards/config:/app/config \
 #     -e JWT_SECRET=your_random_secret_here \
@@ -45,13 +45,13 @@ echo "  3. In Synology Docker UI (or via SSH):"
 echo "       docker run -d \\"
 echo "         --name openflashcards \\"
 echo "         --restart unless-stopped \\"
-echo "         -p 3000:3000 \\"
+echo "         -p 8000:8000 \\"
 echo "         -v /volume1/docker/openflashcards/data:/app/data \\"
 echo "         -v /volume1/docker/openflashcards/config:/app/config \\"
 echo "         -e JWT_SECRET=\$(openssl rand -hex 32) \\"
 echo "         openflashcards:latest"
 echo ""
-echo "  4. Open http://your-nas-ip:3000"
+echo "  4. Open http://your-nas-ip:8000"
 echo "     Default login: admin / admin"
 echo "     ⚠️  Change the admin password on first login!"
 echo "──────────────────────────────────────────────────────────"

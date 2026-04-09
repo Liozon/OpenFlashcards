@@ -359,6 +359,32 @@ img { max-width: 100%; }
   background: var(--primary);
   transition: width .3s;
 }
+.progress-bar-wrap {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+  cursor: default;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary) 0%, #2ecc71 100%);
+  transition: width .4s ease;
+}
+.mastered-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #1abc9c20;
+  border: 1.5px solid #1abc9c;
+  color: #1abc9c;
+}
 
 /* ── QUIZ / TRAINING ────────────────────────────────────────── */
 .score-bar {
@@ -552,12 +578,13 @@ img { max-width: 100%; }
 }
 
 .conjugation-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
 }
 .conj-item label { font-size: .78rem; }
+.conj-item { margin-bottom: 0 !important; }
 
 /* ── SETTINGS ───────────────────────────────────────────────── */
 .settings-section { margin-bottom: 32px; }
@@ -745,7 +772,7 @@ img { max-width: 100%; }
   .question-word { font-size: 1.6rem; }
   .quiz-card { padding: 24px 18px; }
   .page-content { padding: 20px 14px 50px; }
-  .conjugation-grid { grid-template-columns: 1fr; }
+  .conjugation-grid { flex-direction: column; }
   .phrase-actions { flex-direction: column; }
   .user-table th:nth-child(3),
   .user-table td:nth-child(3) { display: none; }
@@ -755,3 +782,24 @@ img { max-width: 100%; }
   .add-tabs { gap: 2px; }
   .add-tab  { padding: 8px 10px; font-size: .82rem; }
 }
+
+/* ── LABELS ─────────────────────────────────────────────────── */
+.label-chip {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  transition: opacity .15s;
+}
+.label-chip.active { opacity: 1; }
+.label-chip:not(.active) { opacity: .65; }
+
+.label-pick-btn {
+  transition: background .15s, opacity .15s;
+}
+.label-pick-btn:not(.active) { opacity: .7; }

@@ -1,4 +1,4 @@
-# 🃏 OpenFlashcards v2
+# 🃏 OpenFlashcards
 
 A lightweight, responsive web application for language learning with flashcards.  
 **Migrated from Java/Spring Boot/MongoDB → Node.js/Express/JSON files.**
@@ -44,9 +44,9 @@ npm install
 docker run -d \
   --name openflashcards \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 8000:8000 \
   openflashcards
-# Open http://localhost:3000
+# Open http://localhost:8000
 # Login: admin / admin  ← change this!
 ```
 
@@ -76,13 +76,13 @@ mkdir -p /volume1/docker/openflashcards/{data,config}
 docker run -d \
   --name openflashcards \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 8000:8000 \
   -v /volume1/docker/openflashcards/data:/app/data \
   -v /volume1/docker/openflashcards/config:/app/config \
   -e JWT_SECRET=$(openssl rand -hex 32) \
   openflashcards:latest
 
-# 4. Open http://your-nas-ip:3000
+# 4. Open http://your-nas-ip:8000
 #    Default login: admin / admin
 #    ⚠️ Change the admin password on first login!
 ```
@@ -91,7 +91,7 @@ docker run -d \
 
 1. Import image: **Container Manager → Registry → Import**
 2. Create container with:
-   - Port mapping: `3000 → 3000`
+   - Port mapping: `8000 → 8000`
    - Volume: `/volume1/docker/openflashcards/data` → `/app/data`
    - Volume: `/volume1/docker/openflashcards/config` → `/app/config`
    - Env: `JWT_SECRET=your_random_secret`
