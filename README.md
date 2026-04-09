@@ -1,4 +1,4 @@
-# 🃏 OpenFlashcards v2
+# 🃏 OpenFlashcards
 
 A lightweight, responsive web application for language learning with flashcards.  
 **Migrated from Java/Spring Boot/MongoDB → Node.js/Express/JSON files.**
