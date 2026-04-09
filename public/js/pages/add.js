@@ -143,39 +143,6 @@ function renderAdd(el) {
   }
 
 
-  // Build label pickers
-  const lang_ = currentLang();
-  const langData_ = currentLangData();
-  const allLabels_ = (langData_ && langData_.labels) ? langData_.labels : [];
-
-  function buildAddPageLabelPicker(containerId, trackKey) {
-    const container = document.getElementById(containerId);
-    if (!container || !allLabels_.length) return;
-    container.innerHTML =
-      '<div style="margin-bottom:14px">' +
-        '<label style="font-size:.88rem;font-weight:600;color:var(--text-muted)">' + t('labels_assign') + ' <span class="optional">' + t('common_optional') + '</span></label>' +
-        '<div id="' + containerId + '-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
-          allLabels_.map(lb =>
-            '<button type="button" class="label-pick-btn" data-lid="' + lb.id + '"' +
-            ' style="padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:transparent;border:1.5px solid ' + lb.color + ';color:' + lb.color + ';transition:.15s"' +
-            ' onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'' + lb.color + '33\':\'transparent\'">' + lb.name + '</button>'
-          ).join('') +
-        '</div>' +
-      '</div>';
-  }
-
-  buildAddPageLabelPicker('wordLabelPickerContainer', 'word');
-  buildAddPageLabelPicker('phraseLabelPickerContainer', 'phrase');
-
-  window.getAddPageSelectedLabels = function() {
-    const chips = document.getElementById('wordLabelPickerContainer-chips');
-    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
-  };
-  window.getAddPagePhraseSelectedLabels = function() {
-    const chips = document.getElementById('phraseLabelPickerContainer-chips');
-    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
-  };
-
   ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
@@ -248,6 +215,8 @@ window.submitWord = async function () {
     if (Object.keys(declObj).length) body.declensions = declObj;
   }
 
+  body.labels = (window.getAddPageSelectedLabels ? window.getAddPageSelectedLabels() : []);
+
   const btn = document.getElementById('addWordBtn');
   btn.disabled = true;
   try {
@@ -255,39 +224,6 @@ window.submitWord = async function () {
     okEl.textContent = `${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
   
-  // Build label pickers
-  const lang_ = currentLang();
-  const langData_ = currentLangData();
-  const allLabels_ = (langData_ && langData_.labels) ? langData_.labels : [];
-
-  function buildAddPageLabelPicker(containerId, trackKey) {
-    const container = document.getElementById(containerId);
-    if (!container || !allLabels_.length) return;
-    container.innerHTML =
-      '<div style="margin-bottom:14px">' +
-        '<label style="font-size:.88rem;font-weight:600;color:var(--text-muted)">' + t('labels_assign') + ' <span class="optional">' + t('common_optional') + '</span></label>' +
-        '<div id="' + containerId + '-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
-          allLabels_.map(lb =>
-            '<button type="button" class="label-pick-btn" data-lid="' + lb.id + '"' +
-            ' style="padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:transparent;border:1.5px solid ' + lb.color + ';color:' + lb.color + ';transition:.15s"' +
-            ' onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'' + lb.color + '33\':\'transparent\'">' + lb.name + '</button>'
-          ).join('') +
-        '</div>' +
-      '</div>';
-  }
-
-  buildAddPageLabelPicker('wordLabelPickerContainer', 'word');
-  buildAddPageLabelPicker('phraseLabelPickerContainer', 'phrase');
-
-  window.getAddPageSelectedLabels = function() {
-    const chips = document.getElementById('wordLabelPickerContainer-chips');
-    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
-  };
-  window.getAddPagePhraseSelectedLabels = function() {
-    const chips = document.getElementById('phraseLabelPickerContainer-chips');
-    return chips ? [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid) : [];
-  };
-
   ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
@@ -296,6 +232,7 @@ window.submitWord = async function () {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
+    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
@@ -317,16 +254,19 @@ window.submitPhrase = async function () {
     errEl.textContent = t('add_err_phrase'); errEl.classList.remove('hidden'); return;
   }
 
+  const phraseLabels = (window.getAddPagePhraseSelectedLabels ? window.getAddPagePhraseSelectedLabels() : []);
+
   const btn = document.getElementById('addPhraseBtn');
   btn.disabled = true;
   try {
-    await api('POST', '/api/phrases', { lang, text, translation, helpNote });
+    await api('POST', '/api/phrases', { lang, text, translation, helpNote, labels: phraseLabels });
     okEl.textContent = t('add_ok_phrase');
     okEl.classList.remove('hidden');
     document.getElementById('pText').value = '';
     document.getElementById('pTranslation').value = '';
     document.getElementById('pNote').value = '';
     document.getElementById('pText').focus();
+    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');

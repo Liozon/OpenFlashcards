@@ -40,7 +40,7 @@
   "vocab_phrases": "💬 Phrases",
   "vocab_empty": "📭 No entries found.",
   "vocab_add_first": "➕ Add your first word",
-  "vocab_mastered": "Mastered",
+  "vocab_mastered": "✅ Mastered",
   "vocab_noun": "📦 Noun",
   "vocab_verb": "⚡ Verb",
   "vocab_adjective": "🎨 Adj.",
@@ -210,5 +210,8 @@
   "train_declensions": "📐 Declensions",
   "add_conj_pronoun": "Pronoun",
   "add_conj_form": "Form (target lang)",
-  "add_conj_translation_ph": "Native translation"
+  "add_conj_translation_ph": "Native translation",
+  "vocab_reset_progress": "Reset progress",
+  "vocab_progress_reset": "↺ Progress reset.",
+  "vocab_progress": "Progress"
 }

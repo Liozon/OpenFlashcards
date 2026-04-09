@@ -1,5 +1,32 @@
 'use strict';
 
+// ── Progress helpers ──────────────────────────────────────────────────────────
+function wordMaxProgress(literal, infinitive) {
+  const minProgressValue = 50;
+  const maxProgressValue = 200;
+  const coefficient = 5; // Increase to make longer words/phrases harder; decrease to flatten the curve
+  const str = (infinitive && infinitive.trim()) ? infinitive.trim() : (literal || '');
+  const n = str.length;
+  return Math.max(minProgressValue, Math.min(maxProgressValue, Math.round(minProgressValue + Math.sqrt(n) * coefficient)));
+}
+
+function phraseMaxProgress(text) {
+  const minProgressValue = 50;
+  const maxProgressValue = 200;
+  const wordCountCoefficient = 10; // Increase to make longer words/phrases harder; decrease to flatten the curve
+  const lengthCoefficient = 8; // Increase to make longer words/phrases harder; decrease to flatten the curve
+  const words = (text || '').trim().split(/\s+/).filter(Boolean);
+  const wordCount = words.length;
+  const avgWordLength = wordCount > 0 ? words.reduce((sum, word) => sum + word.length, 0) / wordCount : 0;
+
+  const score = minProgressValue +
+    wordCount * wordCountCoefficient +
+    avgWordLength * lengthCoefficient;
+
+  return Math.max(minProgressValue, Math.min(maxProgressValue, Math.round(score)));
+}
+
+
 // Normalize a conjugation entry: string → {form, translation}
 function normConj(entry) {
   if (!entry) return { form: '', translation: '' };
@@ -137,7 +164,8 @@ router.post('/words', (req, res) => {
     translation: translation.trim(),
     definition: definition ? definition.trim() : '',
     langCode: lang,
-    difficulty: 5000,
+    progress: 0,
+    maxProgress: wordMaxProgress(literal, infinitive),
     createdAt: new Date().toISOString()
   };
   if (type === 'noun') word.article = article ? article.trim() : '';
@@ -164,7 +192,7 @@ router.put('/words/:id', (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup', 'literal', 'labels', 'verbConjugationTranslation'].forEach(k => {
+  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup', 'literal', 'labels', 'verbConjugationTranslation', 'progress', 'maxProgress'].forEach(k => {
     if (req.body[k] !== undefined) w[k] = req.body[k];
   });
   w.updatedAt = new Date().toISOString();
@@ -218,7 +246,8 @@ router.post('/phrases', (req, res) => {
     translation: translation.trim(),
     helpNote: helpNote ? helpNote.trim() : '',
     labels: labels || [],
-    difficulty: 5000,
+    progress: 0,
+    maxProgress: phraseMaxProgress(text),
     createdAt: new Date().toISOString()
   };
   phrases.push(phrase);
@@ -234,7 +263,7 @@ router.put('/phrases/:id', (req, res) => {
   const idx = phrases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
-  ['text', 'translation', 'helpNote', 'labels'].forEach(k => {
+  ['text', 'translation', 'helpNote', 'labels', 'progress', 'maxProgress'].forEach(k => {
     if (req.body[k] !== undefined) phrases[idx][k] = req.body[k];
   });
   phrases[idx].updatedAt = new Date().toISOString();
@@ -267,11 +296,18 @@ router.get('/quiz', (req, res) => {
   let pool = getWords(userId(req), lang).filter(w => types.includes(w.type));
   if (pool.length < 2) return res.status(400).json({ error: 'Add at least 2 words to start!' });
 
-  // Sort by difficulty desc (harder words appear more often → weighted shuffle)
-  pool.sort((a, b) => (b.difficulty || 0) - (a.difficulty || 0));
-  // Weighted random pick from first 60% of sorted pool
-  const topN = Math.max(2, Math.ceil(pool.length * 0.6));
-  const topPool = pool.slice(0, topN);
+  // Sort by progress ratio asc (least learned first → prioritised)
+  // Mastered words (progress >= maxProgress) are excluded unless pool is too small
+  const getMax = w => w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+  const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
+  const activePool = unmastered.length >= 2 ? unmastered : pool;
+  activePool.sort((a, b) => {
+    const ra = (a.progress || 0) / getMax(a);
+    const rb = (b.progress || 0) / getMax(b);
+    return ra - rb;
+  });
+  const topN = Math.max(2, Math.ceil(activePool.length * 0.6));
+  const topPool = activePool.slice(0, topN);
   const question = topPool[Math.floor(Math.random() * topPool.length)];
 
   const showNative = direction === 'native' ? true
@@ -358,9 +394,13 @@ router.post('/quiz/answer', (req, res) => {
     display.trim().toLowerCase() === answer.trim().toLowerCase()
   );
 
-  w.difficulty = correct
-    ? Math.max(0, (w.difficulty || 5000) - 8000)
-    : Math.min(10000, (w.difficulty || 5000) + 1000);
+  if (correct) {
+    w.progress = Math.min((w.maxProgress || wordMaxProgress(w.literal, w.infinitive)), (w.progress || 0) + 1);
+  } else {
+    w.progress = Math.max(0, (w.progress || 0) - 1);
+  }
+  // Keep maxProgress in sync (recalc if missing)
+  if (!w.maxProgress) w.maxProgress = wordMaxProgress(w.literal, w.infinitive);
   saveWords(userId(req), lang, words);
 
   res.json({
@@ -392,9 +432,13 @@ router.post('/quiz/phrase/answer', (req, res) => {
   const idx = phrases.findIndex(p => p.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
-  phrases[idx].difficulty = correct
-    ? Math.max(0, (phrases[idx].difficulty || 5000) - 8000)
-    : Math.min(10000, (phrases[idx].difficulty || 5000) + 1000);
+  const ph = phrases[idx];
+  if (correct) {
+    ph.progress = Math.min((ph.maxProgress || phraseMaxProgress(ph.text)), (ph.progress || 0) + 1);
+  } else {
+    ph.progress = Math.max(0, (ph.progress || 0) - 1);
+  }
+  if (!ph.maxProgress) ph.maxProgress = phraseMaxProgress(ph.text);
   savePhrases(userId(req), lang, phrases);
   res.json({ ok: true });
 });
@@ -418,8 +462,14 @@ router.get('/stats', (req, res) => {
     totalWords: words.length,
     totalPhrases: phrases.length,
     byType,
-    mastered: words.filter(w => (w.difficulty || 5000) < 1000).length,
-    learning: words.filter(w => (w.difficulty || 5000) >= 1000).length
+    mastered: words.filter(w => {
+      const mx = w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+      return (w.progress || 0) >= mx;
+    }).length,
+    learning: words.filter(w => {
+      const mx = w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+      return (w.progress || 0) < mx;
+    }).length
   });
 });
 

@@ -40,7 +40,7 @@
   "vocab_phrases": "💬 Phrases",
   "vocab_empty": "📭 Aucun résultat.",
   "vocab_add_first": "➕ Ajouter votre premier mot",
-  "vocab_mastered": "Maîtrisé",
+  "vocab_mastered": "✅ Maîtrisé",
   "vocab_noun": "📦 Nom",
   "vocab_verb": "⚡ Verbe",
   "vocab_adjective": "🎨 Adj.",
@@ -210,5 +210,8 @@
   "train_declensions": "📐 Déclinaisons",
   "add_conj_pronoun": "Pronom",
   "add_conj_form": "Forme (langue cible)",
-  "add_conj_translation_ph": "Trad. maternelle"
+  "add_conj_translation_ph": "Trad. maternelle",
+  "vocab_reset_progress": "Réinitialiser la progression",
+  "vocab_progress_reset": "↺ Progression réinitialisée.",
+  "vocab_progress": "Progression"
 }

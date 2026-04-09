@@ -10,12 +10,14 @@ const adminRoutes = require('./routes/admin');
 const i18nRoutes = require('./routes/i18n');
 const { requireAuth } = require('./middleware/auth');
 const { ensureDataDirs } = require('./utils/storage');
+const { runMigration }   = require('./utils/migrate');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 // ── Boot: ensure data dirs & default admin ──────────────────────────────────
 ensureDataDirs();
+runMigration();
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 app.use(express.json());
