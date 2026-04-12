@@ -46,27 +46,27 @@ async function renderSettings(el) {
   renderLangChips();
 
   // Dark mode
-  document.getElementById('darkModeToggle').addEventListener('change', async function() {
+  document.getElementById('darkModeToggle').addEventListener('change', async function () {
     await saveConfig({ darkMode: this.checked });
     document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
   });
 
   // Add language
   let selectedNewLang = null;
-  const searchEl  = document.getElementById('settingsLangSearch');
+  const searchEl = document.getElementById('settingsLangSearch');
   const resultsEl = document.getElementById('settingsLangResults');
-  const addBtn    = document.getElementById('addLangBtn');
+  const addBtn = document.getElementById('addLangBtn');
 
   searchEl.addEventListener('input', () => {
     const q = searchEl.value.trim().toLowerCase();
     if (!q) { resultsEl.style.display = 'none'; return; }
     const list = (window.WORLD_LANGUAGES || []).filter(l =>
-      l.name.toLowerCase().includes(q) || (l.native||'').toLowerCase().includes(q) || l.code.includes(q)
+      l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
     ).slice(0, 40);
     resultsEl.style.display = list.length ? '' : 'none';
     resultsEl.innerHTML = list.map(l =>
-      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag||'🌐'}" data-native="${l.native||l.name}">
-        <span>${l.flag||'🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
+      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}" data-native="${l.native || l.name}">
+        <span>${l.flag || '🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
       </div>`
     ).join('');
     resultsEl.querySelectorAll('.lang-result-item').forEach(item => {
@@ -79,7 +79,7 @@ async function renderSettings(el) {
     });
   });
 
-  window.addLangFromSettings = async function() {
+  window.addLangFromSettings = async function () {
     const lang = selectedNewLang;
     if (!lang) return;
     addBtn.disabled = true;
@@ -90,26 +90,26 @@ async function renderSettings(el) {
       searchEl.value = '';
       selectedNewLang = null;
       toast(t('settings_lang_added'));
-    } catch(e) {
+    } catch (e) {
       toast(e.error || t('common_error'), 'danger');
       addBtn.disabled = false;
     }
   };
 
   // UI language picker
-  const uiSearchEl  = document.getElementById('uiLangSearch');
+  const uiSearchEl = document.getElementById('uiLangSearch');
   const uiResultsEl = document.getElementById('uiLangResults');
 
   uiSearchEl.addEventListener('input', () => {
     const q = uiSearchEl.value.trim().toLowerCase();
     if (!q) { uiResultsEl.style.display = 'none'; return; }
     const list = (window.WORLD_LANGUAGES || []).filter(l =>
-      l.name.toLowerCase().includes(q) || (l.native||'').toLowerCase().includes(q) || l.code.includes(q)
+      l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
     ).slice(0, 20);
     uiResultsEl.style.display = list.length ? '' : 'none';
     uiResultsEl.innerHTML = list.map(l =>
-      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag||'🌐'}">
-        <span>${l.flag||'🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
+      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}">
+        <span>${l.flag || '🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
       </div>`
     ).join('');
     uiResultsEl.querySelectorAll('.lang-result-item').forEach(item => {
@@ -144,14 +144,14 @@ function renderLangChips() {
   }
   el.innerHTML = langs.map(l =>
     `<div class="lang-chip">
-      ${l.flag||'🌐'} ${l.name}
+      ${l.flag || '🌐'} ${l.name}
       <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">${t('settings_configure')}</button>
       <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="${t('common_delete')}">✕</span>
     </div>`
   ).join('');
 }
 
-window.removeLang = async function(code) {
+window.removeLang = async function (code) {
   if (!confirm(t('settings_remove_confirm'))) return;
   try {
     await api('DELETE', '/api/languages/' + encodeURIComponent(code));
@@ -159,22 +159,22 @@ window.removeLang = async function(code) {
     updateNavLangBadge();
     renderLangChips();
     toast(t('settings_lang_removed'));
-  } catch(e) { toast(e.error || t('common_error'), 'danger'); }
+  } catch (e) { toast(e.error || t('common_error'), 'danger'); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LANGUAGE CONFIG MODAL (declensions + verb groups + labels)
 // ─────────────────────────────────────────────────────────────────────────────
 
-window.openLangConfig = function(isoCode) {
+window.openLangConfig = function (isoCode) {
   const lang = (App.config.targetLangs || []).find(l => l.isoCode === isoCode);
   if (!lang) return;
 
   let declensions = (lang.declensions || []).map(d => ({ ...d }));
-  let verbGroups  = (lang.verbGroups  || []).map(g => ({ ...g }));
-  let labels      = (lang.labels      || []).map(lb => ({ ...lb }));
+  let verbGroups = (lang.verbGroups || []).map(g => ({ ...g }));
+  let labels = (lang.labels || []).map(lb => ({ ...lb }));
 
-  const LABEL_COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63','#607d8b','#795548'];
+  const LABEL_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63', '#607d8b', '#795548'];
 
   function renderDeclensionRows() {
     const container = document.getElementById('declContainer');
@@ -224,10 +224,10 @@ window.openLangConfig = function(isoCode) {
     container.innerHTML = labels.map((lb, i) => `
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <span style="width:22px;height:22px;border-radius:50%;background:${esc(lb.color)};display:inline-block;flex-shrink:0;border:2px solid var(--border)"></span>
-        <input type="text" class="lb-name" data-i="${i}" value="${esc(lb.name)}" placeholder="Label name"
+        <input type="text" class="lb-name" data-i="${i}" value="${esc(lb.name)}" placeholder="${t('labels_name')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <select class="lb-color" data-i="${i}" style="padding:6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-          ${LABEL_COLORS.map(c => `<option value="${c}" ${lb.color===c?'selected':''}>${c}</option>`).join('')}
+          ${LABEL_COLORS.map(c => `<option value="${c}" ${lb.color === c ? 'selected' : ''}>${c}</option>`).join('')}
         </select>
         <button onclick="removeLabelCfg(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
       </div>`).join('');
@@ -237,7 +237,7 @@ window.openLangConfig = function(isoCode) {
       sel.addEventListener('change', () => { labels[+sel.dataset.i].color = sel.value; }));
   }
 
-  openModal(`${t('settings_lang_config_title')}: ${lang.flag||'🌐'} ${lang.name}`, `
+  openModal(`${t('settings_lang_config_title')}: ${lang.flag || '🌐'} ${lang.name}`, `
     <div style="margin-bottom:20px">
       <h3 style="font-size:1rem;margin-bottom:4px">${t('settings_declensions_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_declensions_desc')}</p>
@@ -266,19 +266,19 @@ window.openLangConfig = function(isoCode) {
   renderLabelRows();
 
   let colorIdx = 0;
-  window.addDeclension    = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
+  window.addDeclension = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
   window.removeDeclension = (i) => { declensions.splice(i, 1); renderDeclensionRows(); };
-  window.addVerbGroup     = () => { verbGroups.push({ name: '' }); renderVerbGroupRows(); };
-  window.removeVerbGroup  = (i) => { verbGroups.splice(i, 1); renderVerbGroupRows(); };
-  window.addLabelCfg      = () => {
+  window.addVerbGroup = () => { verbGroups.push({ name: '' }); renderVerbGroupRows(); };
+  window.removeVerbGroup = (i) => { verbGroups.splice(i, 1); renderVerbGroupRows(); };
+  window.addLabelCfg = () => {
     const color = LABEL_COLORS[colorIdx % LABEL_COLORS.length];
     colorIdx++;
     labels.push({ id: 'new-' + Date.now(), name: '', color });
     renderLabelRows();
   };
-  window.removeLabelCfg   = (i) => { labels.splice(i, 1); renderLabelRows(); };
+  window.removeLabelCfg = (i) => { labels.splice(i, 1); renderLabelRows(); };
 
-  window.saveLangConfig = async function(code) {
+  window.saveLangConfig = async function (code) {
     const errEl = document.getElementById('lcErr');
     errEl.classList.add('hidden');
     if (declensions.some(d => !d.nativeName.trim())) {
@@ -296,7 +296,7 @@ window.openLangConfig = function(isoCode) {
       closeModal();
       renderLangChips();
       toast(t('settings_config_saved'));
-    } catch(e) {
+    } catch (e) {
       errEl.textContent = e.error || t('common_error');
       errEl.classList.remove('hidden');
     }
@@ -307,7 +307,7 @@ window.openLangConfig = function(isoCode) {
 // CHANGE PASSWORD
 // ─────────────────────────────────────────────────────────────────────────────
 
-window.showChangePassword = function() {
+window.showChangePassword = function () {
   openModal(t('settings_change_pw'), `
     <div class="field-group">
       <label>${t('settings_pw_current')}</label>
@@ -327,11 +327,11 @@ window.showChangePassword = function() {
   );
 };
 
-window.submitChangePassword = async function() {
+window.submitChangePassword = async function () {
   const current = document.getElementById('cpCurrent').value;
   const newPass = document.getElementById('cpNew').value;
   const confirm = document.getElementById('cpConfirm').value;
-  const errEl   = document.getElementById('cpErr');
+  const errEl = document.getElementById('cpErr');
   errEl.classList.add('hidden');
   if (!current || !newPass || !confirm) {
     errEl.textContent = t('vocab_required'); errEl.classList.remove('hidden'); return;
@@ -346,17 +346,17 @@ window.submitChangePassword = async function() {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
     toast(t('settings_pw_ok'));
-  } catch(e) {
+  } catch (e) {
     errEl.textContent = e.error || t('common_error');
     errEl.classList.remove('hidden');
   }
 };
 
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-window._applySettingsLang = function() {
+window._applySettingsLang = function () {
   if (App.config && App.config.uiLang) {
     window.setUiLang(App.config.uiLang);
   } else if (App.config && App.config.nativeLang) {
