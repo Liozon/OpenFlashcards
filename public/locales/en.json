@@ -189,6 +189,7 @@
   "settings_ui_lang_ph": "Search languages…",
   "settings_ui_lang_saved": "✓ Interface language updated!",
   "labels_title": "🏷️ Labels",
+  "labels_name": "Label name",
   "labels_manage": "Manage labels",
   "labels_add_ph": "New label name…",
   "labels_add_btn": "➕ Add",

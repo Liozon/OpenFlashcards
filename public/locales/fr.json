@@ -189,6 +189,7 @@
   "settings_ui_lang_ph": "Rechercher une langue…",
   "settings_ui_lang_saved": "✓ Langue d'interface mise à jour !",
   "labels_title": "🏷️ Étiquettes",
+  "labels_name": "Nom du label",
   "labels_manage": "Gérer les étiquettes",
   "labels_add_ph": "Nom de la nouvelle étiquette…",
   "labels_add_btn": "➕ Ajouter",
