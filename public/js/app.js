@@ -263,7 +263,7 @@ function applyNavLabels() {
 
   // Language tools: hidden for admin users (admins only manage users)
   const isAdmin = App.user && App.user.role === 'admin';
-  ['navHome','navVocab','navAdd','navTrain'].forEach(id => {
+  ['navHome', 'navVocab', 'navAdd', 'navTrain'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? 'none' : '';
   });
@@ -322,17 +322,17 @@ function renderOnboarding(el) {
         <h2>${t('onb_welcome')}</h2>
         <p>${t('onb_native_q')}</p>
 
-        <div class="field-group">
-          <label>Your native language</label>
+        <div class="field-group your-language">
+          <label>${t('onb_your_language')}</label>
           <input type="text" id="onbNativeSearch" placeholder="Search…" autocomplete="off">
           <div id="onbNativeResults" class="lang-results" style="display:none"></div>
           <div id="onbNativeChip" style="margin-top:8px"></div>
         </div>
 
         <p style="margin-top:8px">${t('onb_learn_q')}</p>
-        <div class="field-group">
-          <label>Languages to learn</label>
-          <input type="text" id="onbLearnSearch" placeholder="Search…" autocomplete="off">
+        <div class="field-group languages-to-learn">
+          <label>${t('onb_language_to_learn')}</label>
+          <input type="text" id="onbLearnSearch" placeholder="${t('onb_search')}" autocomplete="off">
           <div id="onbLearnResults" class="lang-results" style="display:none"></div>
           <div id="onbLearnChips" class="selected-chips"></div>
         </div>
@@ -373,6 +373,9 @@ function renderOnboarding(el) {
           // Re-render onboarding texts in the new language
           document.querySelector('.onboarding-card h2').textContent = t('onb_welcome');
           document.querySelector('.onboarding-card > p').textContent = t('onb_native_q');
+          document.querySelector('.your-language > label').textContent = t('onb_your_language');
+          document.querySelector('.languages-to-learn > label').textContent = t('onb_language_to_learn');
+          document.querySelector('.languages-to-learn > input').placeholder = t('onb_search');
           const learnP = document.querySelector('.onboarding-card p[style]');
           if (learnP) learnP.textContent = t('onb_learn_q');
           const startBtn = document.getElementById('onbStartBtn');
