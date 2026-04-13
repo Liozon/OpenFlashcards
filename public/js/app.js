@@ -430,7 +430,7 @@ function renderOnboarding(el) {
       if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
 
       try {
-        await saveConfig({ nativeLang: nativeLang.code });
+        await saveConfig({ nativeLang: nativeLang.code, uiLang: nativeLang.code });
         for (const l of Object.values(learnLangs)) {
           await api('POST', '/api/languages', l);
         }

@@ -121,7 +121,8 @@ async function renderSettings(el) {
         await saveConfig({ uiLang: code });
         App.config.uiLang = code;
         toast(t('settings_ui_lang_saved'));
-        // Re-render settings page in new language
+        // Re-render navbar and settings page in new language
+        applyNavLabels();
         navigate('settings');
       });
     });
