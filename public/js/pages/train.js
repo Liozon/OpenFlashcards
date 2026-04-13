@@ -12,6 +12,7 @@ function normConj(entry) {
 // ── State ─────────────────────────────────────────────────────────────────────
 let _trainMode = 'word';
 let _trainTypes = [];
+let _trainLabels = [];
 let _trainDirection = 'random';
 let _trainCorrect = 0;
 let _trainWrong = 0;
@@ -24,7 +25,7 @@ function renderTrain(el) {
   if (!lang) { navigate('settings'); return; }
 
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
-  _trainTypes = []; _trainMode = 'word'; _trainDirection = 'random';
+  _trainTypes = []; _trainLabels = []; _trainMode = 'word'; _trainDirection = 'random';
 
   const ld = currentLangData();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
@@ -58,9 +59,36 @@ function renderTrain(el) {
     '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetName + '→🌐</button>' +
     '</div>' +
 
+    '<div class="filter-row" id="labelFilters"></div>' +
+
     '<div id="quizArea"></div>';
 
+  _populateLabelFilters(lang);
   loadQuestion();
+}
+
+async function _populateLabelFilters(lang) {
+  let labels = [];
+  try { labels = await api('GET', '/api/labels?lang=' + encodeURIComponent(lang)); } catch { }
+  const row = document.getElementById('labelFilters');
+  if (!row) return;
+  if (!labels.length) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'type-btn active';
+  allBtn.dataset.labelId = '';
+  allBtn.textContent = t('train_labels_filter');
+  allBtn.addEventListener('click', () => toggleLabelFilter('', allBtn));
+  row.appendChild(allBtn);
+  labels.forEach(lb => {
+    const btn = document.createElement('button');
+    btn.className = 'type-btn';
+    btn.dataset.labelId = lb.id;
+    btn.style.borderColor = lb.color;
+    btn.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + esc(lb.color) + ';margin-right:5px"></span>' + esc(lb.name);
+    btn.addEventListener('click', () => toggleLabelFilter(lb.id, btn));
+    row.appendChild(btn);
+  });
 }
 
 // ── Mode / filter / direction ─────────────────────────────────────────────────
@@ -70,6 +98,27 @@ window.setTrainMode = function (mode, btn) {
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = mode === 'word' ? '' : 'none';
   document.getElementById('dirFilters').style.display  = mode === 'word' ? '' : 'none';
+  const lf = document.getElementById('labelFilters');
+  if (lf && lf.children.length) lf.style.display = '';
+  loadQuestion();
+};
+
+window.toggleLabelFilter = function (labelId, btn) {
+  if (labelId === '') {
+    _trainLabels = [];
+    document.querySelectorAll('#labelFilters .type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    document.querySelector('#labelFilters .type-btn[data-label-id=""]').classList.remove('active');
+    btn.classList.toggle('active');
+    const active = [...document.querySelectorAll('#labelFilters .type-btn.active')]
+      .map(b => b.dataset.labelId).filter(Boolean);
+    _trainLabels = active;
+    if (!active.length) {
+      _trainLabels = [];
+      document.querySelector('#labelFilters .type-btn[data-label-id=""]').classList.add('active');
+    }
+  }
   loadQuestion();
 };
 
@@ -113,10 +162,11 @@ async function loadWordQuestion() {
 
   const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
   const apiDir = dirMap[_trainDirection] || 'random';
-  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+  const typesParam  = _trainTypes.length  ? '&types='  + _trainTypes.join(',')  : '';
+  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
 
   try {
-    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam);
+    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam + labelsParam);
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
@@ -257,7 +307,8 @@ async function loadPhraseQuestion() {
   _curPhrase = null;
 
   try {
-    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang));
+    const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam);
     renderPhraseQuiz(_curPhrase);
   } catch (e) {
     area.innerHTML =

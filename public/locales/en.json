@@ -206,6 +206,7 @@
   "add_verb_conjugation_translation_ph": "e.g. je suis, tu es…",
   "vocab_labels": "Labels",
   "vocab_edit_labels": "Edit labels",
+  "train_labels_filter": "🏷️ All labels",
   "train_conjugation": "Conjugation",
   "train_show_conjugation": "Show conjugation",
   "train_declensions": "📐 Declensions",
