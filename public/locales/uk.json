@@ -206,6 +206,7 @@
   "add_verb_conjugation_translation_ph": "напр. je suis, tu es…",
   "vocab_labels": "Мітки",
   "vocab_edit_labels": "Редагувати мітки",
+  "train_labels_filter": "🏷️ Усі мітки",
   "train_conjugation": "Відмінювання",
   "train_show_conjugation": "Показати відмінювання",
   "train_declensions": "📐 Відмінювання",
