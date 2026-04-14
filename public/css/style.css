@@ -4,9 +4,9 @@
 
 /* ── Variables ──────────────────────────────────────────────── */
 :root {
-  --primary: #58cc02;
-  --primary-dk: #46a302;
-  --primary-bg: #e9f9d8;
+  --primary: #439b00;
+  --primary-dk: #ffffff;
+  --primary-bg: #439b00;
   --danger: #ff4b4b;
   --danger-dk: #d93636;
   --danger-bg: #ffe0e0;
@@ -29,9 +29,9 @@
 }
 
 [data-theme="dark"] {
-  --primary: #89e219;
-  --primary-dk: #6cb810;
-  --primary-bg: #1a2e06;
+  --primary: #439b00;
+  --primary-dk: #ffffff;
+  --primary-bg: #439b00;
   --danger: #ff6b6b;
   --danger-dk: #cc3333;
   --danger-bg: #2d1010;
@@ -523,7 +523,7 @@ img {
 .type-btn.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: #000;
+  color: #fff;
 }
 
 .word-grid {
