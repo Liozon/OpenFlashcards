@@ -41,6 +41,15 @@ data/
 
 ```bash
 npm install
+node src/server.js
+```
+
+---
+
+## Quick start (docker)
+
+```bash
+npm install
 docker run -d \
   --name openflashcards \
   --restart unless-stopped \
