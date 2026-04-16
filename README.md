@@ -142,4 +142,4 @@ All API routes require authentication (cookie or `Authorization: Bearer <token>`
 
 ## Acknowledgments
 
-This project is based on the work of Alex Bokos with open.flashcards 
+This project is based on the work of [Alex Bokos](https://github.com/alexbokos) with [open.flashcards](https://github.com/alexbokos/open.flashcards) 
