@@ -25,19 +25,33 @@ A lightweight, responsive web application for language learning with flashcards.
 ## Features
 
 - **Multi-user** with login portal (JWT authentication)
+
 ![Login page](<images/Login page.png>)
+
 - **Admin panel** to create/manage users
+
 ![User management portal](<images/Users management.png>)
+
 - **Per-user word banks** – each user has their own vocabulary
+
 ![Vocabulary page](images/Vocabulary.png)
+
 - **Word categories**: Nouns, Verbs, Adjectives, Adverbs
+
 ![Words practice](<images/Practice words.png>)
+
 - **Phrases** (sentence reconstruction exercise)
+
 ![Sentences writing](<images/Practice sentences.png>)
+
 - **Optional "Definition" field** on every word
+
 ![Word editing page](<images/Editing word.png>)
+
 - **Mixed practice** – choose any combination of categories
+
 ![Practice settings](<images/Practice settings.png>)
+
 - **Dark mode**, responsive (mobile-first)
 
 | Dark mode                            | White mode                             |
