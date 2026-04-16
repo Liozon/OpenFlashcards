@@ -3,7 +3,9 @@
 
 ![alt text](<images/OpenFlashcards logo.png>)
 
-A lightweight, responsive web application for language learning with flashcards.  
+A lightweight, responsive web application for language learning with flashcards.
+
+![Docker Image Version](https://img.shields.io/docker/v/liozon/openflashcards?logo=docker)
 
 ---
 
@@ -13,6 +15,7 @@ A lightweight, responsive web application for language learning with flashcards.
   <ol>
     <li><a href="#features">Features</a></li>
     <li><a href="#data-structure">Data structure</a></li>
+    <li><a href="#quick-start-get-it-from-docker-hub">Quick start (get it from Docker Hub)</a></li>
     <li><a href="#quick-start-local">Quick start (local)</a></li>
     <li><a href="#quick-start-docker">Quick start (docker)</a></li>
     <li><a href="#api-reference">API Reference</a></li>
@@ -79,6 +82,12 @@ data/
 
 ---
 
+## Quick start (get it from Docker Hub)
+
+Get the image from **[Docker Hub](https://hub.docker.com/r/liozon/openflashcards)**
+
+---
+
 ## Quick start (local)
 
 ```bash
@@ -89,13 +98,15 @@ node src/server.js
 
 ---
 
-## Quick start (docker)
+## Quick start (compile for docker)
 
 ```bash
 npm install
+
 chmod +x build-and-export.sh
 ./build-and-export.sh
 # This creates `openflashcards.tar.gz`.
+
 docker run -d \
   --name openflashcards \
   --restart unless-stopped \
@@ -142,4 +153,4 @@ All API routes require authentication (cookie or `Authorization: Bearer <token>`
 
 ## Acknowledgments
 
-This project is based on the work of [Alex Bokos](https://github.com/alexbokos) with [open.flashcards](https://github.com/alexbokos/open.flashcards) 
+This project is based on the work of [Alex Bokos](https://github.com/alexbokos) with [open.flashcards](https://github.com/alexbokos/open.flashcards)
