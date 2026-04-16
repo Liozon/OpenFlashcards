@@ -11,24 +11,11 @@ A lightweight, responsive web application for language learning with flashcards.
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#features">Features</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#data-structure">Data structure</a></li>
+    <li><a href="#quick-start-local">Quick start (local)</a></li>
+    <li><a href="#quick-start-docker">Quick start (docker)</a></li>
+    <li><a href="#api-reference">API Reference</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
