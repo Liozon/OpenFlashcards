@@ -1,7 +1,7 @@
 
 # 🃏 OpenFlashcards
 
-![alt text](<images/OpenFlashcards logo.png>)
+![OpenFlashcards logo](<images/OpenFlashcards logo.png>)
 
 A lightweight, responsive web application for language learning with flashcards.
 
