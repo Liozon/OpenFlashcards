@@ -1,39 +1,90 @@
+
 # 🃏 OpenFlashcards
 
-A lightweight, responsive web application for language learning with flashcards.  
-**Migrated from Java/Spring Boot/MongoDB → Node.js/Express/JSON files.**
+![alt text](<images/OpenFlashcards logo.png>)
+
+A lightweight, responsive web application for language learning with flashcards.
+
+![Docker Image Version](https://img.shields.io/docker/v/liozon/openflashcards?logo=docker)
+
+---
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#data-structure">Data structure</a></li>
+    <li><a href="#quick-start-get-it-from-docker-hub">Quick start (get it from Docker Hub)</a></li>
+    <li><a href="#quick-start-local">Quick start (local)</a></li>
+    <li><a href="#quick-start-docker">Quick start (docker)</a></li>
+    <li><a href="#api-reference">API Reference</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
 ---
 
 ## Features
 
 - **Multi-user** with login portal (JWT authentication)
+
+![Login page](<images/Login page.png>)
+
 - **Admin panel** to create/manage users
+
+![User management portal](<images/Users management.png>)
+
 - **Per-user word banks** – each user has their own vocabulary
+
+![Vocabulary page](images/Vocabulary.png)
+
 - **Word categories**: Nouns, Verbs, Adjectives, Adverbs
+
+![Words practice](<images/Practice words.png>)
+
 - **Phrases** (sentence reconstruction exercise)
+
+![Sentences writing](<images/Practice sentences.png>)
+
 - **Optional "Definition" field** on every word
-- **Clickable words** in phrase exercises to see translation hints
+
+![Word editing page](<images/Editing word.png>)
+
 - **Mixed practice** – choose any combination of categories
+
+![Practice settings](<images/Practice settings.png>)
+
 - **Dark mode**, responsive (mobile-first)
+
+| Dark mode                            | White mode                             |
+| ------------------------------------ | -------------------------------------- |
+| ![Dark mode](<images/Dark mode.png>) | ![White mode](<images/White mode.png>) |
+
 - **Text-to-speech** via Web Speech API
 - **Data stored in JSON files** – no database required
-- **Single Docker container** – ready for Synology NAS
+- **Single Docker container** – all in one solution
 
 ---
 
 ## Data structure
 
-```
+```txt
 config/
-  users.json                          ← All users (bcrypt-hashed passwords)
+  users.json                             ← All users (bcrypt-hashed passwords)
 
 data/
   {userId}/
-    config.json                       ← User prefs (languages, dark mode…)
-    Words_{userId}_{langCode}.json    ← Word bank for this language
-    Sentences_{userId}_{langCode}.json← Phrase bank for this language
+    config.json                          ← User prefs (languages, dark mode…)
+    Words_{userId}_{langCode}.json       ← Word bank for this language
+    Sentences_{userId}_{langCode}.json   ← Phrase bank for this language
 ```
+
+---
+
+## Quick start (get it from Docker Hub)
+
+Get the image from **[Docker Hub](https://hub.docker.com/r/liozon/openflashcards)**
 
 ---
 
@@ -41,85 +92,28 @@ data/
 
 ```bash
 npm install
+node src/server.js
+# Open http://localhost:8000
+```
+
+---
+
+## Quick start (compile for docker)
+
+```bash
+npm install
+
+chmod +x build-and-export.sh
+./build-and-export.sh
+# This creates `openflashcards.tar.gz`.
+
 docker run -d \
   --name openflashcards \
   --restart unless-stopped \
   -p 8000:8000 \
   openflashcards
 # Open http://localhost:8000
-# Login: admin / admin  ← change this!
 ```
-
----
-
-## Docker – Build & Deploy to Synology
-
-### Build and export
-
-```bash
-chmod +x build-and-export.sh
-./build-and-export.sh
-```
-
-This creates `openflashcards.tar.gz`.
-
-### Import on Synology
-
-```bash
-# 1. Copy the archive to your NAS, then SSH in:
-docker load < openflashcards.tar.gz
-
-# 2. Create data directories on the NAS:
-mkdir -p /volume1/docker/openflashcards/{data,config}
-
-# 3. Start the container:
-docker run -d \
-  --name openflashcards \
-  --restart unless-stopped \
-  -p 8000:8000 \
-  -v /volume1/docker/openflashcards/data:/app/data \
-  -v /volume1/docker/openflashcards/config:/app/config \
-  -e JWT_SECRET=$(openssl rand -hex 32) \
-  openflashcards:latest
-
-# 4. Open http://your-nas-ip:8000
-#    Default login: admin / admin
-#    ⚠️ Change the admin password on first login!
-```
-
-### Using Synology Container Manager (GUI)
-
-1. Import image: **Container Manager → Registry → Import**
-2. Create container with:
-   - Port mapping: `8000 → 8000`
-   - Volume: `/volume1/docker/openflashcards/data` → `/app/data`
-   - Volume: `/volume1/docker/openflashcards/config` → `/app/config`
-   - Env: `JWT_SECRET=your_random_secret`
-
----
-
-## Security
-
-| Item       | Details                                           |
-| ---------- | ------------------------------------------------- |
-| Passwords  | bcrypt (cost 10)                                  |
-| Sessions   | JWT in httpOnly cookie (30 days)                  |
-| Admin      | Default `admin/admin` – **change on first login** |
-| JWT secret | Set via `JWT_SECRET` env variable                 |
-
----
-
-## Migrating from v1 (Java/MongoDB)
-
-v1 stored data in MongoDB. To migrate your data:
-
-1. Export from MongoDB:
-   ```bash
-   mongoexport --collection=nouns --jsonArray -o nouns.json
-   # repeat for verbs, adjectives, adverbs, phrases
-   ```
-2. Transform to the v2 JSON format (array of word objects per the API schema)
-3. Place files in `data/{userId}/Words_{userId}_{langCode}.json`
 
 ---
 
@@ -154,3 +148,9 @@ All API routes require authentication (cookie or `Authorization: Bearer <token>`
 | POST   | `/admin/users`            | Create user (admin)  |
 | PUT    | `/admin/users/:id`        | Update user (admin)  |
 | DELETE | `/admin/users/:id`        | Delete user (admin)  |
+
+---
+
+## Acknowledgments
+
+This project is based on the work of [Alex Bokos](https://github.com/alexbokos) with [open.flashcards](https://github.com/alexbokos/open.flashcards)
