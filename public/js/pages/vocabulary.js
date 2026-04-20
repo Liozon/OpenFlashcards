@@ -251,7 +251,7 @@ function buildPhraseCard(p) {
 
   div.innerHTML =
     '<div class="word-card-header">' +
-    '<span class="badge badge-phrase">💬 ' + t('vocab_phrase') + '</span>' +
+    '<span class="badge badge-phrase">' + t('vocab_phrase') + '</span>' +
     '<div class="word-actions">' +
     '<span id="ptts-' + p.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
