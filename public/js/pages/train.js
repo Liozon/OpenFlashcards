@@ -41,12 +41,12 @@ function renderTrain(el) {
     '</div>' +
 
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">'   + t('train_words')   + '</button>' +
+    '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase" onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="typeFilters">' +
-    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">'          + t('train_all') + '</button>' +
+    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">' + t('train_all') + '</button>' +
     '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
     '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ', '') + '</button>' +
     '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ', '') + '</button>' +
@@ -97,7 +97,7 @@ window.setTrainMode = function (mode, btn) {
   document.querySelectorAll('#modeWord,#modePhrase').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = mode === 'word' ? '' : 'none';
-  document.getElementById('dirFilters').style.display  = mode === 'word' ? '' : 'none';
+  document.getElementById('dirFilters').style.display = mode === 'word' ? '' : 'none';
   const lf = document.getElementById('labelFilters');
   if (lf && lf.children.length) lf.style.display = '';
   loadQuestion();
@@ -162,7 +162,7 @@ async function loadWordQuestion() {
 
   const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
   const apiDir = dirMap[_trainDirection] || 'random';
-  const typesParam  = _trainTypes.length  ? '&types='  + _trainTypes.join(',')  : '';
+  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
 
   try {
@@ -252,10 +252,10 @@ async function handleWordAnswer(btn, answer, q) {
     const conjRows = Object.entries(q.conjugation).map(([pronoun, entry]) => {
       const e = normConj(entry);
       return '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
-      '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
-      '<span style="font-weight:600">' + esc(e.form) + '</span>' +
-      (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
-      '</div>';
+        '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+        '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+        (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
+        '</div>';
     }).join('');
 
     conjBox.innerHTML = headerRow + conjRows;
@@ -334,7 +334,7 @@ function renderPhraseQuiz(phrase) {
   area.innerHTML =
     '<div class="phrase-card">' +
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
-    '<div class="badge badge-phrase">💬 ' + t('train_phrases') + '</div>' +
+    '<div class="badge badge-phrase">' + t('train_phrases') + '</div>' +
     '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
     '</div>' +
     '<p style="color:var(--text-muted);font-size:.9rem;margin-bottom:8px">' + t('train_reconstruct') + '</p>' +
@@ -418,9 +418,9 @@ function buildWordBank(phrase) {
   tokens.forEach(tok => {
     const btn = document.createElement('div');
     btn.className = 'word-token';
-    btn.dataset.idx  = tok.idx;
+    btn.dataset.idx = tok.idx;
     btn.dataset.word = tok.word;
-    btn.textContent  = tok.word;
+    btn.textContent = tok.word;
     btn.addEventListener('click', () => addTokenToAnswer(btn));
     bank.appendChild(btn);
   });
@@ -440,7 +440,7 @@ function addTokenToAnswer(btn) {
   const chip = document.createElement('div');
   chip.className = 'word-token in-answer';
   chip.textContent = btn.dataset.word;
-  chip.dataset.idx  = btn.dataset.idx;
+  chip.dataset.idx = btn.dataset.idx;
   chip.addEventListener('click', () => {
     chip.remove();
     btn.classList.remove('used');
@@ -464,9 +464,9 @@ window.checkPhraseAnswer = async function () {
   const chips = [...document.querySelectorAll('#answerZone .in-answer')];
   if (!chips.length) return;
 
-  const answer   = chips.map(c => c.textContent).join(' ');
+  const answer = chips.map(c => c.textContent).join(' ');
   const expected = _curPhrase.text.trim();
-  const correct  = answer.trim().toLowerCase() === expected.trim().toLowerCase();
+  const correct = answer.trim().toLowerCase() === expected.trim().toLowerCase();
 
   document.getElementById('answerZone').className = 'answer-zone ' + (correct ? 'correct' : 'wrong');
 
@@ -491,8 +491,8 @@ window.checkPhraseAnswer = async function () {
 
 function updateScore() {
   document.getElementById('trCorrect').textContent = _trainCorrect;
-  document.getElementById('trWrong').textContent   = _trainWrong;
-  document.getElementById('trStreak').textContent  = _trainStreak;
+  document.getElementById('trWrong').textContent = _trainWrong;
+  document.getElementById('trStreak').textContent = _trainStreak;
 }
 
 function getDistr(langCode, words) {
