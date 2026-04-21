@@ -874,6 +874,85 @@ img {
   color: var(--primary-dk);
 }
 
+/* ── WRITING QUIZ ───────────────────────────────────────────── */
+.letter-token {
+  min-width: 38px;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+}
+
+.writing-answer-zone {
+  min-height: 56px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 16px;
+  background: var(--surface-2);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.writing-answer-zone.correct {
+  border-color: var(--primary);
+  background: var(--primary-bg-correct);
+}
+
+.writing-answer-zone.wrong {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* one group of letter-slots per word segment */
+.writing-segment {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* visible space between segments */
+.writing-space-sep {
+  display: inline-flex;
+  align-items: center;
+  width: 18px;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: .7rem;
+  user-select: none;
+}
+
+/* individual letter slot (empty or filled) */
+.letter-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 38px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: default;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.letter-slot.filled-slot {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary-dk);
+  cursor: pointer;
+}
+
+.letter-slot.filled-slot:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger-dk);
+}
+
 .phrase-result {
   padding: 14px;
   border-radius: var(--radius-sm);

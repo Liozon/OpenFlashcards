@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "母語翻譯",
   "vocab_reset_progress": "重設進度",
   "vocab_progress_reset": "↺ 進度已重設。",
-  "vocab_progress": "進度"
+  "vocab_progress": "進度",
+  "train_writing": "寫作",
+  "train_writing_instr": "在目標語言中拼寫該詞：",
+  "train_writing_no_words": "請至少新增一個單字來練習拼寫。",
+  "train_writing_check": "檢查 ✓",
+  "train_writing_correct": "✓ 正確！",
+  "train_writing_wrong": "✗ 正確的拼寫是：",
+  "train_writing_easy": "簡單（有聲）",
+  "train_writing_hard": "困難（靜音）"
 }

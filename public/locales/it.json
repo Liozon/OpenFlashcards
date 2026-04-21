@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Traduzione nella lingua madre",
   "vocab_reset_progress": "Reimposta progresso",
   "vocab_progress_reset": "↺ Progresso reimpostato.",
-  "vocab_progress": "Progresso"
+  "vocab_progress": "Progresso",
+  "train_writing": "Scrittura",
+  "train_writing_instr": "Scrivi la parola nella lingua target:",
+  "train_writing_no_words": "Aggiungi almeno una parola per esercitare l'ortografia.",
+  "train_writing_check": "Verifica ✓",
+  "train_writing_correct": "✓ Corretto!",
+  "train_writing_wrong": "✗ L'ortografia corretta era:",
+  "train_writing_easy": "Facile (audio)",
+  "train_writing_hard": "Difficile (muto)"
 }

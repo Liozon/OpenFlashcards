@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Traducción nativa",
   "vocab_reset_progress": "Restablecer progreso",
   "vocab_progress_reset": "↺ Progreso restablecido.",
-  "vocab_progress": "Progreso"
+  "vocab_progress": "Progreso",
+  "train_writing": "Escritura",
+  "train_writing_instr": "Deletrea la palabra en el idioma objetivo:",
+  "train_writing_no_words": "Añade al menos una palabra para practicar la ortografía.",
+  "train_writing_check": "Verificar ✓",
+  "train_writing_correct": "✓ ¡Correcto!",
+  "train_writing_wrong": "✗ La ortografía correcta era:",
+  "train_writing_easy": "Fácil (audio)",
+  "train_writing_hard": "Difícil (silencio)"
 }

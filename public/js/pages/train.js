@@ -18,6 +18,10 @@ let _trainCorrect = 0;
 let _trainWrong = 0;
 let _trainStreak = 0;
 let _curPhrase = null;
+let _curWritingWord = null;
+let _writingLetterBank = [];
+let _writingEasyMode = false;
+let _writingSegments = [];
 
 // ── Render page ───────────────────────────────────────────────────────────────
 function renderTrain(el) {
@@ -41,8 +45,9 @@ function renderTrain(el) {
     '</div>' +
 
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"   onclick="setTrainMode(\'word\',this)">' + t('train_words') + '</button>' +
-    '<button class="type-btn"        id="modePhrase" onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
+    '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">' + t('train_words') + '</button>' +
+    '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="typeFilters">' +
@@ -60,6 +65,11 @@ function renderTrain(el) {
     '</div>' +
 
     '<div class="filter-row" id="labelFilters"></div>' +
+
+    '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
+    '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
+    '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
+    '</div>' +
 
     '<div id="quizArea"></div>';
 
@@ -94,12 +104,15 @@ async function _populateLabelFilters(lang) {
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
   _trainMode = mode;
-  document.querySelectorAll('#modeWord,#modePhrase').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('typeFilters').style.display = mode === 'word' ? '' : 'none';
-  document.getElementById('dirFilters').style.display = mode === 'word' ? '' : 'none';
+  const isWord = mode === 'word';
+  const isWriting = mode === 'writing';
+  document.getElementById('typeFilters').style.display = (isWord || isWriting) ? '' : 'none';
+  document.getElementById('dirFilters').style.display = isWord ? '' : 'none';
+  document.getElementById('writingDiffFilters').style.display = isWriting ? '' : 'none';
   const lf = document.getElementById('labelFilters');
-  if (lf && lf.children.length) lf.style.display = '';
+  if (lf && lf.children.length) lf.style.display = (isWord || isWriting) ? '' : 'none';
   loadQuestion();
 };
 
@@ -148,8 +161,17 @@ window.setTrainDir = function (dir, btn) {
   loadQuestion();
 };
 
+window.setWritingDifficulty = function (easy, btn) {
+  _writingEasyMode = easy;
+  document.querySelectorAll('#writingDiffFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadQuestion();
+};
+
 async function loadQuestion() {
-  _trainMode === 'phrase' ? await loadPhraseQuestion() : await loadWordQuestion();
+  if (_trainMode === 'phrase') return await loadPhraseQuestion();
+  if (_trainMode === 'writing') return await loadWritingQuestion();
+  return await loadWordQuestion();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -506,6 +528,243 @@ function getDistr(langCode, words) {
   }[langCode] || ['the', 'a', 'and', 'of', 'in'];
   const used = new Set(words.map(w => w.toLowerCase()));
   return pool.filter(w => !used.has(w)).sort(() => Math.random() - 0.5).slice(0, 3);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WRITING QUIZ  (letter-bank spelling of the target word)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function loadWritingQuestion() {
+  const lang = currentLang();
+  const area = document.getElementById('quizArea');
+  area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
+  _curWritingWord = null;
+  _writingLetterBank = [];
+  _writingSegments = [];
+
+  try {
+    const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+    const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+    // Always native→target direction for writing mode
+    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=native' + typesParam + labelsParam);
+    _curWritingWord = q;
+    renderWritingQuiz(q);
+  } catch (e) {
+    area.innerHTML =
+      '<div class="quiz-card" style="text-align:center">' +
+      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="color:var(--text-muted)">' + (e.error || t('train_writing_no_words')) + '</p>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + t('train_add_phrases') + '</button>' +
+      '</div>';
+  }
+}
+
+function renderWritingQuiz(q) {
+  const area = document.getElementById('quizArea');
+  const nativeLang = (App.config && App.config.nativeLang) || 'en';
+  const lang = currentLang();
+  const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
+
+  const targetWord = q.answerText;
+  _writingSegments = targetWord.split(' ');
+
+  // Build the answer zone skeleton: one slot-group per segment, separated by visible space dividers
+  const zoneSegmentsHtml = _writingSegments.map((seg, si) => {
+    const slots = seg.split('').map((_, li) =>
+      '<span class="letter-slot" data-seg="' + si + '" data-pos="' + li + '"></span>'
+    ).join('');
+    return '<span class="writing-segment" data-seg="' + si + '">' + slots + '</span>';
+  }).join('<span class="writing-space-sep"> </span>');
+
+  const ttsBtn = TTS.button(targetWord, lang);
+  // We'll inject the TTS button via JS after innerHTML
+
+  area.innerHTML =
+    '<div class="quiz-card" id="writingQuizCard">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">' +
+    '<div class="badge badge-' + q.type + '">' + (typeLabels[q.type] || q.type) + '</div>' +
+    '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
+    '</div>' +
+
+    // Prompt word + TTS button (always shown)
+    '<div class="question-word" style="display:flex;align-items:center;justify-content:center;gap:10px">' +
+    '<span id="writingPromptText">' + esc(q.promptText) + '</span>' +
+    '<span id="writingTtsSlot"></span>' +
+    '</div>' +
+    (q.definition ? '<div class="question-def">' + esc(q.definition) + '</div>' : '') +
+    '<p class="question-instr">' + t('train_writing_instr') + '</p>' +
+
+    // Answer zone with segment/slot structure
+    '<div class="writing-answer-zone" id="writingAnswerZone">' + zoneSegmentsHtml + '</div>' +
+
+    // Letter bank
+    '<div class="word-bank" id="writingLetterBank"></div>' +
+
+    // Result + feedback
+    '<div id="writingResultEl" class="phrase-result hidden"></div>' +
+    '<div class="phrase-actions" style="margin-top:16px">' +
+    '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + '</button>' +
+    '<button class="btn btn-secondary hidden" id="nextWritingBtn"  onclick="loadQuestion()"        style="flex:1">' + t('train_next') + '</button>' +
+    '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
+    '</div>' +
+    '</div>';
+
+  // Inject TTS button into slot (always visible)
+  document.getElementById('writingTtsSlot').appendChild(TTS.button(targetWord, lang));
+
+  // In easy mode, auto-speak the target word
+  if (_writingEasyMode) {
+    TTS.speak(targetWord, lang);
+  }
+
+  buildWritingLetterBank(targetWord, lang);
+}
+
+function buildWritingLetterBank(targetWord, lang) {
+  const segments = targetWord.split(' ');
+  const neededLetters = segments.join('').split('');
+
+  let extraLetters = [];
+  try { extraLetters = getWritingDistractorLetters(lang, neededLetters); } catch (_) { }
+
+  const maxExtras = Math.max(3, Math.ceil(neededLetters.length / 2));
+  const extras = extraLetters.slice(0, maxExtras);
+  const allLetters = [...neededLetters, ...extras];
+  allLetters.sort(() => Math.random() - 0.5);
+
+  _writingLetterBank = allLetters.map((ch, i) => ({ ch, idx: i, used: false }));
+
+  const bank = document.getElementById('writingLetterBank');
+  _writingLetterBank.forEach(tok => {
+    const btn = document.createElement('div');
+    btn.className = 'word-token letter-token';
+    btn.dataset.idx = tok.idx;
+    btn.textContent = tok.ch;
+    btn.addEventListener('click', () => addLetterToAnswer(btn, tok));
+    bank.appendChild(btn);
+  });
+}
+
+/**
+ * Find the next empty slot across all segments and fill it.
+ * Automatically advances to the next segment once one is full,
+ * inserting the visible space separator between segments.
+ */
+function addLetterToAnswer(btn, tok) {
+  if (tok.used) return;
+
+  // Find the next available slot in order (segment by segment)
+  const allSlots = [...document.querySelectorAll('#writingAnswerZone .letter-slot')];
+  const emptySlot = allSlots.find(s => !s.dataset.filled);
+  if (!emptySlot) return; // all slots filled
+
+  tok.used = true;
+  btn.classList.add('used');
+
+  emptySlot.dataset.filled = '1';
+  emptySlot.dataset.tokenIdx = tok.idx;
+  emptySlot.textContent = tok.ch;
+  emptySlot.classList.add('filled-slot');
+
+  // Make filled slot clickable to remove
+  emptySlot.addEventListener('click', function handler() {
+    emptySlot.removeEventListener('click', handler);
+    emptySlot.textContent = '';
+    emptySlot.classList.remove('filled-slot');
+    delete emptySlot.dataset.filled;
+    delete emptySlot.dataset.tokenIdx;
+    tok.used = false;
+    btn.classList.remove('used');
+  });
+}
+
+window.clearWritingAnswer = function () {
+  document.querySelectorAll('#writingAnswerZone .letter-slot.filled-slot').forEach(slot => {
+    const idx = parseInt(slot.dataset.tokenIdx, 10);
+    const tok = _writingLetterBank.find(t => t.idx === idx);
+    if (tok) {
+      tok.used = false;
+      const btn = document.querySelector('#writingLetterBank .letter-token[data-idx="' + idx + '"]');
+      if (btn) btn.classList.remove('used');
+    }
+    slot.textContent = '';
+    slot.classList.remove('filled-slot');
+    delete slot.dataset.filled;
+    delete slot.dataset.tokenIdx;
+  });
+};
+
+window.checkWritingAnswer = async function () {
+  if (!_curWritingWord) return;
+
+  // Collect typed letters per segment from slots
+  const targetWord = _curWritingWord.answerText;
+  const segments = targetWord.split(' ');
+
+  const typedSegments = segments.map((seg, si) => {
+    const slots = [...document.querySelectorAll('#writingAnswerZone .letter-slot[data-seg="' + si + '"]')];
+    return slots.map(s => s.textContent || '').join('');
+  });
+
+  const reconstructed = typedSegments.join(' ');
+  const correct = reconstructed.trim().toLowerCase() === targetWord.trim().toLowerCase();
+
+  const zone = document.getElementById('writingAnswerZone');
+  zone.classList.add(correct ? 'correct' : 'wrong');
+
+  const resultEl = document.getElementById('writingResultEl');
+  resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
+  resultEl.innerHTML = correct
+    ? t('train_writing_correct')
+    : t('train_writing_wrong') + ' <strong>' + esc(targetWord) + '</strong>';
+  resultEl.classList.remove('hidden');
+
+  document.getElementById('checkWritingBtn').classList.add('hidden');
+  document.getElementById('nextWritingBtn').classList.remove('hidden');
+
+  // Disable all letter tokens
+  document.querySelectorAll('#writingLetterBank .letter-token').forEach(b => b.style.pointerEvents = 'none');
+  // Disable slot clicks
+  document.querySelectorAll('#writingAnswerZone .letter-slot').forEach(s => s.style.pointerEvents = 'none');
+
+  if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
+  updateScore();
+
+  TTS.speak(targetWord, _curWritingWord.langCode);
+
+  try {
+    await api('POST', '/api/quiz/answer', {
+      lang: _curWritingWord.langCode,
+      id: _curWritingWord.id,
+      answer: reconstructed,
+      expectedAnswer: targetWord
+    });
+  } catch { }
+};
+
+/**
+ * Returns random letters weighted toward common ones in the language,
+ * excluding letters already present in neededLetters.
+ */
+function getWritingDistractorLetters(lang, neededLetters) {
+  const commonLetters = {
+    fr: 'eaiuonsrlmtdpcgbfhvjqxyz',
+    en: 'etaoinshrdlucmfywgpbvkjxqz',
+    de: 'enisrathdulgomcbfkwzpvjyqx',
+    es: 'eaoinsrlcdtumpbgvhfyqjzxkw',
+    it: 'eaoinsrltcmdupbgvhfzqjkxyw',
+    uk: 'аоеинтсрлвкмдпзугябчшфйцхжє',
+    default: 'etaoinshrdlucmfywgpbvkjxqz'
+  }[lang] || 'etaoinshrdlucmfywgpbvkjxqz';
+
+  const neededSet = new Set(neededLetters.map(c => c.toLowerCase()));
+  const candidates = commonLetters.split('').filter(c => !neededSet.has(c));
+
+  const result = [];
+  for (let i = 0; i < 8; i++) {
+    result.push(candidates[Math.floor(Math.random() * candidates.length)]);
+  }
+  return result;
 }
 
 function esc(s) {
