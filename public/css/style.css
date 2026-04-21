@@ -6,7 +6,9 @@
 :root {
   --primary: #439b00;
   --primary-dk: #ffffff;
+  --primary-hvr: #327400;
   --primary-bg: #439b00;
+  --primary-bg-correct: #439b007c;
   --danger: #ff4b4b;
   --danger-dk: #d93636;
   --danger-bg: #ffe0e0;
@@ -31,7 +33,9 @@
 [data-theme="dark"] {
   --primary: #439b00;
   --primary-dk: #ffffff;
+  --primary-hvr: #327400;
   --primary-bg: #439b00;
+  --primary-bg-correct: #439b007c;
   --danger: #ff6b6b;
   --danger-dk: #cc3333;
   --danger-bg: #2d1010;
@@ -247,7 +251,7 @@ img {
 }
 
 .btn-primary:hover {
-  background: var(--primary-dk);
+  background: var(--primary-hvr);
   box-shadow: 0 4px 12px rgba(88, 204, 2, .3);
 }
 
@@ -820,7 +824,7 @@ img {
 
 .answer-zone.correct {
   border-color: var(--primary);
-  background: var(--primary-bg);
+  background: var(--primary-bg-correct);
 }
 
 .answer-zone.wrong {
