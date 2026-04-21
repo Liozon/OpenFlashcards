@@ -85,15 +85,17 @@ data/
 ## Quick start (get it from Docker Hub)
 
 1. Download Docker Desktop: https://www.docker.com/products/docker-desktop
-2. Lauch Docker Desktop
-3. Into the search bar, type `liozon/openflashcards` and click on on "Run"
+2. Lauch **Docker Desktop**
+3. Into the search bar, type `liozon/openflashcards` and click on on **Run**
 ![alt text](<images/Docker image search.png>)
-4. Open a browser and go to http://localhost:8000
-5. Connect to the app with the default admin credentials:
+4. Map the **container port 8000** to your **local port 8000** and click **Run**
+![alt text](<images/Docker port config.png>)
+5. Open a browser and go to **http://localhost:8000**
+6. Connect to the app with the default admin credentials:
    - Username: `admin`
    - Password: `admin`
    > ⚠️ Change the default password immediately after logging in!
-6. Create new users and start learning!
+7. Create new users and start learning!
 
 ---
 
