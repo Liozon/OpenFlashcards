@@ -247,8 +247,8 @@ function applyNavLabels() {
   const map = {
     navHome: 'nav_home',
     navVocab: 'nav_vocabulary',
-    navAdd: 'nav_add',
     navTrain: 'nav_train',
+    navAdd: 'nav_add',
     navSettings: 'nav_settings',
     adminLink: 'nav_admin'
   };
@@ -256,8 +256,8 @@ function applyNavLabels() {
   const icons = {
     navHome: '🏠',
     navVocab: '📚',
-    navAdd: '➕',
     navTrain: '🎯',
+    navAdd: '➕',
     navSettings: '⚙️',
     adminLink: '🔑'
   };
