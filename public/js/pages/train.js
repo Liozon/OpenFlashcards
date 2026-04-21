@@ -87,7 +87,7 @@ async function _populateLabelFilters(lang) {
   const allBtn = document.createElement('button');
   allBtn.className = 'type-btn active';
   allBtn.dataset.labelId = '';
-  allBtn.textContent = t('train_labels_filter');
+  allBtn.textContent = `🏷️ ${t('train_labels_filter')}`;
   allBtn.addEventListener('click', () => toggleLabelFilter('', allBtn));
   row.appendChild(allBtn);
   labels.forEach(lb => {
@@ -325,7 +325,7 @@ async function handleWordAnswer(btn, answer, q) {
   nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
   nextRow.innerHTML =
     '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +
-    (correct ? t('train_correct_msg') : t('train_wrong_msg') + ' <em>' + esc(q.answerText) + '</em>') +
+    (correct ? `✓ ${t('train_correct_msg')}` : `✗ ${t('train_wrong_msg')}` + ' <em>' + esc(q.answerText) + '</em>') +
     '</div>' +
     '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + ' →</button>';
   card.appendChild(nextRow);
@@ -349,7 +349,7 @@ async function loadPhraseQuestion() {
       '<div class="phrase-card" style="text-align:center">' +
       '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
       '<p style="color:var(--text-muted)">' + (e.error || t('train_no_phrases')) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + t('train_add_phrases') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('train_add_phrases') + '</button>' +
       '</div>';
   }
 }
@@ -381,9 +381,9 @@ function renderPhraseQuiz(phrase) {
     '<div class="word-bank" id="wordBank"></div>' +
     '<div id="phraseResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions">' +
-    '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + '</button>' +
+    '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + ' ✓</button>' +
     '<button class="btn btn-secondary hidden" id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + ' →</button>' +
-    '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
+    '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">↺</button>' +
     '</div>' +
     '</div>';
 
@@ -508,7 +508,7 @@ window.checkPhraseAnswer = async function () {
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
     ? t('train_correct_msg')
-    : t('train_wrong_msg') + ' <strong>' + esc(expected) + '</strong>';
+    : `🗑 ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkPhraseBtn').classList.add('hidden');
@@ -566,7 +566,7 @@ async function loadWritingQuestion() {
       '<div class="quiz-card" style="text-align:center">' +
       '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
       '<p style="color:var(--text-muted)">' + (e.error || t('train_writing_no_words')) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + t('train_add_phrases') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('train_add_phrases') + '</button>' +
       '</div>';
   }
 }
@@ -584,7 +584,7 @@ function renderWritingQuiz(q) {
   const typeLabels = Object.fromEntries(
     Object.entries(iconLabel).map(([type, { key, icon }]) => [
       type,
-      `${icon} ${t(key)}`
+      `${icon} ${t(key)} `
     ])
   );
 
@@ -626,9 +626,9 @@ function renderWritingQuiz(q) {
     // Result + feedback
     '<div id="writingResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions" style="margin-top:16px">' +
-    '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + '</button>' +
+    '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + ' ✓</button>' +
     '<button class="btn btn-secondary hidden" id="nextWritingBtn"  onclick="loadQuestion()"        style="flex:1">' + t('train_next') + ' →</button>' +
-    '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
+    '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">↺</button>' +
     '</div>' +
     '</div>';
 
@@ -738,8 +738,8 @@ window.checkWritingAnswer = async function () {
   const resultEl = document.getElementById('writingResultEl');
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
-    ? t('train_writing_correct')
-    : t('train_writing_wrong') + ' <strong>' + esc(targetWord) + '</strong>';
+    ? `✓ ${t('train_writing_correct')}`
+    : `✗ ${t('train_writing_wrong')}` + ' <strong>' + esc(targetWord) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkWritingBtn').classList.add('hidden');

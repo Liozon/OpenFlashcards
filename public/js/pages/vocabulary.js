@@ -299,7 +299,7 @@ function buildLabelPicker(selectedIds, containerId) {
   }).join('')}
       <button type="button" class="btn btn-sm btn-secondary"
         style="padding:2px 8px;font-size:.75rem"
-        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">${t('labels_create_new')}</button>
+        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">➕ ${t('labels_create_new')}</button>
     </div>
   </div>`;
 }
@@ -516,7 +516,7 @@ window.saveWordEdit = async function (id, lang) {
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast(t('vocab_updated'));
+    toast(`✓ ${t('vocab_updated')}`);
     const idx = _vocabWords.findIndex(x => x.id === id);
     if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
@@ -580,7 +580,7 @@ window.savePhraseEdit = async function (id, lang) {
   try {
     await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast(t('vocab_phrase_updated'));
+    toast(`✓ ${t('vocab_phrase_updated')}`);
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch (e) {

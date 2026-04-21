@@ -29,7 +29,7 @@ async function renderHome(el) {
       (l.flag || '🌐') + ' ' + l.name +
       '</button>'
     ).join('') +
-    '<button class="btn btn-sm btn-secondary" onclick="navigate(\'settings\')" style="margin-left:4px">' + t('home_more') + '</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="navigate(\'settings\')" style="margin-left:4px">' + `+ ${t('home_more')}` + '</button>' +
     '</div>';
 
   // Stats

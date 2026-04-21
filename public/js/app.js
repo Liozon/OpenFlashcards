@@ -353,7 +353,7 @@ function renderOnboarding(el) {
         </div>
 
         <div id="onbError" class="alert alert-danger hidden"></div>
-        <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')}</button>
+        <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')} →</button>
       </div>
     </div>`;
 
@@ -394,7 +394,7 @@ function renderOnboarding(el) {
           const learnP = document.querySelector('.onboarding-card p[style]');
           if (learnP) learnP.textContent = t('onb_learn_q');
           const startBtn = document.getElementById('onbStartBtn');
-          if (startBtn) startBtn.textContent = t('onb_start');
+          if (startBtn) startBtn.textContent = `${t('onb_start')} →`;
         });
       });
     });
