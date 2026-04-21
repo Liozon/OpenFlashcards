@@ -46,24 +46,24 @@ async function renderVocabulary(el) {
   if (!lang) { navigate('settings'); return; }
 
   el.innerHTML = `
-    <div class="page-title">${t('vocab_title')}</div>
+    <div class="page-title">📚 ${t('vocab_title')}</div>
     <div class="vocab-controls">
       <input type="search" id="vocabSearch" class="search-input" placeholder="${t('vocab_search')}">
       <div class="type-filter" id="vocabFilter">
         <button class="type-btn active" data-type="">${t('vocab_all')}</button>
-        <button class="type-btn" data-type="noun">${t('vocab_nouns')}</button>
-        <button class="type-btn" data-type="verb">${t('vocab_verbs')}</button>
-        <button class="type-btn" data-type="adjective">${t('vocab_adj')}</button>
-        <button class="type-btn" data-type="adverb">${t('vocab_adv')}</button>
-        <button class="type-btn" data-type="phrase">${t('vocab_phrases')}</button>
+        <button class="type-btn" data-type="noun">📦 ${t('vocab_nouns')}</button>
+        <button class="type-btn" data-type="verb">⚡ ${t('vocab_verbs')}</button>
+        <button class="type-btn" data-type="adjective">🎨 ${t('vocab_adj')}</button>
+        <button class="type-btn" data-type="adverb">💨 ${t('vocab_adv')}</button>
+        <button class="type-btn" data-type="phrase">💬 ${t('vocab_phrases')}</button>
       </div>
       <div id="labelFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center"></div>
     </div>
     <div id="vocabGrid" class="word-grid"></div>
     <div id="vocabEmpty" class="hidden" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <p style="font-size:2rem">📭</p>
-      <p>${t('vocab_empty')}</p>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">${t('vocab_add_first')}</button>
+      <p>📭 ${t('vocab_empty')}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
     </div>`;
 
   _vocabFilter = '';
@@ -215,7 +215,7 @@ function buildWordCard(w) {
     '<div class="word-trans">' + esc(w.translation) + '</div>' +
     (w.definition ? '<div class="word-def">' + esc(w.definition) + '</div>' : '') +
     (mastered
-      ? '<div class="mastered-badge">' + t('vocab_mastered') + '</div>'
+      ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
       : '<div class="progress-bar-wrap" title="' + progress + ' / ' + maxProg + '">' +
       '<div class="progress-bar-fill" style="width:' + diffPct + '%"></div>' +
       '</div>') +
@@ -251,7 +251,7 @@ function buildPhraseCard(p) {
 
   div.innerHTML =
     '<div class="word-card-header">' +
-    '<span class="badge badge-phrase">' + t('vocab_phrase') + '</span>' +
+    '<span class="badge badge-phrase">💬 ' + t('vocab_phrase') + '</span>' +
     '<div class="word-actions">' +
     '<span id="ptts-' + p.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
@@ -267,7 +267,7 @@ function buildPhraseCard(p) {
       const pMast = pProg >= pMax;
       const pPct = Math.round((pProg / pMax) * 100);
       return pMast
-        ? '<div class="mastered-badge">' + t('vocab_mastered') + '</div>'
+        ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
         : '<div class="progress-bar-wrap" title="' + pProg + ' / ' + pMax + '">' +
         '<div class="progress-bar-fill" style="width:' + pPct + '%"></div>' +
         '</div>';
@@ -299,7 +299,7 @@ function buildLabelPicker(selectedIds, containerId) {
   }).join('')}
       <button type="button" class="btn btn-sm btn-secondary"
         style="padding:2px 8px;font-size:.75rem"
-        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">${t('labels_create_new')}</button>
+        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">➕ ${t('labels_create_new')}</button>
     </div>
   </div>`;
 }
@@ -516,7 +516,7 @@ window.saveWordEdit = async function (id, lang) {
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast(t('vocab_updated'));
+    toast(`✓ ${t('vocab_updated')}`);
     const idx = _vocabWords.findIndex(x => x.id === id);
     if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
@@ -542,7 +542,7 @@ window.deleteWord = async function (id, lang) {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
     renderVocabGrid();
-    toast(t('vocab_deleted'));
+    toast(`🗑 ${t('vocab_deleted')}`);
   } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
 };
 
@@ -580,7 +580,7 @@ window.savePhraseEdit = async function (id, lang) {
   try {
     await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
     closeModal();
-    toast(t('vocab_phrase_updated'));
+    toast(`✓ ${t('vocab_phrase_updated')}`);
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
@@ -606,7 +606,7 @@ window.deletePhrase = async function (id, lang) {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
     renderVocabGrid();
-    toast(t('vocab_deleted'));
+    toast(`🗑 ${t('vocab_deleted')}`);
   } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
 };
 

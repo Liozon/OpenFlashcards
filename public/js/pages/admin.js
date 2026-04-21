@@ -7,28 +7,33 @@ async function renderAdmin(el) {
     return;
   }
 
+  // Detect browser language for login screen before user logs in
+  const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+  await window.setUiLang(browserLang);
+  applyLoginLabels();
+
   el.innerHTML = `
-    <div class="page-title">🔑 Admin – User Management</div>
+    <div class="page-title">🔑 ${t('admin_title')}</div>
     <div class="card" style="margin-bottom:20px">
-      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">➕ Create user</h2>
+      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">➕ ${t('admin_create')}</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="createUserForm">
         <div class="field-group" style="margin:0">
-          <label>Username</label>
+          <label>${t('admin_username')}</label>
           <input type="text" id="nuUsername" autocomplete="off">
         </div>
         <div class="field-group" style="margin:0">
-          <label>Password</label>
+          <label>${t('admin_password')}</label>
           <input type="password" id="nuPassword" autocomplete="new-password">
         </div>
         <div class="field-group" style="margin:0">
-          <label>Role</label>
+          <label>${t('admin_role')}</label>
           <select id="nuRole">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="user">${t('admin_role_user')}</option>
+            <option value="admin">${t('admin_role_admin')}</option>
           </select>
         </div>
         <div style="display:flex;align-items:flex-end">
-          <button class="btn btn-primary btn-full" onclick="createUser()">Create →</button>
+          <button class="btn btn-primary btn-full" onclick="createUser()">${t('admin_create_btn')}</button>
         </div>
       </div>
       <div id="nuErr" class="alert alert-danger hidden" style="margin-top:12px"></div>
@@ -36,7 +41,7 @@ async function renderAdmin(el) {
     </div>
 
     <div class="card">
-      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">👥 Users</h2>
+      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">👥 ${t('admin_users')}</h2>
       <div id="userTableWrap"><div class="loading-state"><div class="spinner"></div></div></div>
     </div>`;
 
@@ -56,10 +61,10 @@ async function loadUserTable() {
       <div style="overflow-x:auto">
         <table class="user-table">
           <thead><tr>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Created</th>
-            <th>Actions</th>
+            <th>${t('admin_col_user')}</th>
+            <th>${t('admin_col_role')}</th>
+            <th>${t('admin_col_created')}</th>
+            <th>${t('admin_col_actions')}</th>
           </tr></thead>
           <tbody>
             ${users.map(u => `
@@ -69,7 +74,7 @@ async function loadUserTable() {
                 <td style="color:var(--text-faint);font-size:.82rem">${new Date(u.createdAt).toLocaleDateString()}</td>
                 <td>
                   <div style="display:flex;gap:6px">
-                    <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">🔑 Reset pw</button>
+                    <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">🔑 ${t('admin_reset_pw')}</button>
                     ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">🗑</button>` : ''}
                   </div>
                 </td>
@@ -98,7 +103,7 @@ window.createUser = async function () {
   }
   try {
     await api('POST', '/admin/users', { username, password, role });
-    okEl.textContent = `✓ User "${username}" created!`;
+    okEl.textContent = `✓ "${username}" ${t('admin_created_ok')}`;
     okEl.classList.remove('hidden');
     document.getElementById('nuUsername').value = '';
     document.getElementById('nuPassword').value = '';
@@ -134,7 +139,7 @@ window.submitResetPw = async function (id) {
   try {
     await api('PUT', `/admin/users/${id}`, { password: pw });
     closeModal();
-    toast(t('admin_reset_ok'));
+    toast(`✓ ${t('admin_reset_ok')}`);
   } catch (e) {
     errEl.textContent = e.error || 'Failed.';
     errEl.classList.remove('hidden');
@@ -146,7 +151,7 @@ window.deleteUser = async function (id, username) {
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
-    toast(t('admin_deleted'));
+    toast(`🗑 ${t('admin_deleted')}`);
   } catch (e) { toast(e.error || 'Failed.', 'danger'); }
 };
 

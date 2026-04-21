@@ -5,21 +5,21 @@ async function renderSettings(el) {
   const cfg = App.config;
 
   el.innerHTML = `
-    <div class="page-title">${t('settings_title')}</div>
+    <div class="page-title">⚙️ ${t('settings_title')}</div>
 
     <div class="card settings-section">
-      <h2>${t('settings_languages')}</h2>
+      <h2>🌍 ${t('settings_languages')}</h2>
       <div id="langChips" class="lang-chips"></div>
       <div class="field-group" style="margin-top:12px">
         <label>${t('settings_add_lang')}</label>
         <input type="text" id="settingsLangSearch" placeholder="${t('settings_add_lang_ph')}" autocomplete="off">
         <div id="settingsLangResults" class="lang-results" style="display:none"></div>
       </div>
-      <button class="btn btn-primary btn-sm" id="addLangBtn" disabled onclick="addLangFromSettings()">${t('settings_add_btn')}</button>
+      <button class="btn btn-primary btn-sm" id="addLangBtn" disabled onclick="addLangFromSettings()">${t('settings_add_btn')} →</button>
     </div>
 
     <div class="card settings-section">
-      <h2>${t('settings_ui_lang')}</h2>
+      <h2>🌐 ${t('settings_ui_lang')}</h2>
       <div class="field-group">
         <input type="text" id="uiLangSearch" placeholder="${t('settings_ui_lang_ph')}" autocomplete="off" value="${getUiLangName()}">
         <div id="uiLangResults" class="lang-results" style="display:none"></div>
@@ -27,7 +27,7 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
-      <h2>${t('settings_appearance')}</h2>
+      <h2>🎨 ${t('settings_appearance')}</h2>
       <div class="toggle-row">
         <span>${t('settings_dark')}</span>
         <label class="toggle-switch">
@@ -38,7 +38,7 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
-      <h2>${t('settings_account')}</h2>
+      <h2>🔐 ${t('settings_account')}</h2>
       <p style="color:var(--text-muted);margin-bottom:16px">${t('settings_logged_as')} <strong>${esc(App.user.username)}</strong></p>
       <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">${t('settings_change_pw')}</button>
     </div>`;
@@ -89,7 +89,7 @@ async function renderSettings(el) {
       renderLangChips();
       searchEl.value = '';
       selectedNewLang = null;
-      toast(t('settings_lang_added'));
+      toast(`✓ ${t('settings_lang_added')}`);
     } catch (e) {
       toast(e.error || t('common_error'), 'danger');
       addBtn.disabled = false;
@@ -120,7 +120,7 @@ async function renderSettings(el) {
         await window.setUiLang(code);
         await saveConfig({ uiLang: code });
         App.config.uiLang = code;
-        toast(t('settings_ui_lang_saved'));
+        toast(`✓ ${t('settings_ui_lang_saved')}`);
         // Re-render navbar and settings page in new language
         applyNavLabels();
         navigate('settings');
@@ -146,7 +146,7 @@ function renderLangChips() {
   el.innerHTML = langs.map(l =>
     `<div class="lang-chip">
       ${l.flag || '🌐'} ${l.name}
-      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">${t('settings_configure')}</button>
+      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">⚙️ ${t('settings_configure')}</button>
       <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="${t('common_delete')}">✕</span>
     </div>`
   ).join('');
@@ -240,22 +240,22 @@ window.openLangConfig = function (isoCode) {
 
   openModal(`${t('settings_lang_config_title')}: ${lang.flag || '🌐'} ${lang.name}`, `
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">${t('settings_declensions_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">📐 ${t('settings_declensions_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_declensions_desc')}</p>
       <div id="declContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addDeclension()">${t('settings_decl_add')}</button>
     </div>
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">${t('settings_vg_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">📚 ${t('settings_vg_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_vg_desc')}</p>
       <div id="vgContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addVerbGroup()">${t('settings_vg_add')}</button>
     </div>
     <div>
-      <h3 style="font-size:1rem;margin-bottom:4px">${t('labels_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">🏷️ ${t('labels_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('labels_manage')}</p>
       <div id="labelsContainer"></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addLabelCfg()">${t('labels_add_btn')}</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addLabelCfg()">➕ ${t('labels_add_btn')}</button>
     </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
@@ -296,7 +296,7 @@ window.openLangConfig = function (isoCode) {
       await loadConfig();
       closeModal();
       renderLangChips();
-      toast(t('settings_config_saved'));
+      toast(`✓ ${t('settings_config_saved')}`);
     } catch (e) {
       errEl.textContent = e.error || t('common_error');
       errEl.classList.remove('hidden');
@@ -346,7 +346,7 @@ window.submitChangePassword = async function () {
   try {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
-    toast(t('settings_pw_ok'));
+    toast(`🗑 ${t('settings_pw_ok')}`);
   } catch (e) {
     errEl.textContent = e.error || t('common_error');
     errEl.classList.remove('hidden');

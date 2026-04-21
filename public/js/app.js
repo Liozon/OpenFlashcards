@@ -247,14 +247,29 @@ function applyNavLabels() {
   const map = {
     navHome: 'nav_home',
     navVocab: 'nav_vocabulary',
-    navAdd: 'nav_add',
     navTrain: 'nav_train',
+    navAdd: 'nav_add',
     navSettings: 'nav_settings',
     adminLink: 'nav_admin'
   };
+
+  const icons = {
+    navHome: '🏠',
+    navVocab: '📚',
+    navTrain: '🎯',
+    navAdd: '➕',
+    navSettings: '⚙️',
+    adminLink: '🔑'
+  };
+
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = t(key);
+    if (!el) return;
+
+    const label = t(map[id]); // ta fonction de traduction
+    const icon = icons[id] || '';
+
+    el.textContent = `${icon} ${label}`;
   });
 
   // Admin link: only visible to admins. Always enforce this after any textContent reset.
@@ -338,7 +353,7 @@ function renderOnboarding(el) {
         </div>
 
         <div id="onbError" class="alert alert-danger hidden"></div>
-        <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')}</button>
+        <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')} →</button>
       </div>
     </div>`;
 
@@ -379,7 +394,7 @@ function renderOnboarding(el) {
           const learnP = document.querySelector('.onboarding-card p[style]');
           if (learnP) learnP.textContent = t('onb_learn_q');
           const startBtn = document.getElementById('onbStartBtn');
-          if (startBtn) startBtn.textContent = t('onb_start');
+          if (startBtn) startBtn.textContent = `${t('onb_start')} →`;
         });
       });
     });

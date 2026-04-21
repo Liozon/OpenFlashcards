@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OpenFlashcards</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
   <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
   <!-- ── LOGIN SCREEN ─────────────────────────────────────── -->
   <div id="loginScreen" class="login-screen">
@@ -38,11 +41,11 @@
       </a>
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
       <div class="nav-links" id="navLinks">
-        <a class="nav-link" data-page="home"       href="#" id="navHome">🏠 Home</a>
+        <a class="nav-link" data-page="home" href="#" id="navHome">🏠 Home</a>
         <a class="nav-link" data-page="vocabulary" href="#" id="navVocab">📚 Vocabulary</a>
-        <a class="nav-link" data-page="add"        href="#" id="navAdd">➕ Add</a>
-        <a class="nav-link" data-page="train"      href="#" id="navTrain">🎯 Practice</a>
-        <a class="nav-link" data-page="settings"   href="#" id="navSettings">⚙️ Settings</a>
+        <a class="nav-link" data-page="train" href="#" id="navTrain">🎯 Practice</a>
+        <a class="nav-link" data-page="add" href="#" id="navAdd">➕ Add</a>
+        <a class="nav-link" data-page="settings" href="#" id="navSettings">⚙️ Settings</a>
         <a class="nav-link" id="adminLink" data-page="admin" href="#" style="display:none">🔑 Admin</a>
         <button class="btn-icon dark-toggle" id="darkToggle" title="Toggle dark mode">☀️</button>
         <button class="btn-icon" id="logoutBtn" title="Logout">🚪</button>
@@ -76,4 +79,5 @@
   <script src="/js/pages/admin.js"></script>
   <script src="/js/tts.js"></script>
 </body>
+
 </html>
