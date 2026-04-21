@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Übersetzung in Muttersprache",
   "vocab_reset_progress": "Fortschritt zurücksetzen",
   "vocab_progress_reset": "↺ Fortschritt zurückgesetzt.",
-  "vocab_progress": "Fortschritt"
+  "vocab_progress": "Fortschritt",
+  "train_writing": "Schreiben",
+  "train_writing_instr": "Buchstabiere das Wort in der Zielsprache:",
+  "train_writing_no_words": "Füge mindestens ein Wort hinzu, um die Rechtschreibung zu üben.",
+  "train_writing_check": "Prüfen ✓",
+  "train_writing_correct": "✓ Richtig!",
+  "train_writing_wrong": "✗ Die richtige Schreibweise war:",
+  "train_writing_easy": "Einfach (Audio)",
+  "train_writing_hard": "Schwer (stumm)"
 }

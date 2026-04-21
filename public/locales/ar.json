@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "الترجمة إلى اللغة الأم",
   "vocab_reset_progress": "إعادة تعيين التقدم",
   "vocab_progress_reset": "↺ تم إعادة تعيين التقدم.",
-  "vocab_progress": "التقدم"
+  "vocab_progress": "التقدم",
+  "train_writing": "الكتابة",
+  "train_writing_instr": "تهجى الكلمة في اللغة الهدف:",
+  "train_writing_no_words": "أضف كلمة واحدة على الأقل لتدريب الإملاء.",
+  "train_writing_check": "تحقق ✓",
+  "train_writing_correct": "✓ صحيح!",
+  "train_writing_wrong": "✗ الإملاء الصحيح كان:",
+  "train_writing_easy": "سهل (صوت)",
+  "train_writing_hard": "صعب (صامت)"
 }

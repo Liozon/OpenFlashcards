@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Переклад рідною мовою",
   "vocab_reset_progress": "Скинути прогрес",
   "vocab_progress_reset": "↺ Прогрес скинуто.",
-  "vocab_progress": "Прогрес"
+  "vocab_progress": "Прогрес",
+  "train_writing": "Письмо",
+  "train_writing_instr": "Напишіть слово мовою, яку вивчаєте:",
+  "train_writing_no_words": "Додайте хоча б одне слово для тренування правопису.",
+  "train_writing_check": "Перевірити ✓",
+  "train_writing_correct": "✓ Правильно!",
+  "train_writing_wrong": "✗ Правильне написання:",
+  "train_writing_easy": "Легко (аудіо)",
+  "train_writing_hard": "Важко (тихо)"
 }

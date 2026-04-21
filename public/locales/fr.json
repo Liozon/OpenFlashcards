@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Trad. maternelle",
   "vocab_reset_progress": "Réinitialiser la progression",
   "vocab_progress_reset": "↺ Progression réinitialisée.",
-  "vocab_progress": "Progression"
+  "vocab_progress": "Progression",
+  "train_writing": "Écriture",
+  "train_writing_instr": "Épelle le mot dans la langue cible :",
+  "train_writing_no_words": "Ajoute au moins un mot pour entraîner l'orthographe.",
+  "train_writing_check": "Vérifier ✓",
+  "train_writing_correct": "✓ Correct !",
+  "train_writing_wrong": "✗ La bonne orthographe était :",
+  "train_writing_easy": "Facile (audio)",
+  "train_writing_hard": "Difficile (muet)"
 }

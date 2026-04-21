@@ -215,5 +215,13 @@
   "add_conj_translation_ph": "Native translation",
   "vocab_reset_progress": "Reset progress",
   "vocab_progress_reset": "↺ Progress reset.",
-  "vocab_progress": "Progress"
+  "vocab_progress": "Progress",
+  "train_writing": "Writing",
+  "train_writing_instr": "Spell the word in the target language:",
+  "train_writing_no_words": "Add at least one word to train spelling.",
+  "train_writing_check": "Check ✓",
+  "train_writing_correct": "✓ Correct!",
+  "train_writing_wrong": "✗ The correct spelling was:",
+  "train_writing_easy": "Easy (audio)",
+  "train_writing_hard": "Hard (silent)"
 }
