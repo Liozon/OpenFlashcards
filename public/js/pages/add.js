@@ -21,19 +21,19 @@ function renderAdd(el) {
     : '';
 
   el.innerHTML = `
-    <div class="page-title">${t('add_title')}</div>
+    <div class="page-title">➕ ${t('add_title')}</div>
     <div class="add-tabs">
-      <button class="add-tab active" data-tab="word"   onclick="switchAddTab('word',this)">${t('add_tab_word')}</button>
-      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">${t('add_tab_phrase')}</button>
+      <button class="add-tab active" data-tab="word"   onclick="switchAddTab('word',this)">📝 ${t('add_tab_word')}</button>
+      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">💬 ${t('add_tab_phrase')}</button>
     </div>
 
     <!-- WORD FORM -->
     <div id="tabWord">
       <div class="type-selector" id="wordTypeSelector">
-        <button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">${t('add_type_noun')}</button>
-        <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">${t('add_type_verb')}</button>
-        <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">${t('add_type_adj')}</button>
-        <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">${t('add_type_adv')}</button>
+        <button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">📦 ${t('add_type_noun')}</button>
+        <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">⚡ ${t('add_type_verb')}</button>
+        <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">🎨 ${t('add_type_adj')}</button>
+        <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">💨 ${t('add_type_adv')}</button>
       </div>
 
       <div class="card">
@@ -73,7 +73,7 @@ function renderAdd(el) {
         ${declensions.length ? `
         <details id="declensionsSection" style="margin-bottom:16px">
           <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-            ${t('add_declensions')} <span class="optional">${t('vocab_optional')}</span>
+            📐 ${t('add_declensions')} <span class="optional">${t('vocab_optional')}</span>
           </summary>
           <div id="declGrid"></div>
         </details>` : ''}
@@ -89,7 +89,7 @@ function renderAdd(el) {
         <div id="wordLabelPickerContainer"></div>
         <div id="wordAddErr" class="alert alert-danger hidden"></div>
         <div id="wordAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">${t('add_btn_word')}</button>
+        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">➕ ${t('add_btn_word')}</button>
       </div>
     </div>
 
@@ -111,7 +111,7 @@ function renderAdd(el) {
         <div id="phraseLabelPickerContainer"></div>
         <div id="phraseAddErr" class="alert alert-danger hidden"></div>
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">${t('add_btn_phrase')}</button>
+        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">➕ ${t('add_btn_phrase')}</button>
       </div>
     </div>`;
 
@@ -197,7 +197,7 @@ window.submitWord = async function () {
     const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
     pronouns.forEach((p, i) => {
       const form = document.getElementById(`conj_${i}`)?.value.trim();
-      const tr   = document.getElementById(`conjtr_${i}`)?.value.trim();
+      const tr = document.getElementById(`conjtr_${i}`)?.value.trim();
       if (form || tr) conj[p] = { form: form || '', translation: tr || '' };
     });
     body.conjugation = conj;
@@ -221,10 +221,10 @@ window.submitWord = async function () {
   btn.disabled = true;
   try {
     await api('POST', '/api/words', body);
-    okEl.textContent = `${t('add_ok_word')} "${literal}"`;
+    okEl.textContent = `✓ ${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
-  
-  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
+
+    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => el.value = '');
@@ -232,7 +232,7 @@ window.submitWord = async function () {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
-    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; });
+    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
@@ -260,13 +260,13 @@ window.submitPhrase = async function () {
   btn.disabled = true;
   try {
     await api('POST', '/api/phrases', { lang, text, translation, helpNote, labels: phraseLabels });
-    okEl.textContent = t('add_ok_phrase');
+    okEl.textContent = `✓ ${t('add_ok_phrase')}`;
     okEl.classList.remove('hidden');
     document.getElementById('pText').value = '';
     document.getElementById('pTranslation').value = '';
     document.getElementById('pNote').value = '';
     document.getElementById('pText').focus();
-    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background='transparent'; });
+    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');

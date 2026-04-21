@@ -252,9 +252,24 @@ function applyNavLabels() {
     navSettings: 'nav_settings',
     adminLink: 'nav_admin'
   };
+
+  const icons = {
+    navHome: '🏠',
+    navVocab: '📚',
+    navAdd: '➕',
+    navTrain: '🎯',
+    navSettings: '⚙️',
+    adminLink: '🔑'
+  };
+
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = t(key);
+    if (!el) return;
+
+    const label = t(map[id]); // ta fonction de traduction
+    const icon = icons[id] || '';
+
+    el.textContent = `${icon} ${label}`;
   });
 
   // Admin link: only visible to admins. Always enforce this after any textContent reset.

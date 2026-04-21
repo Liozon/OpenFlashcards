@@ -36,7 +36,7 @@ function renderTrain(el) {
   const targetName = ld ? (ld.flag || '') + ' ' + ld.name : lang.toUpperCase();
 
   el.innerHTML =
-    '<div class="page-title">' + t('train_title') + '</div>' +
+    '<div class="page-title">🎯 ' + t('train_title') + '</div>' +
 
     '<div class="score-bar">' +
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
@@ -45,13 +45,13 @@ function renderTrain(el) {
     '</div>' +
 
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">' + t('train_words') + '</button>' +
-    '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">' + t('train_phrases') + '</button>' +
+    '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="typeFilters">' +
-    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">' + t('train_all') + '</button>' +
+    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">🌍 ' + t('train_all') + '</button>' +
     '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
     '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ', '') + '</button>' +
     '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ', '') + '</button>' +
@@ -107,12 +107,13 @@ window.setTrainMode = function (mode, btn) {
   document.querySelectorAll('#modeWord,#modePhrase,#modeWriting').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const isWord = mode === 'word';
+  const isPhrase = mode === 'phrase';
   const isWriting = mode === 'writing';
   document.getElementById('typeFilters').style.display = (isWord || isWriting) ? '' : 'none';
   document.getElementById('dirFilters').style.display = isWord ? '' : 'none';
   document.getElementById('writingDiffFilters').style.display = isWriting ? '' : 'none';
   const lf = document.getElementById('labelFilters');
-  if (lf && lf.children.length) lf.style.display = (isWord || isWriting) ? '' : 'none';
+  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase) ? '' : 'none';
   loadQuestion();
 };
 
@@ -195,14 +196,25 @@ async function loadWordQuestion() {
       '<div class="quiz-card">' +
       '<p style="font-size:2rem;margin-bottom:12px">😅</p>' +
       '<p style="color:var(--text-muted)">' + (e.error || 'Error loading question.') + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="loadQuestion()">' + t('train_retry') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="loadQuestion()">↺ ' + t('train_retry') + '</button>' +
       '</div>';
   }
 }
 
 function renderWordQuiz(q) {
   const area = document.getElementById('quizArea');
-  const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
+  const iconLabel = {
+    noun: { key: 'vocab_noun', icon: '📦' },
+    verb: { key: 'vocab_verb', icon: '⚡' },
+    adjective: { key: 'vocab_adjective', icon: '🎨' },
+    adverb: { key: 'vocab_adverb', icon: '💨' }
+  };
+  const typeLabels = Object.fromEntries(
+    Object.entries(iconLabel).map(([type, { key, icon }]) => [
+      type,
+      `${icon} ${t(key)}`
+    ])
+  );
   const lang = currentLang();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
 
@@ -300,7 +312,7 @@ async function handleWordAnswer(btn, answer, q) {
     const declBox = document.createElement('div');
     declBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
     declBox.innerHTML =
-      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' + t('train_declensions') + '</div>' +
+      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📐 ' + t('train_declensions') + '</div>' +
       '<div style="font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;gap:10px">' +
       '<span style="color:var(--text-muted);min-width:100px">' + t('common_nominative') + '</span>' +
       '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
@@ -315,7 +327,7 @@ async function handleWordAnswer(btn, answer, q) {
     '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +
     (correct ? t('train_correct_msg') : t('train_wrong_msg') + ' <em>' + esc(q.answerText) + '</em>') +
     '</div>' +
-    '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + '</button>';
+    '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + ' →</button>';
   card.appendChild(nextRow);
 }
 
@@ -356,7 +368,7 @@ function renderPhraseQuiz(phrase) {
   area.innerHTML =
     '<div class="phrase-card">' +
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
-    '<div class="badge badge-phrase">' + t('train_phrases') + '</div>' +
+    '<div class="badge badge-phrase">💬 ' + t('train_phrases') + '</div>' +
     '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
     '</div>' +
     '<p style="color:var(--text-muted);font-size:.9rem;margin-bottom:8px">' + t('train_reconstruct') + '</p>' +
@@ -370,7 +382,7 @@ function renderPhraseQuiz(phrase) {
     '<div id="phraseResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions">' +
     '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + '</button>' +
-    '<button class="btn btn-secondary hidden" id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + '</button>' +
+    '<button class="btn btn-secondary hidden" id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + ' →</button>' +
     '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
     '</div>' +
     '</div>';
@@ -563,7 +575,18 @@ function renderWritingQuiz(q) {
   const area = document.getElementById('quizArea');
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
   const lang = currentLang();
-  const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
+  const iconLabel = {
+    noun: { key: 'vocab_noun', icon: '📦' },
+    verb: { key: 'vocab_verb', icon: '⚡' },
+    adjective: { key: 'vocab_adjective', icon: '🎨' },
+    adverb: { key: 'vocab_adverb', icon: '💨' }
+  };
+  const typeLabels = Object.fromEntries(
+    Object.entries(iconLabel).map(([type, { key, icon }]) => [
+      type,
+      `${icon} ${t(key)}`
+    ])
+  );
 
   const targetWord = q.answerText;
   _writingSegments = targetWord.split(' ');
@@ -604,7 +627,7 @@ function renderWritingQuiz(q) {
     '<div id="writingResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions" style="margin-top:16px">' +
     '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + '</button>' +
-    '<button class="btn btn-secondary hidden" id="nextWritingBtn"  onclick="loadQuestion()"        style="flex:1">' + t('train_next') + '</button>' +
+    '<button class="btn btn-secondary hidden" id="nextWritingBtn"  onclick="loadQuestion()"        style="flex:1">' + t('train_next') + ' →</button>' +
     '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">' + t('train_clear') + '</button>' +
     '</div>' +
     '</div>';
