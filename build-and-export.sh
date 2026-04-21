@@ -20,9 +20,9 @@
 
 set -e
 
-IMAGE_NAME="openflashcards"
+IMAGE_NAME="OpenFlashcards"
 IMAGE_TAG="latest"
-ARCHIVE="openflashcards.tar.gz"
+ARCHIVE="OpenFlashcards.tar.gz"
 
 echo "🔨 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
 docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
