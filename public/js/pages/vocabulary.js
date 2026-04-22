@@ -154,6 +154,30 @@ function renderVocabGrid() {
   if (!items.length) {
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
+
+    const hasAnyContent = _vocabWords.length > 0 || _vocabPhrases.length > 0;
+    const isSearchOrFilter = _vocabSearch || _vocabFilter || _vocabLabel;
+
+    if (hasAnyContent && isSearchOrFilter) {
+      const searchTerm = _vocabSearch ? `"${_vocabSearch}"` : '';
+      const isPhrase = _vocabFilter === 'phrase';
+      const addLabel = isPhrase ? t('vocab_add_this_phrase') : t('vocab_add_this_word');
+      const addHint = isPhrase ? t('vocab_no_phrase_found') : t('vocab_no_word_found');
+
+      empty.innerHTML = `
+      <p style="font-size:2rem">🔍</p>
+      <p>${addHint}${searchTerm ? ' ' + searchTerm : ''}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+    `;
+    } else {
+      const isPhrase = _vocabFilter === 'phrase';
+      const addLabel = isPhrase ? t('vocab_add_first_phrase') : t('vocab_add_first');
+      empty.innerHTML = `
+      <p style="font-size:2rem">📭</p>
+      <p>${t('vocab_empty')}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+    `;
+    }
     return;
   }
   empty.classList.add('hidden');
