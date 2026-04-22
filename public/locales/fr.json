@@ -9,7 +9,7 @@
   "login_username": "Nom d'utilisateur",
   "login_password": "Mot de passe",
   "login_btn": "Se connecter",
-  "login_error": "Identifiant invalides",
+  "login_error": "Identifiant invalide",
   "login_error_empty": "Merci de saisir votre identifiant.",
   "onb_welcome": "Bienvenue sur OpenFlashcards !",
   "onb_native_q": "Quelle est votre langue maternelle ?",

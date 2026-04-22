@@ -197,12 +197,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       var errorLabel
       if (e.error === "Invalid credentials.") {
-        errorLabel = t('login_error');
+        errorLabel = t('login_error')
+      } else if (e.error === "Username and password required.") {
+        errorLabel = t('login_error_empty')
       } else {
-        errorLabel = t('login_error_empty');
+        errorLabel = e.error
       }
 
-      loginErr.textContent = errorLabel || e.error;
+      loginErr.textContent = errorLabel;
       loginErr.classList.remove('hidden');
       loginBtn.disabled = false;
       loginBtn.textContent = t('login_btn') + " →";
