@@ -195,10 +195,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       await doLogin(loginUser.value.trim(), loginPass.value);
       await bootApp();
     } catch (e) {
-      loginErr.textContent = e.error || 'Login failed.';
+      var errorLabel
+      if (e.error === "Invalid credentials.") {
+        errorLabel = t('login_error')
+      } else if (e.error === "Username and password required.") {
+        errorLabel = t('login_error_empty')
+      } else {
+        errorLabel = e.error
+      }
+
+      loginErr.textContent = errorLabel;
       loginErr.classList.remove('hidden');
       loginBtn.disabled = false;
-      loginBtn.textContent = 'Sign in →';
+      loginBtn.textContent = t('login_btn') + " →";
     }
   }
 
@@ -295,7 +304,7 @@ function applyLoginLabels() {
   if (sub) sub.textContent = t('login_title');
   if (ul) ul.textContent = t('login_username');
   if (pl) pl.textContent = t('login_password');
-  if (btn) btn.textContent = t('login_btn');
+  if (btn) btn.textContent = t('login_btn') + " →";
 }
 
 async function bootApp() {

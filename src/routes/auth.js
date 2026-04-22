@@ -1,6 +1,6 @@
 'use strict';
-const router  = require('express').Router();
-const bcrypt  = require('bcryptjs');
+const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 const { getUserByUsername, getUserById, getUsers, saveUsers } = require('../utils/storage');
 const { signToken, requireAuth } = require('../middleware/auth');
 
@@ -39,7 +39,7 @@ router.post('/change-password', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Invalid passwords.' });
 
   const users = getUsers();
-  const user  = users[req.user.id];
+  const user = users[req.user.id];
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
   if (!bcrypt.compareSync(currentPassword, user.passwordHash))
