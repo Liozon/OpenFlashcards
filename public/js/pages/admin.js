@@ -33,7 +33,7 @@ async function renderAdmin(el) {
           </select>
         </div>
         <div style="display:flex;align-items:flex-end">
-          <button class="btn btn-primary btn-full" onclick="createUser()">${t('admin_create_btn')}</button>
+          <button class="btn btn-primary btn-full" onclick="createUser()">${t('admin_create_btn')} →</button>
         </div>
       </div>
       <div id="nuErr" class="alert alert-danger hidden" style="margin-top:12px"></div>
