@@ -62,7 +62,7 @@ async function renderVocabulary(el) {
     <div id="vocabGrid" class="word-grid"></div>
     <div id="vocabEmpty" class="hidden" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <p style="font-size:2rem">📭</p>
-      <p>📭 ${t('vocab_empty')}</p>
+      <p>${t('vocab_empty')}</p>
       <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
     </div>`;
 
