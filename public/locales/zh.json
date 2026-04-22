@@ -210,7 +210,7 @@
   "vocab_progress": "进度",
   "train_writing": "写作",
   "train_writing_instr": "在目标语言中拼写该词：",
-  "train_writing_no_words": "请至少添加一个单词来练习拼写。",
+  "train_no_words": "添加至少两个单词以开始。",
   "train_writing_check": "检查",
   "train_writing_correct": "正确！",
   "train_writing_wrong": "正确的拼写是：",
