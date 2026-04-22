@@ -215,5 +215,7 @@
   "train_writing_correct": "Richtig!",
   "train_writing_wrong": "Die richtige Schreibweise war:",
   "train_writing_easy": "Einfach (Audio)",
-  "train_writing_hard": "Schwer (stumm)"
+  "train_writing_hard": "Schwer (stumm)",
+  "vocab_reset_confirm_title": "Fortschritt zurücksetzen?",
+  "vocab_reset_confirm_body": "Der Lernfortschritt für diesen Eintrag wird dauerhaft zurückgesetzt. Sind Sie sicher?"
 }

@@ -215,5 +215,7 @@
   "train_writing_correct": "Correct!",
   "train_writing_wrong": "The correct spelling was:",
   "train_writing_easy": "Easy (audio)",
-  "train_writing_hard": "Hard (silent)"
+  "train_writing_hard": "Hard (silent)",
+  "vocab_reset_confirm_title": "Reset progress?",
+  "vocab_reset_confirm_body": "This will permanently reset the learning progress for this item. Are you sure?"
 }

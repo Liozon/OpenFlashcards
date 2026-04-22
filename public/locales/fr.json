@@ -215,5 +215,7 @@
   "train_writing_correct": "Correct !",
   "train_writing_wrong": "La bonne orthographe était :",
   "train_writing_easy": "Facile (audio)",
-  "train_writing_hard": "Difficile (muet)"
+  "train_writing_hard": "Difficile (muet)",
+  "vocab_reset_confirm_title": "Réinitialiser la progression ?",
+  "vocab_reset_confirm_body": "Cela réinitialisera définitivement la progression d'apprentissage de cet élément. Êtes-vous sûr ?"
 }

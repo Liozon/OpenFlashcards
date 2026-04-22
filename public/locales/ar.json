@@ -215,5 +215,7 @@
   "train_writing_correct": "صحيح!",
   "train_writing_wrong": "الإملاء الصحيح كان:",
   "train_writing_easy": "سهل (صوت)",
-  "train_writing_hard": "صعب (صامت)"
+  "train_writing_hard": "صعب (صامت)",
+  "vocab_reset_confirm_title": "إعادة تعيين التقدم؟",
+  "vocab_reset_confirm_body": "سيؤدي هذا إلى إعادة تعيين تقدم التعلم لهذا العنصر بشكل دائم. هل أنت متأكد؟"
 }

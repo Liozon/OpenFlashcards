@@ -452,7 +452,7 @@ window.editWord = function (id, lang) {
     <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="resetWordProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetWordProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="saveWordEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -526,6 +526,15 @@ window.saveWordEdit = async function (id, lang) {
 };
 
 
+window.confirmResetWordProgress = function (id, lang) {
+  openModal(
+    t('vocab_reset_confirm_title'),
+    `<p>${t('vocab_reset_confirm_body')}</p>`,
+    `<button class="btn btn-secondary" onclick="editWord('${id}','${lang}')">${t('vocab_cancel')}</button>
+     <button class="btn btn-danger" onclick="resetWordProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+  );
+};
+
 window.resetWordProgress = async function (id, lang) {
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, { progress: 0 });
@@ -559,7 +568,7 @@ window.editPhrase = function (id, lang) {
       <input id="mePNote" value="${esc(p.helpNote || '')}"></div>
     ${labelPickerHtml}
     <div id="mePErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="resetPhraseProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetPhraseProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="savePhraseEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -589,6 +598,15 @@ window.savePhraseEdit = async function (id, lang) {
   }
 };
 
+
+window.confirmResetPhraseProgress = function (id, lang) {
+  openModal(
+    t('vocab_reset_confirm_title'),
+    `<p>${t('vocab_reset_confirm_body')}</p>`,
+    `<button class="btn btn-secondary" onclick="editPhrase('${id}','${lang}')">${t('vocab_cancel')}</button>
+     <button class="btn btn-danger" onclick="resetPhraseProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+  );
+};
 
 window.resetPhraseProgress = async function (id, lang) {
   try {

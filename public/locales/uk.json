@@ -215,5 +215,7 @@
   "train_writing_correct": "Правильно!",
   "train_writing_wrong": "Правильне написання:",
   "train_writing_easy": "Легко (аудіо)",
-  "train_writing_hard": "Важко (тихо)"
+  "train_writing_hard": "Важко (тихо)",
+  "vocab_reset_confirm_title": "Скинути прогрес?",
+  "vocab_reset_confirm_body": "Це назавжди скине прогрес навчання для цього елемента. Ви впевнені?"
 }

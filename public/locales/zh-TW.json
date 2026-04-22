@@ -215,5 +215,7 @@
   "train_writing_correct": "正確！",
   "train_writing_wrong": "正確的拼寫是：",
   "train_writing_easy": "簡單（有聲）",
-  "train_writing_hard": "困難（靜音）"
+  "train_writing_hard": "困難（靜音）",
+  "vocab_reset_confirm_title": "重設進度？",
+  "vocab_reset_confirm_body": "這將永久重設此條目的學習進度。您確定嗎？"
 }
