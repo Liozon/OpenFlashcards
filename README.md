@@ -39,13 +39,17 @@ A lightweight, responsive web application for language learning with flashcards.
 
 ![Vocabulary page](images/Vocabulary.png)
 
-- **Word categories**: Nouns, Verbs, Adjectives, Adverbs
+- **Word practice** practice words based on your word bank
 
 ![Words practice](<images/Practice words.png>)
 
-- **Phrases** (sentence reconstruction exercise)
+- **Phrases** practise phrases reconstruction
 
 ![Sentences writing](<images/Practice sentences.png>)
+
+- **Words writing** write words, letter by letter, with (easy) or without (hard) audio input
+
+![Sentences writing](<images/Practice writing.png>)
 
 - **Optional "Definition" field** on every word
 
