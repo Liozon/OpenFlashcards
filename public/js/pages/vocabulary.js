@@ -62,7 +62,7 @@ async function renderVocabulary(el) {
     <div id="vocabGrid" class="word-grid"></div>
     <div id="vocabEmpty" class="hidden" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
       <p style="font-size:2rem">📭</p>
-      <p>📭 ${t('vocab_empty')}</p>
+      <p>${t('vocab_empty')}</p>
       <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
     </div>`;
 
@@ -154,6 +154,30 @@ function renderVocabGrid() {
   if (!items.length) {
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
+
+    const hasAnyContent = _vocabWords.length > 0 || _vocabPhrases.length > 0;
+    const isSearchOrFilter = _vocabSearch || _vocabFilter || _vocabLabel;
+
+    if (hasAnyContent && isSearchOrFilter) {
+      const searchTerm = _vocabSearch ? `"${_vocabSearch}"` : '';
+      const isPhrase = _vocabFilter === 'phrase';
+      const addLabel = isPhrase ? t('vocab_add_this_phrase') : t('vocab_add_this_word');
+      const addHint = isPhrase ? t('vocab_no_phrase_found') : t('vocab_no_word_found');
+
+      empty.innerHTML = `
+      <p style="font-size:2rem">🔍</p>
+      <p>${addHint}${searchTerm ? ' ' + searchTerm : ''}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+    `;
+    } else {
+      const isPhrase = _vocabFilter === 'phrase';
+      const addLabel = isPhrase ? t('vocab_add_first_phrase') : t('vocab_add_first');
+      empty.innerHTML = `
+      <p style="font-size:2rem">📭</p>
+      <p>${t('vocab_empty')}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+    `;
+    }
     return;
   }
   empty.classList.add('hidden');
@@ -174,7 +198,7 @@ function getLabels() {
 }
 
 function buildWordCard(w) {
-  const labels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb') };
+  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}` };
   const display = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const progress = w.progress || 0;
   const maxProg = w.maxProgress || wordMaxProgressClient(w.literal, w.infinitive);
@@ -452,7 +476,7 @@ window.editWord = function (id, lang) {
     <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="resetWordProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetWordProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="saveWordEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -526,6 +550,15 @@ window.saveWordEdit = async function (id, lang) {
 };
 
 
+window.confirmResetWordProgress = function (id, lang) {
+  openModal(
+    t('vocab_reset_confirm_title'),
+    `<p>${t('vocab_reset_confirm_body')}</p>`,
+    `<button class="btn btn-secondary" onclick="editWord('${id}','${lang}')">${t('vocab_cancel')}</button>
+     <button class="btn btn-danger" onclick="resetWordProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+  );
+};
+
 window.resetWordProgress = async function (id, lang) {
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, { progress: 0 });
@@ -559,7 +592,7 @@ window.editPhrase = function (id, lang) {
       <input id="mePNote" value="${esc(p.helpNote || '')}"></div>
     ${labelPickerHtml}
     <div id="mePErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="resetPhraseProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetPhraseProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="savePhraseEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -589,6 +622,15 @@ window.savePhraseEdit = async function (id, lang) {
   }
 };
 
+
+window.confirmResetPhraseProgress = function (id, lang) {
+  openModal(
+    t('vocab_reset_confirm_title'),
+    `<p>${t('vocab_reset_confirm_body')}</p>`,
+    `<button class="btn btn-secondary" onclick="editPhrase('${id}','${lang}')">${t('vocab_cancel')}</button>
+     <button class="btn btn-danger" onclick="resetPhraseProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+  );
+};
 
 window.resetPhraseProgress = async function (id, lang) {
   try {

@@ -66,6 +66,11 @@
   "vocab_updated": "词汇已更新！",
   "vocab_deleted": "已删除。",
   "vocab_phrase_target": "短语（目标语言）",
+  "vocab_add_first_phrase": "添加您的第一个句子",
+  "vocab_add_this_word": "添加这个单词",
+  "vocab_add_this_phrase": "添加这个句子",
+  "vocab_no_word_found": "未找到单词",
+  "vocab_no_phrase_found": "未找到句子",
   "add_title": "添加",
   "add_tab_word": "单词",
   "add_tab_phrase": "短语",
@@ -210,10 +215,12 @@
   "vocab_progress": "进度",
   "train_writing": "写作",
   "train_writing_instr": "在目标语言中拼写该词：",
-  "train_writing_no_words": "请至少添加一个单词来练习拼写。",
+  "train_no_words": "添加至少两个单词以开始。",
   "train_writing_check": "检查",
   "train_writing_correct": "正确！",
   "train_writing_wrong": "正确的拼写是：",
   "train_writing_easy": "简单（有声）",
-  "train_writing_hard": "困难（静音）"
+  "train_writing_hard": "困难（静音）",
+  "vocab_reset_confirm_title": "重置进度？",
+  "vocab_reset_confirm_body": "这将永久重置此条目的学习进度。您确定吗？"
 }

@@ -1227,6 +1227,22 @@ img {
   justify-content: flex-end;
 }
 
+@media (max-width: 600px) {
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn-reset-progress {
+    width: auto;
+    margin-right: 0 !important;
+    order: -1;
+  }
+
+  .modal-footer .btn-reset-progress .btn-reset-text {
+    display: none;
+  }
+}
+
 /* ── SPINNER ────────────────────────────────────────────────── */
 .spinner {
   width: 36px;

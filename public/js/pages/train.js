@@ -193,12 +193,13 @@ async function loadWordQuestion() {
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
-      '<div class="quiz-card">' +
-      '<p style="font-size:2rem;margin-bottom:12px">😅</p>' +
-      '<p style="color:var(--text-muted)">' + (e.error || 'Error loading question.') + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="loadQuestion()">↺ ' + t('train_retry') + '</button>' +
+      '<div class="quiz-card" style="text-align:center">' +
+      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
       '</div>';
   }
+
 }
 
 function renderWordQuiz(q) {
@@ -348,7 +349,7 @@ async function loadPhraseQuestion() {
     area.innerHTML =
       '<div class="phrase-card" style="text-align:center">' +
       '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
-      '<p style="color:var(--text-muted)">' + (e.error || t('train_no_phrases')) + '</p>' +
+      '<p style="color:var(--text-muted)">' + (t('train_no_phrases') || e.error) + '</p>' +
       '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('train_add_phrases') + '</button>' +
       '</div>';
   }
@@ -565,8 +566,8 @@ async function loadWritingQuestion() {
     area.innerHTML =
       '<div class="quiz-card" style="text-align:center">' +
       '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
-      '<p style="color:var(--text-muted)">' + (e.error || t('train_writing_no_words')) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('train_add_phrases') + '</button>' +
+      '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
       '</div>';
   }
 }
