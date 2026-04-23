@@ -3,9 +3,22 @@
 
 ![OpenFlashcards logo](<images/OpenFlashcards logo.png>)
 
-A lightweight, responsive web application for language learning with flashcards.
+A lightweight, modern flashcard app designed for efficient language learning, based on the words and phrases you want to learn and master — simple, fast and self-hostable.
 
-![Docker Image Version](https://img.shields.io/docker/v/liozon/openflashcards?logo=docker)
+![GitHub latest version](https://img.shields.io/github/v/release/Liozon/OpenFlashcards?display_name=release&logo=github&label=Latest%20version&color=%2300ae00&link=https%3A%2F%2Fgithub.com%2FLiozon%2FOpenFlashcards%2Freleases%2Flatest)
+
+![Docker Image Version](https://img.shields.io/docker/v/liozon/openflashcards?logo=docker&logoColor=white&label=Latest%20version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fliozon%2Fopenflashcards)
+
+---
+
+## Why OpenFlashcards ?
+
+OpenFlashcards helps you learn languages effectively with a clean interface and powerful features — without the complexity of traditional tools.
+
+* Focus on what matters: your vocabulary
+* Fast and responsive user experience
+* Fully self-hosted, your data stays yours
+* Easy deployment with Docker
 
 ---
 
@@ -27,15 +40,15 @@ A lightweight, responsive web application for language learning with flashcards.
 
 ## Features
 
-- **Multi-user** with login portal (JWT authentication)
+- **Multi-user** with personnal authentication
 
 ![Login page](<images/Login page.png>)
 
-- **Admin panel** to create/manage users
+- **Admin panel** to create & manage users
 
 ![User management portal](<images/Users management.png>)
 
-- **Per-user word banks** – each user has their own vocabulary
+- **Per-user word banks** each user has their own words and phrases
 
 ![Vocabulary page](images/Vocabulary.png)
 
@@ -43,31 +56,31 @@ A lightweight, responsive web application for language learning with flashcards.
 
 ![Words practice](<images/Practice words.png>)
 
-- **Phrases** practise phrases reconstruction
+- **Phrases** practice phrase reconstruction
 
 ![Sentences writing](<images/Practice sentences.png>)
 
-- **Words writing** write words, letter by letter, with (easy) or without (hard) audio input
+- **Words writing** write words letter by letter, with TTS audio (easy mode) or without it (hard mode)
 
 ![Sentences writing](<images/Practice writing.png>)
 
-- **Optional "Definition" field** on every word
+- **Optional "Definition" field** on every word, to add context or a use case for the word
 
 ![Word editing page](<images/Editing word.png>)
 
-- **Mixed practice** – choose any combination of categories
+- **Mixed practice** using filters and word types
 
 ![Practice settings](<images/Practice settings.png>)
 
-- **Dark mode**, responsive (mobile-first)
+- **Dark mode** and responsive user interface
 
-| Dark mode                            | White mode                             |
+| Dark mode                            | Light mode                             |
 | ------------------------------------ | -------------------------------------- |
-| ![Dark mode](<images/Dark mode.png>) | ![White mode](<images/White mode.png>) |
+| ![Dark mode](<images/Dark mode.png>) | ![Light mode](<images/Light mode.png>) |
 
 - **Text-to-speech** via Web Speech API
-- **Data stored in JSON files** – no database required
-- **Single Docker container** – all in one solution
+- **Data stored in local JSON files** no database required and easy backup
+- **Single Docker container** all in one solution
 
 ---
 
@@ -89,17 +102,17 @@ data/
 ## Quick start (get it from Docker Hub)
 
 1. Download Docker Desktop: https://www.docker.com/products/docker-desktop
-2. Lauch **Docker Desktop**
-3. Into the search bar, type `liozon/openflashcards` and click on on **Run**
+2. Launch **Docker Desktop**
+3. In the search bar, type `liozon/openflashcards` and click on **Run**
 ![alt text](<images/Docker image search.png>)
-4. Map the **container port 8000** to your **local port 8000** and click **Run**
+1. Map the **container port 8000** to your **local port 8000** and click **Run**
 ![alt text](<images/Docker port config.png>)
-5. Open a browser and go to **http://localhost:8000**
-6. Connect to the app with the default admin credentials:
+1. Open a browser and go to **http://localhost:8000**
+2. Connect to the app with the default admin credentials:
    - Username: `admin`
    - Password: `admin`
    > ⚠️ Change the default password immediately after logging in!
-7. Create new users and start learning!
+3. Create new users and start learning!
 
 ---
 
@@ -115,7 +128,7 @@ node src/server.js
 
 ---
 
-## Quick start (compile for docker)
+## Quick start (build for docker)
 
 ```bash
 git clone https://github.com/Liozon/OpenFlashcards.git
