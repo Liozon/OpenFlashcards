@@ -15,7 +15,7 @@ A lightweight, modern flashcard app designed for efficient language learning, ba
 
 OpenFlashcards helps you learn languages effectively with a clean interface and powerful features — without the complexity of traditional tools.
 
-* Focus on what matters: your vocabulary
+* Focus on what matters: your vocabulary, words and phrases
 * Fast and responsive user experience
 * Fully self-hosted, your data stays yours
 * Easy deployment with Docker
@@ -40,47 +40,47 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 
 ## Features
 
-- **Multi-user** with personnal authentication
+* **Multi-user** with personnal authentication
 
 ![Login page](<images/Login page.png>)
 
-- **Admin panel** to create & manage users
+* **Admin panel** to create & manage users
 
 ![User management portal](<images/Users management.png>)
 
-- **Per-user word banks** each user has their own words and phrases
+* **Per-user word banks** each user has their own words and phrases
 
 ![Vocabulary page](images/Vocabulary.png)
 
-- **Word practice** practice words based on your word bank
+* **Word practice** practice words based on your word bank
 
 ![Words practice](<images/Practice words.png>)
 
-- **Phrases** practice phrase reconstruction
+* **Phrases** practice phrase reconstruction
 
 ![Sentences writing](<images/Practice sentences.png>)
 
-- **Words writing** write words letter by letter, with TTS audio (easy mode) or without it (hard mode)
+* **Words writing** write words letter by letter, with TTS audio (easy mode) or without it (hard mode)
 
 ![Sentences writing](<images/Practice writing.png>)
 
-- **Optional "Definition" field** on every word, to add context or a use case for the word
+* **Optional "Definition" field** on every word, to add context or a use case for the word
 
 ![Word editing page](<images/Editing word.png>)
 
-- **Mixed practice** using filters and word types
+* **Mixed practice** using filters and word types
 
 ![Practice settings](<images/Practice settings.png>)
 
-- **Dark mode** and responsive user interface
+* **Dark mode** and responsive user interface
 
 | Dark mode                            | Light mode                             |
 | ------------------------------------ | -------------------------------------- |
 | ![Dark mode](<images/Dark mode.png>) | ![Light mode](<images/Light mode.png>) |
 
-- **Text-to-speech** via Web Speech API
-- **Data stored in local JSON files** no database required and easy backup
-- **Single Docker container** all in one solution
+* **Text-to-speech** via Web Speech API
+* **Data stored in local JSON files** no database required and easy backup
+* **Single Docker container** all in one solution
 
 ---
 
@@ -105,14 +105,14 @@ data/
 2. Launch **Docker Desktop**
 3. In the search bar, type `liozon/openflashcards` and click on **Run**
 ![alt text](<images/Docker image search.png>)
-1. Map the **container port 8000** to your **local port 8000** and click **Run**
+4. Map the **container port 8000** to your **local port 8000** and click **Run**
 ![alt text](<images/Docker port config.png>)
-1. Open a browser and go to **http://localhost:8000**
-2. Connect to the app with the default admin credentials:
-   - Username: `admin`
-   - Password: `admin`
+5. Open a browser and go to **http://localhost:8000**
+6. Connect to the app with the default admin credentials:
+   * Username: `admin`
+   * Password: `admin`
    > ⚠️ Change the default password immediately after logging in!
-3. Create new users and start learning!
+7. Create new users and start learning!
 
 ---
 
