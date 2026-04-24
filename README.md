@@ -5,9 +5,10 @@
 
 A lightweight, modern flashcard app designed for efficient language learning, based on the words and phrases you want to learn and master — simple, fast and self-hostable.
 
-![GitHub latest version](https://img.shields.io/github/v/release/Liozon/OpenFlashcards?display_name=release&logo=github&label=Latest%20version&color=%2300ae00&link=https%3A%2F%2Fgithub.com%2FLiozon%2FOpenFlashcards%2Freleases%2Flatest)
-
-![Docker Image Version](https://img.shields.io/docker/v/liozon/openflashcards?logo=docker&logoColor=white&label=Latest%20version&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fliozon%2Fopenflashcards)
+<p align="center">
+<img alt="GitHub latest version" src="https://img.shields.io/github/v/release/Liozon/OpenFlashcards?display_name=release&logo=github&label=Latest%20version&color=%230FBF3E&link=https%3A%2F%2Fgithub.com%2FLiozon%2FOpenFlashcards%2Freleases%2Flatest">
+<img alt="GitHub latest version" src="https://img.shields.io/docker/v/liozon/openflashcards?logo=docker&logoColor=white&label=Latest%20version&color=%232560ff&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fliozon%2Fopenflashcards">
+</p>
 
 ---
 
@@ -40,36 +41,50 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 * **Multi-user** with personnal authentication
 
 <p align="center">
-  <img class="drop-shadow" src="images/Login page.png" style="box-shadow: 10px 12px 24px rgba(0,0,0,0.3);>
+  <img alt="Login page" src="images/Login page.png">
 </p>
 
 * **Admin panel** to create & manage users
 
-![User management portal](<images/Users management.png>)
+<p align="center">
+  <img alt="User management portal" src="images/Users management.png">
+</p>
 
 * **Per-user word banks** each user has their own words and phrases
 
-![Vocabulary page](images/Vocabulary.png)
+<p align="center">
+  <img alt="Vocabulary page" src="images/Vocabulary.png">
+</p>
 
 * **Word practice** practice words based on your word bank
 
-![Words practice](<images/Practice words.png>)
+<p align="center">
+  <img alt="Login page" src="Practice words.png">
+</p>
 
 * **Phrases** practice phrase reconstruction
 
-![Sentences writing](<images/Practice sentences.png>)
+<p align="center">
+  <img alt="Login page" src="images/Practice sentences.png">
+</p>
 
 * **Words writing** write words letter by letter, with TTS audio (easy mode) or without it (hard mode)
 
-![Sentences writing](<images/Practice writing.png>)
+<p align="center">
+  <img alt="Login page" src="images/Practice writing.png">
+</p>
 
 * **Optional "Definition" field** on every word, to add context or a use case for the word
 
-![Word editing page](<images/Editing word.png>)
+<p align="center">
+  <img alt="Login page" src="images/Editing word.png">
+</p>
 
 * **Mixed practice** using filters and word types
 
-![Practice settings](<images/Practice settings.png>)
+<p align="center">
+  <img alt="Login page" src="images/Practice settings.png">
+</p>
 
 * **Dark mode** and responsive user interface
 
