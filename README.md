@@ -1,5 +1,5 @@
 
-# 🃏 OpenFlashcards
+<h1>🃏 OpenFlashcards</h1>
 
 ![OpenFlashcards logo](<images/OpenFlashcards logo.png>)
 
@@ -11,7 +11,7 @@ A lightweight, modern flashcard app designed for efficient language learning, ba
 
 ---
 
-## Why OpenFlashcards ?
+<h2>Why OpenFlashcards ?</h2>
 
 OpenFlashcards helps you learn languages effectively with a clean interface and powerful features — without the complexity of traditional tools.
 
@@ -22,19 +22,16 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 
 ---
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#data-structure">Data structure</a></li>
-    <li><a href="#quick-start-get-it-from-docker-hub">Quick start (get it from Docker Hub)</a></li>
-    <li><a href="#quick-start-local">Quick start (local)</a></li>
-    <li><a href="#quick-start-docker">Quick start (docker)</a></li>
-    <li><a href="#api-reference">API Reference</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
+<h2>Table of content</h2>
+
+- [Features](#features)
+- [Data structure](#data-structure)
+- [Quick start (get it from Docker Hub)](#quick-start-get-it-from-docker-hub)
+- [Quick start (local)](#quick-start-local)
+- [Quick start (build for docker)](#quick-start-build-for-docker)
+- [API Reference](#api-reference)
+- [Acknowledgments](#acknowledgments)
+
 
 ---
 
@@ -42,7 +39,9 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 
 * **Multi-user** with personnal authentication
 
-![Login page](<images/Login page.png>)
+<p align="center">
+  <img class="drop-shadow" src="images/Login page.png" style="box-shadow: 10px 12px 24px rgba(0,0,0,0.3);>
+</p>
 
 * **Admin panel** to create & manage users
 
