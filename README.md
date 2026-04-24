@@ -3,7 +3,7 @@
 
 ![OpenFlashcards logo](<images/OpenFlashcards logo.png>)
 
-A lightweight, modern flashcard app designed for efficient language learning, based on the words and phrases you want to learn and master — simple, fast and self-hostable.
+A lightweight, modern flashcard app designed for efficient language learning, based on the words and phrases you want to learn and master — simple, fast and self-hostable with Docker.
 
 <p align="center">
   <a href="https://github.com/Liozon/OpenFlashcards/releases/latest">
