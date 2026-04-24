@@ -6,8 +6,12 @@
 A lightweight, modern flashcard app designed for efficient language learning, based on the words and phrases you want to learn and master — simple, fast and self-hostable.
 
 <p align="center">
-<img alt="GitHub latest version" src="https://img.shields.io/github/v/release/Liozon/OpenFlashcards?display_name=release&logo=github&label=Latest%20version&color=%230FBF3E&link=https%3A%2F%2Fgithub.com%2FLiozon%2FOpenFlashcards%2Freleases%2Flatest">
-<img alt="GitHub latest version" src="https://img.shields.io/docker/v/liozon/openflashcards?logo=docker&logoColor=white&label=Latest%20version&color=%232560ff&link=https%3A%2F%2Fhub.docker.com%2Fr%2Fliozon%2Fopenflashcards">
+<a href="https://github.com/Liozon/OpenFlashcards/releases/latest">
+  <img alt="GitHub latest version" src="https://img.shields.io/github/v/release/Liozon/OpenFlashcards?display_name=release&logo=github&label=Latest%20version&color=%230FBF3E">
+</a>
+<a href="https://hub.docker.com/r/liozon/openflashcards">
+  <img alt="Docker latest version" src="https://img.shields.io/docker/v/liozon/openflashcards?logo=docker&logoColor=white&label=Latest%20version&color=%232560ff">
+</a>
 </p>
 
 ---
