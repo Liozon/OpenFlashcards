@@ -63,7 +63,7 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 * **Word practice** practice words based on your word bank
 
 <p align="center">
-  <img alt="Login page" src="Practice words.png">
+  <img alt="Login page" src="images/Practice words.png">
 </p>
 
 * **Phrases** practice phrase reconstruction
