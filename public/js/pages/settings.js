@@ -175,7 +175,7 @@ window.openLangConfig = function (isoCode) {
   let verbGroups = (lang.verbGroups || []).map(g => ({ ...g }));
   let labels = (lang.labels || []).map(lb => ({ ...lb }));
 
-  const LABEL_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63', '#607d8b', '#795548'];
+  const LABEL_COLORS = ['#e74c3c', '#ff6b6b', '#e67e22', '#f39c12', '#f1c40f', '#d4e157', '#2ecc71', '#00c853', '#1abc9c', '#00bcd4', '#3498db', '#2979ff', '#3f51b5', '#9b59b6', '#673ab7', '#e91e63', '#ff4081', '#795548', '#607d8b', '#9e9e9e'];
 
   function renderDeclensionRows() {
     const container = document.getElementById('declContainer');
@@ -223,23 +223,40 @@ window.openLangConfig = function (isoCode) {
       return;
     }
     container.innerHTML = labels.map((lb, i) => `
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <span style="width:22px;height:22px;border-radius:50%;background:${esc(lb.color)};display:inline-block;flex-shrink:0;border:2px solid var(--border)"></span>
-        <input type="text" class="lb-name" data-i="${i}" value="${esc(lb.name)}" placeholder="${t('labels_name')}"
-          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <select class="lb-color" data-i="${i}" style="padding:6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-          ${LABEL_COLORS.map(c => `<option value="${c}" ${lb.color === c ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-        <button onclick="removeLabelCfg(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span class="lb-dot" data-i="${i}" style="width:22px;height:22px;border-radius:50%;background:${esc(lb.color)};display:inline-block;flex-shrink:0;border:2px solid var(--border)"></span>
+          <input type="text" class="lb-name" data-i="${i}" value="${esc(lb.name)}" placeholder="${t('labels_name')}"
+            style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+          <button onclick="removeLabelCfg(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+        </div>
+        <div class="lb-swatches" data-i="${i}" style="display:flex;flex-wrap:wrap;gap:6px;padding-left:30px">
+          ${LABEL_COLORS.map(c => `
+            <button type="button" data-color="${c}" data-i="${i}"
+              style="width:28px;height:28px;border-radius:50%;background:${c};border:${lb.color === c ? '3px solid var(--text)' : '2px solid transparent'};cursor:pointer;padding:0;outline:${lb.color === c ? '2px solid var(--surface-1)' : 'none'};outline-offset:1px;transition:transform .1s"
+              title="${c}"
+              onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+            </button>`).join('')}
+        </div>
       </div>`).join('');
     container.querySelectorAll('.lb-name').forEach(inp =>
       inp.addEventListener('input', () => { labels[+inp.dataset.i].name = inp.value; }));
-    container.querySelectorAll('.lb-color').forEach(sel =>
-      sel.addEventListener('change', () => {
-        labels[+sel.dataset.i].color = sel.value;
-        const dot = sel.closest('div').querySelector('span');
-        if (dot) dot.style.background = sel.value;
-      }));
+    container.querySelectorAll('.lb-swatches button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.i;
+        const color = btn.dataset.color;
+        labels[i].color = color;
+        // Update dot
+        const dot = container.querySelector(`.lb-dot[data-i="${i}"]`);
+        if (dot) dot.style.background = color;
+        // Update swatch borders in this row
+        container.querySelectorAll(`.lb-swatches[data-i="${i}"] button`).forEach(b => {
+          const selected = b.dataset.color === color;
+          b.style.border = selected ? '3px solid var(--text)' : '2px solid transparent';
+          b.style.outline = selected ? '2px solid var(--surface-1)' : 'none';
+        });
+      });
+    });
   }
 
   openModal(`${t('settings_lang_config_title')}: ${lang.flag || '🌐'} ${lang.name}`, `
