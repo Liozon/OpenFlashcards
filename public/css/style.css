@@ -1189,7 +1189,7 @@ img {
   background: var(--surface);
   border-radius: var(--radius);
   width: 100%;
-  max-width: 480px;
+  max-width: 600px;
   box-shadow: var(--shadow-lg);
   max-height: 90vh;
   overflow-y: auto;
