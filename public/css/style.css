@@ -1189,7 +1189,7 @@ img {
   background: var(--surface);
   border-radius: var(--radius);
   width: 100%;
-  max-width: 480px;
+  max-width: 600px;
   box-shadow: var(--shadow-lg);
   max-height: 90vh;
   overflow-y: auto;
@@ -1351,6 +1351,44 @@ img {
 .selected-chip::after {
   content: ' ✕';
   opacity: .6;
+}
+
+/* ── TRAIN SETTINGS PANEL (collapsible on mobile) ────────────── */
+.train-settings-toggle {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .train-settings-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .train-settings-toggle.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  .train-settings-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  .train-settings-panel.open {
+    max-height: 600px;
+  }
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */

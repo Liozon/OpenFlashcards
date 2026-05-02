@@ -42,12 +42,15 @@ function renderTrain(el) {
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
+    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="false" aria-controls="trainSettingsPanel">⚙️</button>' +
     '</div>' +
 
+    '<div id="trainSettingsPanel" class="train-settings-panel">' +
     '<div class="filter-row">' +
     '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
+    '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="typeFilters">' +
@@ -69,6 +72,7 @@ function renderTrain(el) {
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
     '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
     '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
+    '</div>' +
     '</div>' +
 
     '<div id="quizArea"></div>';
@@ -104,16 +108,17 @@ async function _populateLabelFilters(lang) {
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
   _trainMode = mode;
-  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting,#modeMixed').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const isWord = mode === 'word';
   const isPhrase = mode === 'phrase';
   const isWriting = mode === 'writing';
-  document.getElementById('typeFilters').style.display = (isWord || isWriting) ? '' : 'none';
-  document.getElementById('dirFilters').style.display = isWord ? '' : 'none';
-  document.getElementById('writingDiffFilters').style.display = isWriting ? '' : 'none';
+  const isMixed = mode === 'mixed';
+  document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
+  document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
+  document.getElementById('writingDiffFilters').style.display = (isWriting || isPhrase || isMixed) ? '' : 'none';
   const lf = document.getElementById('labelFilters');
-  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase) ? '' : 'none';
+  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed) ? '' : 'none';
   loadQuestion();
 };
 
@@ -172,6 +177,15 @@ window.setWritingDifficulty = function (easy, btn) {
 async function loadQuestion() {
   if (_trainMode === 'phrase') return await loadPhraseQuestion();
   if (_trainMode === 'writing') return await loadWritingQuestion();
+  if (_trainMode === 'mixed') return await loadMixedQuestion();
+  return await loadWordQuestion();
+}
+
+async function loadMixedQuestion() {
+  const modes = ['word', 'phrase', 'writing'];
+  const picked = modes[Math.floor(Math.random() * modes.length)];
+  if (picked === 'phrase') return await loadPhraseQuestion();
+  if (picked === 'writing') return await loadWritingQuestion();
   return await loadWordQuestion();
 }
 
@@ -392,6 +406,11 @@ function renderPhraseQuiz(phrase) {
   const transEl = document.getElementById('phraseTransEl');
   transEl.appendChild(document.createTextNode(' '));
   transEl.appendChild(TTS.button(phrase.translation, nativeLang));
+
+  // In easy mode, auto-speak the phrase in the target language
+  if (_writingEasyMode) {
+    TTS.speak(phrase.text, lang);
+  }
 
   // Wire tooltip/TTS clicks
   loadWordsForTooltips(lang, phrase);
@@ -790,6 +809,15 @@ function getWritingDistractorLetters(lang, neededLetters) {
   }
   return result;
 }
+
+window.toggleTrainSettings = function () {
+  const panel = document.getElementById('trainSettingsPanel');
+  const btn = document.getElementById('trainSettingsToggle');
+  if (!panel || !btn) return;
+  const open = panel.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.classList.toggle('active', open);
+};
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
