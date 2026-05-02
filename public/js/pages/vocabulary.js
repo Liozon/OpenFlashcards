@@ -410,7 +410,9 @@ window.editWord = function (id, lang) {
   const isVerb = w.type === 'verb';
   const isNoun = w.type === 'noun';
 
-  const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const langDataBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const langPronouns = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataBase.isoCode]) || langDataBase.pronouns || [];
+  const langData = langPronouns.length ? { ...langDataBase, pronouns: langPronouns } : langDataBase;
   const declensions = langData.declensions || [];
   const verbGroups = langData.verbGroups || [];
   const existingDecl = w.declensions || {};
@@ -427,7 +429,10 @@ window.editWord = function (id, lang) {
       </div>` : '';
 
   // Conjugation section for verbs — per-pronoun form + translation
-  const pronounKeys = Object.keys(existingConj);
+  // Use existing conjugation keys if present, otherwise fall back to the language's pronoun list
+  const configPronouns = langData.pronouns || [];
+  const existingKeys = Object.keys(existingConj);
+  const pronounKeys = existingKeys.length ? existingKeys : configPronouns;
   const conjHtml = isVerb && pronounKeys.length
     ? `<details style="margin-bottom:14px">
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
@@ -508,16 +513,24 @@ window.saveWordEdit = async function (id, lang) {
 
   // Collect conjugation edits (per-pronoun form + translation)
   const w = _vocabWords.find(x => x.id === id);
-  if (w && w.conjugation) {
-    const conj = {};
-    Object.keys(w.conjugation).forEach(p => {
-      const formEl = document.getElementById('meConj_' + p);
-      const trEl = document.getElementById('meCT_' + p);
-      const form = formEl ? formEl.value.trim() : normConj(w.conjugation[p]).form;
-      const tr = trEl ? trEl.value.trim() : normConj(w.conjugation[p]).translation;
-      if (form || tr) conj[p] = { form, translation: tr };
-    });
-    body.conjugation = conj;
+  if (w && w.type === 'verb') {
+    const langDataSaveBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+    const langPronounsSave = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataSaveBase.isoCode]) || langDataSaveBase.pronouns || [];
+    const langDataSave = langPronounsSave.length ? { ...langDataSaveBase, pronouns: langPronounsSave } : langDataSaveBase;
+    const existingConjSave = w.conjugation || {};
+    const existingKeysSave = Object.keys(existingConjSave);
+    const pronounKeysSave = existingKeysSave.length ? existingKeysSave : (langDataSave.pronouns || []);
+    if (pronounKeysSave.length) {
+      const conj = {};
+      pronounKeysSave.forEach(p => {
+        const formEl = document.getElementById('meConj_' + p);
+        const trEl = document.getElementById('meCT_' + p);
+        const form = formEl ? formEl.value.trim() : normConj(existingConjSave[p]).form;
+        const tr = trEl ? trEl.value.trim() : normConj(existingConjSave[p]).translation;
+        if (form || tr) conj[p] = { form, translation: tr };
+      });
+      body.conjugation = conj;
+    }
   }
 
   // Collect declensions
