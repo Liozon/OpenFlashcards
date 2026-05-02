@@ -50,6 +50,7 @@ function renderTrain(el) {
     '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
+    '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="typeFilters">' +
@@ -107,16 +108,17 @@ async function _populateLabelFilters(lang) {
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
   _trainMode = mode;
-  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting,#modeMixed').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const isWord = mode === 'word';
   const isPhrase = mode === 'phrase';
   const isWriting = mode === 'writing';
-  document.getElementById('typeFilters').style.display = (isWord || isWriting) ? '' : 'none';
-  document.getElementById('dirFilters').style.display = isWord ? '' : 'none';
+  const isMixed = mode === 'mixed';
+  document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
+  document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
   document.getElementById('writingDiffFilters').style.display = isWriting ? '' : 'none';
   const lf = document.getElementById('labelFilters');
-  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase) ? '' : 'none';
+  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed) ? '' : 'none';
   loadQuestion();
 };
 
@@ -175,6 +177,15 @@ window.setWritingDifficulty = function (easy, btn) {
 async function loadQuestion() {
   if (_trainMode === 'phrase') return await loadPhraseQuestion();
   if (_trainMode === 'writing') return await loadWritingQuestion();
+  if (_trainMode === 'mixed') return await loadMixedQuestion();
+  return await loadWordQuestion();
+}
+
+async function loadMixedQuestion() {
+  const modes = ['word', 'phrase', 'writing'];
+  const picked = modes[Math.floor(Math.random() * modes.length)];
+  if (picked === 'phrase') return await loadPhraseQuestion();
+  if (picked === 'writing') return await loadWritingQuestion();
   return await loadWordQuestion();
 }
 
@@ -512,7 +523,7 @@ window.checkPhraseAnswer = async function () {
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
     ? t('train_correct_msg')
-    : `🗑 ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
+    : `✗ ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkPhraseBtn').classList.add('hidden');
