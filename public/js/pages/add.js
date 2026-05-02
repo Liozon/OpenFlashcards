@@ -115,6 +115,32 @@ function renderAdd(el) {
       </div>
     </div>`;
 
+  // ── Label pickers ──────────────────────────────────────────────────────────
+  // Inject the label picker widget into both the word and phrase containers.
+  // buildLabelPicker / toggleLabelPick / showCreateLabelInline /
+  // confirmCreateLabelInline are all defined in vocabulary.js which loads first.
+  const wordLabelContainer = document.getElementById('wordLabelPickerContainer');
+  if (wordLabelContainer && typeof buildLabelPicker === 'function') {
+    wordLabelContainer.innerHTML = buildLabelPicker([], 'wordLabelPickerContainer');
+  }
+
+  const phraseLabelContainer = document.getElementById('phraseLabelPickerContainer');
+  if (phraseLabelContainer && typeof buildLabelPicker === 'function') {
+    phraseLabelContainer.innerHTML = buildLabelPicker([], 'phraseLabelPickerContainer');
+  }
+
+  // Expose getters used by submitWord / submitPhrase
+  window.getAddPageSelectedLabels = function () {
+    const chips = document.getElementById('wordLabelPickerContainer-chips');
+    if (!chips) return [];
+    return [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid).filter(Boolean);
+  };
+  window.getAddPagePhraseSelectedLabels = function () {
+    const chips = document.getElementById('phraseLabelPickerContainer-chips');
+    if (!chips) return [];
+    return [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid).filter(Boolean);
+  };
+
   // Build conjugation grid
   const conjGrid = document.getElementById('conjGrid');
   if (conjGrid) {
