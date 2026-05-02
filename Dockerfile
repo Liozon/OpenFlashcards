@@ -8,7 +8,7 @@ FROM node:20-alpine
 # Metadata
 LABEL org.opencontainers.image.title="OpenFlashcards"
 LABEL org.opencontainers.image.description="A lightweight, responsive web application for language learning with flashcards, progress and TTS"
-LABEL org.opencontainers.image.version="2.3"
+LABEL org.opencontainers.image.version="2.4"
 
 # Working directory
 WORKDIR /app

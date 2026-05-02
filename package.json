@@ -1,6 +1,6 @@
 {
   "name": "openflashcards",
-  "version": "2.0.0",
+  "version": "2.4",
   "description": "OpenFlashcards – lightweight language learning flashcard app",
   "main": "src/server.js",
   "scripts": {
