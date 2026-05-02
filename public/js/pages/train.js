@@ -42,8 +42,10 @@ function renderTrain(el) {
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
+    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="false" aria-controls="trainSettingsPanel">⚙️</button>' +
     '</div>' +
 
+    '<div id="trainSettingsPanel" class="train-settings-panel">' +
     '<div class="filter-row">' +
     '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
@@ -69,6 +71,7 @@ function renderTrain(el) {
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
     '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
     '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
+    '</div>' +
     '</div>' +
 
     '<div id="quizArea"></div>';
@@ -790,6 +793,15 @@ function getWritingDistractorLetters(lang, neededLetters) {
   }
   return result;
 }
+
+window.toggleTrainSettings = function () {
+  const panel = document.getElementById('trainSettingsPanel');
+  const btn = document.getElementById('trainSettingsToggle');
+  if (!panel || !btn) return;
+  const open = panel.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.classList.toggle('active', open);
+};
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
