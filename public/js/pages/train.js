@@ -116,7 +116,7 @@ window.setTrainMode = function (mode, btn) {
   const isMixed = mode === 'mixed';
   document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
   document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
-  document.getElementById('writingDiffFilters').style.display = isWriting ? '' : 'none';
+  document.getElementById('writingDiffFilters').style.display = (isWriting || isMixed) ? '' : 'none';
   const lf = document.getElementById('labelFilters');
   if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed) ? '' : 'none';
   loadQuestion();
@@ -407,6 +407,11 @@ function renderPhraseQuiz(phrase) {
   transEl.appendChild(document.createTextNode(' '));
   transEl.appendChild(TTS.button(phrase.translation, nativeLang));
 
+  // In easy mode (mixed), auto-speak the phrase in the target language
+  if (_writingEasyMode && (_trainMode === 'mixed')) {
+    TTS.speak(phrase.text, lang);
+  }
+
   // Wire tooltip/TTS clicks
   loadWordsForTooltips(lang, phrase);
 
@@ -523,7 +528,7 @@ window.checkPhraseAnswer = async function () {
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
     ? t('train_correct_msg')
-    : `✗ ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
+    : `🗑 ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkPhraseBtn').classList.add('hidden');
