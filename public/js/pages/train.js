@@ -116,7 +116,7 @@ window.setTrainMode = function (mode, btn) {
   const isMixed = mode === 'mixed';
   document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
   document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
-  document.getElementById('writingDiffFilters').style.display = (isWriting || isMixed) ? '' : 'none';
+  document.getElementById('writingDiffFilters').style.display = (isWriting || isPhrase || isMixed) ? '' : 'none';
   const lf = document.getElementById('labelFilters');
   if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed) ? '' : 'none';
   loadQuestion();
@@ -407,8 +407,8 @@ function renderPhraseQuiz(phrase) {
   transEl.appendChild(document.createTextNode(' '));
   transEl.appendChild(TTS.button(phrase.translation, nativeLang));
 
-  // In easy mode (mixed), auto-speak the phrase in the target language
-  if (_writingEasyMode && (_trainMode === 'mixed')) {
+  // In easy mode, auto-speak the phrase in the target language
+  if (_writingEasyMode) {
     TTS.speak(phrase.text, lang);
   }
 
