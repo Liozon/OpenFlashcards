@@ -235,7 +235,11 @@ window.openLangConfig = function (isoCode) {
     container.querySelectorAll('.lb-name').forEach(inp =>
       inp.addEventListener('input', () => { labels[+inp.dataset.i].name = inp.value; }));
     container.querySelectorAll('.lb-color').forEach(sel =>
-      sel.addEventListener('change', () => { labels[+sel.dataset.i].color = sel.value; }));
+      sel.addEventListener('change', () => {
+        labels[+sel.dataset.i].color = sel.value;
+        const dot = sel.closest('div').querySelector('span');
+        if (dot) dot.style.background = sel.value;
+      }));
   }
 
   openModal(`${t('settings_lang_config_title')}: ${lang.flag || '🌐'} ${lang.name}`, `
