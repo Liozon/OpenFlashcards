@@ -344,28 +344,27 @@ window.showCreateLabelInline = function (chipsId, lang) {
   // Don't add duplicates
   if (chips.querySelector('.new-label-input')) return;
 
-  const COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63'];
-  let colorIdx = 0;
+  const DEFAULT_COLOR = '#439b00';
 
   const wrapper = document.createElement('div');
   wrapper.className = 'new-label-input';
   wrapper.style.cssText = 'display:flex;gap:4px;align-items:center;margin-top:4px;width:100%';
   wrapper.innerHTML =
     `<input type="text" placeholder="${t('labels_add_ph')}" style="flex:1;padding:4px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem" id="newLabelNameInline">` +
-    `<button type="button" id="newLabelColorBtn" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;background:${COLORS[0]};flex-shrink:0" title="Pick color"></button>` +
+    `<span style="position:relative;width:28px;height:28px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center" title="Pick color">` +
+      `<span id="newLabelColorDot" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:${DEFAULT_COLOR};display:block;pointer-events:none"></span>` +
+      `<input type="color" id="newLabelColorPicker" value="${DEFAULT_COLOR}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">` +
+    `</span>` +
     `<button type="button" class="btn btn-sm btn-primary" style="padding:3px 8px;font-size:.78rem" onclick="confirmCreateLabelInline('${chipsId}','${lang}')">✓</button>` +
     `<button type="button" class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:.78rem" onclick="this.closest('.new-label-input').remove()">✕</button>`;
 
   chips.appendChild(wrapper);
 
-  const colorBtn = wrapper.querySelector('#newLabelColorBtn');
-  colorBtn.addEventListener('click', () => {
-    colorIdx = (colorIdx + 1) % COLORS.length;
-    colorBtn.style.background = COLORS[colorIdx];
-    colorBtn._color = COLORS[colorIdx];
+  const colorPicker = wrapper.querySelector('#newLabelColorPicker');
+  const colorDot    = wrapper.querySelector('#newLabelColorDot');
+  colorPicker.addEventListener('input', () => {
+    colorDot.style.background = colorPicker.value;
   });
-  colorBtn._color = COLORS[0];
-  colorBtn._colors = COLORS;
 
   wrapper.querySelector('#newLabelNameInline').focus();
 };
@@ -375,10 +374,10 @@ window.confirmCreateLabelInline = async function (chipsId, lang) {
   const wrapper = chips && chips.querySelector('.new-label-input');
   if (!wrapper) return;
   const nameEl = wrapper.querySelector('#newLabelNameInline');
-  const colorBtn = wrapper.querySelector('#newLabelColorBtn');
+  const colorPicker = wrapper.querySelector('#newLabelColorPicker');
   const name = nameEl ? nameEl.value.trim() : '';
   if (!name) return;
-  const color = colorBtn ? (colorBtn._color || '#6c757d') : '#6c757d';
+  const color = colorPicker ? colorPicker.value : '#6c757d';
   try {
     const result = await api('POST', '/api/labels', { lang, name, color });
     await loadConfig();
