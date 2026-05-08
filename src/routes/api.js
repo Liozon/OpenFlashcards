@@ -35,7 +35,7 @@ function normConj(entry) {
 }
 
 const router = require('express').Router();
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const {
   getWords, saveWords,
   getPhrases, savePhrases,
@@ -158,7 +158,7 @@ router.post('/words', (req, res) => {
     return res.status(409).json({ error: 'Word already exists.' });
 
   const word = {
-    id: uuidv4(),
+    id: randomUUID(),
     type,
     literal: literal.trim(),
     translation: translation.trim(),
@@ -240,7 +240,7 @@ router.post('/phrases', (req, res) => {
 
   const phrases = getPhrases(userId(req), lang);
   const phrase = {
-    id: uuidv4(),
+    id: randomUUID(),
     langCode: lang,
     text: text.trim(),
     translation: translation.trim(),
@@ -290,7 +290,7 @@ router.delete('/phrases/:id', (req, res) => {
 // GET /api/quiz?lang=fr[&type=verb,noun][&direction=random][&labels=id1,id2]
 router.get('/quiz', (req, res) => {
   const { lang, direction = 'random' } = req.query;
-  const types  = req.query.types  ? req.query.types.split(',')  : TYPES;
+  const types = req.query.types ? req.query.types.split(',') : TYPES;
   const labels = req.query.labels ? req.query.labels.split(',') : [];
   if (!lang) return res.status(400).json({ error: 'lang required' });
 
@@ -510,7 +510,7 @@ router.post('/labels', (req, res) => {
   if (!langData.labels) langData.labels = [];
   if (langData.labels.find(lb => lb.name.toLowerCase() === name.toLowerCase()))
     return res.status(409).json({ error: 'Label already exists.' });
-  const label = { id: uuidv4(), name: name.trim(), color: color || '#6c757d' };
+  const label = { id: randomUUID(), name: name.trim(), color: color || '#6c757d' };
   langData.labels.push(label);
   saveUserConfig(userId(req), cfg);
   res.status(201).json({ ok: true, label });

@@ -1,8 +1,8 @@
 'use strict';
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR   = process.env.DATA_DIR   || path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', '..', 'data');
 const CONFIG_DIR = process.env.CONFIG_DIR || path.join(__dirname, '..', '..', 'config');
 const USERS_FILE = path.join(CONFIG_DIR, 'users.json');
 
@@ -15,8 +15,8 @@ function ensureDataDirs() {
   // Bootstrap users.json with admin if missing
   if (!fs.existsSync(USERS_FILE)) {
     const bcrypt = require('bcryptjs');
-    const { v4: uuidv4 } = require('uuid');
-    const adminId = uuidv4();
+    const { randomUUID } = require('crypto');
+    const adminId = randomUUID();
     const users = {
       [adminId]: {
         id: adminId,
