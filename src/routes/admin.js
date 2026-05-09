@@ -1,7 +1,7 @@
 'use strict';
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { getUsers, saveUsers, getUserConfig, saveUserConfig } = require('../utils/storage');
 const { requireAdmin } = require('../middleware/auth');
 
@@ -28,7 +28,7 @@ router.post('/users', (req, res) => {
   if (Object.values(users).find(u => u.username === username.trim()))
     return res.status(409).json({ error: 'Username already taken.' });
 
-  const id = uuidv4();
+  const id = randomUUID();
   users[id] = {
     id,
     username: username.trim(),
@@ -43,7 +43,7 @@ router.post('/users', (req, res) => {
 // PUT /admin/users/:id – reset password or change role
 router.put('/users/:id', (req, res) => {
   const users = getUsers();
-  const user  = users[req.params.id];
+  const user = users[req.params.id];
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
   if (req.body.password) {
@@ -51,7 +51,7 @@ router.put('/users/:id', (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 4 characters.' });
     user.passwordHash = bcrypt.hashSync(req.body.password, 10);
   }
-  if (req.body.role && ['admin','user'].includes(req.body.role)) {
+  if (req.body.role && ['admin', 'user'].includes(req.body.role)) {
     user.role = req.body.role;
   }
   saveUsers(users);
