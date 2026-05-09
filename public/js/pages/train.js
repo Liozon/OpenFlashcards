@@ -258,6 +258,7 @@ function renderWordQuiz(q) {
   const ttsWord = q.showNative ? q.answerText : q.promptText;
   wordEl.appendChild(document.createTextNode(' '));
   wordEl.appendChild(TTS.button(ttsWord, lang));
+  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang));
 
   const grid = document.getElementById('choicesGrid');
   q.choices.forEach(choice => {
@@ -405,7 +406,8 @@ function renderPhraseQuiz(phrase) {
   // TTS for the translation (native lang)
   const transEl = document.getElementById('phraseTransEl');
   transEl.appendChild(document.createTextNode(' '));
-  transEl.appendChild(TTS.button(phrase.translation, nativeLang));
+  transEl.appendChild(TTS.button(phrase.text, lang));
+  transEl.appendChild(TTS.buttonSlow(phrase.text, lang));
 
   // In easy mode, auto-speak the phrase in the target language
   if (_writingEasyMode) {
@@ -451,6 +453,8 @@ function showTooltip(el, text, word, langCode) {
   tip.className = 'word-tooltip';
   tip.textContent = text || '? (click 🔊)';
   const ttsBtn = TTS.button(word, langCode, 'margin-left:6px;padding:2px 6px;font-size:.8rem;');
+  const ttsBtnSlow = TTS.buttonSlow(word, langCode, 'margin-left:2px;padding:2px 6px;font-size:.8rem;');
+  tip.appendChild(ttsBtnSlow);
   tip.style.display = 'flex';
   tip.style.alignItems = 'center';
   tip.style.gap = '4px';
@@ -528,7 +532,7 @@ window.checkPhraseAnswer = async function () {
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
     ? t('train_correct_msg')
-    : `🗑 ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
+    : `✗ ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkPhraseBtn').classList.add('hidden');
@@ -654,6 +658,7 @@ function renderWritingQuiz(q) {
 
   // Inject TTS button into slot (always visible)
   document.getElementById('writingTtsSlot').appendChild(TTS.button(targetWord, lang));
+  document.getElementById('writingTtsSlot').appendChild(TTS.buttonSlow(targetWord, lang));
 
   // In easy mode, auto-speak the target word
   if (_writingEasyMode) {

@@ -111,10 +111,11 @@ router.put('/languages/:code', (req, res) => {
 
 // GET /api/tts?lang=uk&q=молоко  – proxy Google TTS to avoid CORS/referer blocks
 router.get('/tts', async (req, res) => {
-  const { lang, q } = req.query;
+  const { lang, q, slow } = req.query;
   if (!lang || !q) return res.status(400).json({ error: 'lang and q required' });
   const https = require('https');
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob`;
+  const speedParam = slow === '1' ? '&ttsspeed=0.1' : '';
+  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob${speedParam}`;
   const request = https.get(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; OpenFlashcards/1.0)',

@@ -387,7 +387,7 @@ window.submitChangePassword = async function () {
   try {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
-    toast(`🗑 ${t('settings_pw_ok')}`);
+    toast(`✅ ${t('settings_pw_ok')}`);
   } catch (e) {
     errEl.textContent = e.error || t('common_error');
     errEl.classList.remove('hidden');

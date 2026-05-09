@@ -232,7 +232,7 @@ function buildWordCard(w) {
     '<div class="word-actions">' +
     '<span id="tts-' + w.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="editWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
-    '<button class="btn btn-sm btn-danger"    onclick="deleteWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑</button>' +
+    '<button class="btn btn-sm btn-danger"    onclick="deleteWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
     '<div class="word-literal">' + esc(display) + '</div>' +
@@ -249,7 +249,12 @@ function buildWordCard(w) {
 
   // TTS button via DOM to avoid HTML injection issues
   const ttsSlot = div.querySelector('#tts-' + w.id);
-  if (ttsSlot) ttsSlot.replaceWith(TTS.button(display, w.langCode));
+  if (ttsSlot) {
+    const normalBtn = TTS.button(display, w.langCode);
+    const slowBtn = TTS.buttonSlow(display, w.langCode);
+    ttsSlot.replaceWith(normalBtn);
+    normalBtn.insertAdjacentElement('afterend', slowBtn);
+  }
 
   return div;
 }
@@ -279,7 +284,7 @@ function buildPhraseCard(p) {
     '<div class="word-actions">' +
     '<span id="ptts-' + p.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
-    '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">🗑</button>' +
+    '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
     '<div class="word-literal" style="font-size:1rem">' + esc(p.text) + '</div>' +
@@ -299,7 +304,12 @@ function buildPhraseCard(p) {
     labelHtml;
 
   const ttsSlot = div.querySelector('#ptts-' + p.id);
-  if (ttsSlot) ttsSlot.replaceWith(TTS.button(p.text, p.langCode));
+  if (ttsSlot) {
+    const normalBtn = TTS.button(p.text, p.langCode);
+    const slowBtn = TTS.buttonSlow(p.text, p.langCode);
+    ttsSlot.replaceWith(normalBtn);
+    normalBtn.insertAdjacentElement('afterend', slowBtn);
+  }
 
   return div;
 }
@@ -352,8 +362,8 @@ window.showCreateLabelInline = function (chipsId, lang) {
   wrapper.innerHTML =
     `<input type="text" placeholder="${t('labels_add_ph')}" style="flex:1;padding:4px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem" id="newLabelNameInline">` +
     `<span style="position:relative;width:28px;height:28px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center" title="Pick color">` +
-      `<span id="newLabelColorDot" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:${DEFAULT_COLOR};display:block;pointer-events:none"></span>` +
-      `<input type="color" id="newLabelColorPicker" value="${DEFAULT_COLOR}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">` +
+    `<span id="newLabelColorDot" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:${DEFAULT_COLOR};display:block;pointer-events:none"></span>` +
+    `<input type="color" id="newLabelColorPicker" value="${DEFAULT_COLOR}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">` +
     `</span>` +
     `<button type="button" class="btn btn-sm btn-primary" style="padding:3px 8px;font-size:.78rem" onclick="confirmCreateLabelInline('${chipsId}','${lang}')">✓</button>` +
     `<button type="button" class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:.78rem" onclick="this.closest('.new-label-input').remove()">✕</button>`;
@@ -361,7 +371,7 @@ window.showCreateLabelInline = function (chipsId, lang) {
   chips.appendChild(wrapper);
 
   const colorPicker = wrapper.querySelector('#newLabelColorPicker');
-  const colorDot    = wrapper.querySelector('#newLabelColorDot');
+  const colorDot = wrapper.querySelector('#newLabelColorDot');
   colorPicker.addEventListener('input', () => {
     colorDot.style.background = colorPicker.value;
   });
@@ -587,7 +597,7 @@ window.deleteWord = async function (id, lang) {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
     renderVocabGrid();
-    toast(`🗑 ${t('vocab_deleted')}`);
+    toast(`🗑️️ ${t('vocab_deleted')}`);
   } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
 };
 
@@ -660,7 +670,7 @@ window.deletePhrase = async function (id, lang) {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
     renderVocabGrid();
-    toast(`🗑 ${t('vocab_deleted')}`);
+    toast(`🗑️ ${t('vocab_deleted')}`);
   } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
 };
 

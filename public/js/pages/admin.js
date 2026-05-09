@@ -75,7 +75,7 @@ async function loadUserTable() {
                 <td>
                   <div style="display:flex;gap:6px">
                     <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">🔑 ${t('admin_reset_pw')}</button>
-                    ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">🗑</button>` : ''}
+                    ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">🗑️</button>` : ''}
                   </div>
                 </td>
               </tr>`).join('')}
@@ -151,7 +151,7 @@ window.deleteUser = async function (id, username) {
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
-    toast(`🗑 ${t('admin_deleted')}`);
+    toast(`🗑️ ${t('admin_deleted')}`);
   } catch (e) { toast(e.error || 'Failed.', 'danger'); }
 };
 
