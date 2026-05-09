@@ -154,7 +154,7 @@ cd OpenFlashcards
 npm install
 chmod +x build-and-export.sh
 ./build-and-export.sh
-# This creates `openflashcards.tar.gz`.
+# This creates `Docker.OpenFlashcards.vlatest.tar.gz`.
 
 docker run -d \
   --name openflashcards \
