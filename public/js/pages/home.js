@@ -36,12 +36,13 @@ async function renderHome(el) {
   try {
     const stats = await api('GET', '/api/stats?lang=' + encodeURIComponent(lang));
     document.getElementById('statsGrid').innerHTML =
-      '<div class="stat-card"><div class="stat-number">' + stats.totalWords + '</div><div class="stat-label">' + t('home_total_words') + '</div></div>' +
-      '<div class="stat-card"><div class="stat-number">' + stats.totalPhrases + '</div><div class="stat-label">' + t('home_phrases') + '</div></div>' +
-      '<div class="stat-card"><div class="stat-number">' + stats.mastered + '</div><div class="stat-label">' + t('home_mastered') + '</div></div>' +
-      '<div class="stat-card"><div class="stat-number">' + (stats.byType.noun || 0) + '</div><div class="stat-label">' + t('home_nouns') + '</div></div>' +
-      '<div class="stat-card"><div class="stat-number">' + (stats.byType.verb || 0) + '</div><div class="stat-label">' + t('home_verbs') + '</div></div>' +
-      '<div class="stat-card"><div class="stat-number">' + (stats.byType.adjective || 0) + '</div><div class="stat-label">' + t('home_adj') + '</div></div>';
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {})"><div class="stat-number">' + stats.totalWords + '</div><div class="stat-label">' + t('home_total_words') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'phrase\'})"><div class="stat-number">' + stats.totalPhrases + '</div><div class="stat-label">' + t('home_phrases') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'mastered\'})"><div class="stat-number">' + stats.mastered + '</div><div class="stat-label">' + t('home_mastered') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'noun\'})"><div class="stat-number">' + (stats.byType.noun || 0) + '</div><div class="stat-label">' + t('home_nouns') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'verb\'})"><div class="stat-number">' + (stats.byType.verb || 0) + '</div><div class="stat-label">' + t('home_verbs') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adjective\'})"><div class="stat-number">' + (stats.byType.adjective || 0) + '</div><div class="stat-label">' + t('home_adj') + '</div></div>' +
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adverb\'})"><div class="stat-number">' + (stats.byType.adverb || 0) + '</div><div class="stat-label">' + t('home_adv') + '</div></div>';
   } catch {
     document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">Could not load stats.</p>';
   }

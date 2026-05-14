@@ -455,6 +455,22 @@ img {
   box-shadow: var(--shadow);
 }
 
+.stat-card-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.stat-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  border-color: var(--primary);
+}
+
+.stat-card-clickable:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow);
+}
+
 .stat-number {
   font-size: 2rem;
   font-weight: 900;

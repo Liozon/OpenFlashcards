@@ -40,22 +40,29 @@ let _vocabPhrases = [];
 let _vocabFilter = '';
 let _vocabSearch = '';
 let _vocabLabel = '';   // filter by label id
+let _vocabMastered = false; // filter only mastered items
 
-async function renderVocabulary(el) {
+async function renderVocabulary(el, params) {
+  params = params || {};
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
+
+  // Determine initial filter from params
+  const initFilter = (params.filter && params.filter !== 'mastered') ? params.filter : '';
+  const initMastered = params.filter === 'mastered';
 
   el.innerHTML = `
     <div class="page-title">📚 ${t('vocab_title')}</div>
     <div class="vocab-controls">
       <input type="search" id="vocabSearch" class="search-input" placeholder="${t('vocab_search')}">
       <div class="type-filter" id="vocabFilter">
-        <button class="type-btn active" data-type="">${t('vocab_all')}</button>
-        <button class="type-btn" data-type="noun">📦 ${t('vocab_nouns')}</button>
-        <button class="type-btn" data-type="verb">⚡ ${t('vocab_verbs')}</button>
-        <button class="type-btn" data-type="adjective">🎨 ${t('vocab_adj')}</button>
-        <button class="type-btn" data-type="adverb">💨 ${t('vocab_adv')}</button>
-        <button class="type-btn" data-type="phrase">💬 ${t('vocab_phrases')}</button>
+        <button class="type-btn ${!initFilter && !initMastered ? 'active' : ''}" data-type="">${t('vocab_all')}</button>
+        <button class="type-btn ${initFilter === 'noun' ? 'active' : ''}" data-type="noun">📦 ${t('vocab_nouns')}</button>
+        <button class="type-btn ${initFilter === 'verb' ? 'active' : ''}" data-type="verb">⚡ ${t('vocab_verbs')}</button>
+        <button class="type-btn ${initFilter === 'adjective' ? 'active' : ''}" data-type="adjective">🎨 ${t('vocab_adj')}</button>
+        <button class="type-btn ${initFilter === 'adverb' ? 'active' : ''}" data-type="adverb">💨 ${t('vocab_adv')}</button>
+        <button class="type-btn ${initFilter === 'phrase' ? 'active' : ''}" data-type="phrase">💬 ${t('vocab_phrases')}</button>
+        <button class="type-btn ${initMastered ? 'active' : ''}" data-type="mastered">✅ ${t('vocab_mastered') || 'Maîtrisés'}</button>
       </div>
       <div id="labelFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center"></div>
     </div>
@@ -66,15 +73,22 @@ async function renderVocabulary(el) {
       <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
     </div>`;
 
-  _vocabFilter = '';
+  _vocabFilter = initFilter;
   _vocabSearch = '';
   _vocabLabel = '';
+  _vocabMastered = initMastered;
 
   document.getElementById('vocabFilter').querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#vocabFilter .type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      _vocabFilter = btn.dataset.type;
+      if (btn.dataset.type === 'mastered') {
+        _vocabFilter = '';
+        _vocabMastered = true;
+      } else {
+        _vocabFilter = btn.dataset.type;
+        _vocabMastered = false;
+      }
       renderVocabGrid();
     });
   });
@@ -139,16 +153,21 @@ function renderVocabGrid() {
         w.translation.toLowerCase().includes(_vocabSearch) ||
         (w.definition || '').toLowerCase().includes(_vocabSearch);
       const matchLabel = !_vocabLabel || (w.labels || []).includes(_vocabLabel);
-      return matchType && matchSearch && matchLabel;
+      const maxProg = w.maxProgress || wordMaxProgressClient(w.literal, w.infinitive);
+      const matchMastered = !_vocabMastered || (w.progress || 0) >= maxProg;
+      return matchType && matchSearch && matchLabel && matchMastered;
     }).map(w => ({ ...w, _kind: 'word' })));
   }
   if (showPhrases) {
-    items = items.concat(_vocabPhrases.filter(p =>
-      (!_vocabSearch ||
+    items = items.concat(_vocabPhrases.filter(p => {
+      const matchSearch = !_vocabSearch ||
         p.text.toLowerCase().includes(_vocabSearch) ||
-        p.translation.toLowerCase().includes(_vocabSearch)) &&
-      (!_vocabLabel || (p.labels || []).includes(_vocabLabel))
-    ).map(p => ({ ...p, _kind: 'phrase' })));
+        p.translation.toLowerCase().includes(_vocabSearch);
+      const matchLabel = !_vocabLabel || (p.labels || []).includes(_vocabLabel);
+      const pMax = p.maxProgress || phraseMaxProgressClient(p.text);
+      const matchMastered = !_vocabMastered || (p.progress || 0) >= pMax;
+      return matchSearch && matchLabel && matchMastered;
+    }).map(p => ({ ...p, _kind: 'phrase' })));
   }
 
   if (!items.length) {
