@@ -225,5 +225,11 @@
   "train_writing_easy": "Facile (audio)",
   "train_writing_hard": "Difficile (muet)",
   "vocab_reset_confirm_title": "Réinitialiser la progression ?",
-  "vocab_reset_confirm_body": "Cela réinitialisera définitivement la progression d'apprentissage de cet élément. Êtes-vous sûr ?"
+  "vocab_reset_confirm_body": "Cela réinitialisera définitivement la progression d'apprentissage de cet élément. Êtes-vous sûr ?",
+  "settings_tts_title": "Vitesses TTS",
+  "settings_tts_desc": "Ajustez la vitesse de lecture pour les boutons normal (🔊) et lent (🐌).",
+  "settings_tts_normal": "Vitesse normale",
+  "settings_tts_slow": "Vitesse lente",
+  "settings_tts_sample": "Le renard brun rapide saute par-dessus le chien paresseux.",
+  "settings_tts_test": "Tester"
 }

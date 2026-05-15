@@ -225,5 +225,11 @@
   "train_writing_easy": "سهل (صوت)",
   "train_writing_hard": "صعب (صامت)",
   "vocab_reset_confirm_title": "إعادة تعيين التقدم؟",
-  "vocab_reset_confirm_body": "سيؤدي هذا إلى إعادة تعيين تقدم التعلم لهذا العنصر بشكل دائم. هل أنت متأكد؟"
+  "vocab_reset_confirm_body": "سيؤدي هذا إلى إعادة تعيين تقدم التعلم لهذا العنصر بشكل دائم. هل أنت متأكد؟",
+  "settings_tts_title": "سرعات TTS",
+  "settings_tts_desc": "اضبط سرعة التشغيل لأزرار العادي (🔊) والبطيء (🐌).",
+  "settings_tts_normal": "السرعة العادية",
+  "settings_tts_slow": "السرعة البطيئة",
+  "settings_tts_sample": "الثعلب البني السريع يقفز فوق الكلب الكسول.",
+  "settings_tts_test": "اختبار"
 }

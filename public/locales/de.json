@@ -225,5 +225,11 @@
   "train_writing_easy": "Einfach (Audio)",
   "train_writing_hard": "Schwer (stumm)",
   "vocab_reset_confirm_title": "Fortschritt zurücksetzen?",
-  "vocab_reset_confirm_body": "Der Lernfortschritt für diesen Eintrag wird dauerhaft zurückgesetzt. Sind Sie sicher?"
+  "vocab_reset_confirm_body": "Der Lernfortschritt für diesen Eintrag wird dauerhaft zurückgesetzt. Sind Sie sicher?",
+  "settings_tts_title": "TTS-Geschwindigkeiten",
+  "settings_tts_desc": "Passen Sie die Wiedergabegeschwindigkeit für Normal (🔊) und Langsam (🐌) an.",
+  "settings_tts_normal": "Normale Geschwindigkeit",
+  "settings_tts_slow": "Langsame Geschwindigkeit",
+  "settings_tts_sample": "Der schnelle braune Fuchs springt über den faulen Hund.",
+  "settings_tts_test": "Testen"
 }

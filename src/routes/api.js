@@ -104,6 +104,9 @@ router.put('/languages/:code', (req, res) => {
   // verbGroups: array of { id, name }
   if (req.body.verbGroups !== undefined) lang.verbGroups = req.body.verbGroups;
   if (req.body.labels !== undefined) lang.labels = req.body.labels;
+  // TTS speeds: floats 0.1–1.0
+  if (req.body.ttsSpeedNormal !== undefined) lang.ttsSpeedNormal = req.body.ttsSpeedNormal;
+  if (req.body.ttsSpeedSlow !== undefined) lang.ttsSpeedSlow = req.body.ttsSpeedSlow;
 
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, lang });
@@ -111,10 +114,17 @@ router.put('/languages/:code', (req, res) => {
 
 // GET /api/tts?lang=uk&q=молоко  – proxy Google TTS to avoid CORS/referer blocks
 router.get('/tts', async (req, res) => {
-  const { lang, q, slow } = req.query;
+  const { lang, q, slow, speed } = req.query;
   if (!lang || !q) return res.status(400).json({ error: 'lang and q required' });
   const https = require('https');
-  const speedParam = slow === '1' ? '&ttsspeed=0.1' : '';
+  // `speed` is a numeric override (0.1–1.0); `slow=1` is the legacy boolean flag
+  let speedParam = '';
+  if (speed !== undefined) {
+    const s = parseFloat(speed);
+    if (!isNaN(s)) speedParam = `&ttsspeed=${Math.min(2, Math.max(0.1, s)).toFixed(2)}`;
+  } else if (slow === '1') {
+    speedParam = '&ttsspeed=0.1';
+  }
   const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob${speedParam}`;
   const request = https.get(url, {
     headers: {

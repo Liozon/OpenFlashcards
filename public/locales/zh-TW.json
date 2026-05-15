@@ -225,5 +225,11 @@
   "train_writing_easy": "簡單（有聲）",
   "train_writing_hard": "困難（靜音）",
   "vocab_reset_confirm_title": "重設進度？",
-  "vocab_reset_confirm_body": "這將永久重設此條目的學習進度。您確定嗎？"
+  "vocab_reset_confirm_body": "這將永久重設此條目的學習進度。您確定嗎？",
+  "settings_tts_title": "TTS 語速",
+  "settings_tts_desc": "調整正常 (🔊) 和慢速 (🐌) 朗讀按鈕的播放速度。",
+  "settings_tts_normal": "正常語速",
+  "settings_tts_slow": "慢速",
+  "settings_tts_sample": "敏捷的棕色狐狸跳過了懶狗。",
+  "settings_tts_test": "測試"
 }
