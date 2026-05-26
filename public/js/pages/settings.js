@@ -326,6 +326,29 @@ window.openLangConfig = function (isoCode) {
         </button>
       </div>
     </div>
+    <div style="margin-top:20px">
+      <h3 style="font-size:1rem;margin-bottom:4px">🗄️ ${t('settings_tts_cache_title')}</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_tts_cache_desc')}</p>
+      <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm">
+          ⚡ ${t('settings_tts_cache_generate')}
+        </button>
+        <button type="button" id="ttsCachePurgeBtn" class="btn btn-danger btn-sm">
+          🗑️ ${t('settings_tts_cache_purge')}
+        </button>
+      </div>
+      <div id="ttsCacheGenProgress" style="display:none;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span id="ttsCacheGenLabel" style="font-size:.83rem;color:var(--text-muted)"></span>
+          <button type="button" id="ttsCacheGenCancelBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.82rem;padding:0">${t('common_cancel')}</button>
+        </div>
+        <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden">
+          <div id="ttsCacheGenBar" style="height:100%;background:var(--primary);width:0%;transition:width .2s;border-radius:6px"></div>
+        </div>
+        <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
+      </div>
+    </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
      <button class="btn btn-primary" onclick="saveLangConfig('${isoCode}')">${t('common_save')}</button>`
@@ -357,12 +380,16 @@ window.openLangConfig = function (isoCode) {
   const ttsTestNormal = document.getElementById('ttsNormalTest');
   const ttsTestSlow   = document.getElementById('ttsSlowTest');
   function ttsTestSpeak(mode) {
+    // The sample phrase is in the UI language → use _uiLang for the TTS lang param
+    // so the voice matches the text being read.
+    // nocache=1 → server skips cache read AND write; test audio is never stored on disk.
     const uiLang = window._uiLang || 'en';
     const sample = t('settings_tts_sample');
     const speed  = mode === 'slow' ? ttsSpeedSlow : ttsSpeedNormal;
     const url = '/api/tts?lang=' + encodeURIComponent(uiLang) +
-                '&q=' + encodeURIComponent(sample) +
-                '&speed=' + speed.toFixed(2);
+                '&q='       + encodeURIComponent(sample) +
+                '&speed='   + speed.toFixed(2) +
+                '&nocache=1';
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => {
@@ -376,6 +403,168 @@ window.openLangConfig = function (isoCode) {
   }
   if (ttsTestNormal) ttsTestNormal.addEventListener('click', () => ttsTestSpeak('normal'));
   if (ttsTestSlow)   ttsTestSlow.addEventListener('click',   () => ttsTestSpeak('slow'));
+
+  // ── TTS speed change tracking: remember original speeds to detect changes ──
+  const _origSpeedNormal = ttsSpeedNormal;
+  const _origSpeedSlow   = ttsSpeedSlow;
+
+  // ── TTS cache: load stats on open ─────────────────────────────────────────
+  (async () => {
+    const infoEl = document.getElementById('ttsCacheInfo');
+    if (!infoEl) return;
+    const stats = await TTS.getCacheStats(isoCode);
+    if (stats.files === 0) {
+      infoEl.textContent = t('settings_tts_cache_empty');
+    } else {
+      const kb = (stats.sizeBytes / 1024).toFixed(1);
+      infoEl.textContent = t('settings_tts_cache_info')
+        .replace('{files}', stats.files)
+        .replace('{size}',  kb);
+    }
+  })();
+
+  const purgeBtn = document.getElementById('ttsCachePurgeBtn');
+  if (purgeBtn) {
+    purgeBtn.addEventListener('click', async () => {
+      if (!confirm(t('settings_tts_cache_confirm'))) return;
+      purgeBtn.disabled = true;
+      const result = await TTS.purgeCache(isoCode);
+      const infoEl = document.getElementById('ttsCacheInfo');
+      if (result && result.ok) {
+        if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
+        toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+      } else {
+        toast(t('common_error'), 'danger');
+      }
+      purgeBtn.disabled = false;
+    });
+  }
+
+  // ── TTS cache: generate all ───────────────────────────────────────────────
+  const genBtn = document.getElementById('ttsCacheGenBtn');
+  if (genBtn) {
+    genBtn.addEventListener('click', () => _startTTSGeneration(isoCode));
+  }
+
+  async function _startTTSGeneration(langCode) {
+    const genBtn    = document.getElementById('ttsCacheGenBtn');
+    const purgeBtn2 = document.getElementById('ttsCachePurgeBtn');
+    const progressEl = document.getElementById('ttsCacheGenProgress');
+    const barEl     = document.getElementById('ttsCacheGenBar');
+    const labelEl   = document.getElementById('ttsCacheGenLabel');
+    const countEl   = document.getElementById('ttsCacheGenCount');
+    const cancelBtn = document.getElementById('ttsCacheGenCancelBtn');
+    if (!genBtn || !progressEl) return;
+
+    // Lock UI
+    genBtn.disabled    = true;
+    purgeBtn2.disabled = true;
+    progressEl.style.display = '';
+    barEl.style.width  = '0%';
+    labelEl.textContent = t('settings_tts_cache_gen_running');
+    countEl.textContent = '…';
+
+    // The server drives the entire generation loop via SSE.
+    // We pass current speeds + previous speeds so it can skip unchanged cached items
+    // and lazily delete stale files for speed-changed items.
+    const body = JSON.stringify({
+      lang:            langCode,
+      speedNormal:     ttsSpeedNormal,
+      speedSlow:       ttsSpeedSlow,
+      prevSpeedNormal: _origSpeedNormal,
+      prevSpeedSlow:   _origSpeedSlow
+    });
+
+    let abortCtrl = new AbortController();
+    cancelBtn.disabled = false;
+    cancelBtn.onclick = () => {
+      abortCtrl.abort();
+      cancelBtn.disabled = true;
+    };
+
+    let done = 0, total = 0, wasCancelled = false;
+
+    try {
+      const resp = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: abortCtrl.signal
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      // Read the SSE stream line by line
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop(); // keep incomplete last line
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let evt;
+          try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (evt.type === 'progress') {
+            done  = evt.done;
+            total = evt.total;
+            const pct = total > 0 ? Math.round(done / total * 100) : 0;
+            barEl.style.width  = pct + '%';
+            countEl.textContent = done + ' / ' + total;
+            const icon = evt.mode === 'slow' ? '🐌' : '🔊';
+            const label = evt.text || '';
+            labelEl.textContent = icon + ' ' + label.slice(0, 38) + (label.length > 38 ? '…' : '');
+          } else if (evt.type === 'done') {
+            done  = evt.done;
+            total = evt.total;
+            barEl.style.width = '100%';
+            countEl.textContent = done + ' / ' + total;
+          } else if (evt.type === 'error') {
+            toast(evt.message || t('common_error'), 'danger');
+          }
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        wasCancelled = true;
+      } else {
+        toast(t('common_error'), 'danger');
+        console.error('[TTS generate]', err);
+      }
+    }
+
+    // Restore UI
+    genBtn.disabled    = false;
+    purgeBtn2.disabled = false;
+    progressEl.style.display = 'none';
+
+    if (wasCancelled) {
+      toast(t('settings_tts_cache_gen_cancelled').replace('{n}', done));
+    } else if (total > 0) {
+      toast('✅ ' + t('settings_tts_cache_gen_done').replace('{n}', done));
+    } else {
+      toast(t('settings_tts_cache_gen_empty'));
+    }
+
+    // Refresh stats display
+    const infoEl2 = document.getElementById('ttsCacheInfo');
+    if (infoEl2) {
+      const stats2 = await TTS.getCacheStats(langCode);
+      if (stats2.files === 0) {
+        infoEl2.textContent = t('settings_tts_cache_empty');
+      } else {
+        const kb2 = (stats2.sizeBytes / 1024).toFixed(1);
+        infoEl2.textContent = t('settings_tts_cache_info')
+          .replace('{files}', stats2.files)
+          .replace('{size}',  kb2);
+      }
+    }
+  }
 
   let colorIdx = 0;
   window.addDeclension = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
@@ -405,6 +594,24 @@ window.openLangConfig = function (isoCode) {
     try {
       await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow });
       await loadConfig();
+
+      // Purge ONLY the speed bucket(s) that actually changed, leave the other intact.
+      // We purge the OLD speed value so newly-generated files (at new speed) are unaffected.
+      const normalChanged = Math.abs(ttsSpeedNormal - _origSpeedNormal) > 0.001;
+      const slowChanged   = Math.abs(ttsSpeedSlow   - _origSpeedSlow)   > 0.001;
+      let totalPurged = 0;
+      if (normalChanged) {
+        const r = await TTS.purgeCache(code, _origSpeedNormal);
+        if (r && r.ok) totalPurged += r.deleted;
+      }
+      if (slowChanged) {
+        const r = await TTS.purgeCache(code, _origSpeedSlow);
+        if (r && r.ok) totalPurged += r.deleted;
+      }
+      if (totalPurged > 0) {
+        toast(`🗑️ ${t('settings_tts_cache_speed_purged').replace('{n}', totalPurged)}`);
+      }
+
       closeModal();
       renderLangChips();
       toast(`✓ ${t('settings_config_saved')}`);

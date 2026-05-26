@@ -269,8 +269,8 @@ function buildWordCard(w) {
   // TTS button via DOM to avoid HTML injection issues
   const ttsSlot = div.querySelector('#tts-' + w.id);
   if (ttsSlot) {
-    const normalBtn = TTS.button(display, w.langCode);
-    const slowBtn = TTS.buttonSlow(display, w.langCode);
+    const normalBtn = TTS.button(display, w.langCode, null, w.id);
+    const slowBtn = TTS.buttonSlow(display, w.langCode, null, w.id);
     ttsSlot.replaceWith(normalBtn);
     normalBtn.insertAdjacentElement('afterend', slowBtn);
   }
@@ -324,8 +324,8 @@ function buildPhraseCard(p) {
 
   const ttsSlot = div.querySelector('#ptts-' + p.id);
   if (ttsSlot) {
-    const normalBtn = TTS.button(p.text, p.langCode);
-    const slowBtn = TTS.buttonSlow(p.text, p.langCode);
+    const normalBtn = TTS.button(p.text, p.langCode, null, p.id);
+    const slowBtn = TTS.buttonSlow(p.text, p.langCode, null, p.id);
     ttsSlot.replaceWith(normalBtn);
     normalBtn.insertAdjacentElement('afterend', slowBtn);
   }

@@ -231,5 +231,18 @@
   "settings_tts_normal": "Velocità normale",
   "settings_tts_slow": "Velocità lenta",
   "settings_tts_sample": "La volpe marrone veloce salta sopra il cane pigro.",
-  "settings_tts_test": "Prova"
+  "settings_tts_test": "Prova",
+  "settings_tts_cache_title": "Cache TTS",
+  "settings_tts_cache_desc": "I file audio generati vengono memorizzati nella cache su disco per evitare chiamate API ripetute.",
+  "settings_tts_cache_empty": "Nessun file nella cache.",
+  "settings_tts_cache_info": "{files} file · {size} KB",
+  "settings_tts_cache_purge": "Svuota cache",
+  "settings_tts_cache_confirm": "Eliminare tutti i file TTS memorizzati nella cache per questa lingua?",
+  "settings_tts_cache_purged": "{n} file eliminato/i.",
+  "settings_tts_cache_speed_purged": "Velocità modificata — {n} file TTS in cache eliminato/i.",
+  "settings_tts_cache_generate": "Genera cache",
+  "settings_tts_cache_gen_empty": "Nessuna parola o frase da generare per questa lingua.",
+  "settings_tts_cache_gen_running": "Generazione in corso…",
+  "settings_tts_cache_gen_done": "{n} file audio generato/i.",
+  "settings_tts_cache_gen_cancelled": "Annullato dopo {n} file."
 }

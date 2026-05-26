@@ -231,5 +231,18 @@
   "settings_tts_normal": "Normal speed",
   "settings_tts_slow": "Slow speed",
   "settings_tts_sample": "The quick brown fox jumps over the lazy dog.",
-  "settings_tts_test": "Test"
+  "settings_tts_test": "Test",
+  "settings_tts_cache_title": "TTS Cache",
+  "settings_tts_cache_desc": "Generated audio files are cached on disk to avoid repeated API calls.",
+  "settings_tts_cache_empty": "No files cached yet.",
+  "settings_tts_cache_info": "{files} file(s) · {size} KB",
+  "settings_tts_cache_purge": "Clear cache",
+  "settings_tts_cache_confirm": "Delete all cached TTS files for this language?",
+  "settings_tts_cache_purged": "{n} file(s) deleted.",
+  "settings_tts_cache_speed_purged": "Speed changed — {n} cached TTS file(s) cleared.",
+  "settings_tts_cache_generate": "Generate cache",
+  "settings_tts_cache_gen_empty": "No words or phrases to generate for this language.",
+  "settings_tts_cache_gen_running": "Generating…",
+  "settings_tts_cache_gen_done": "{n} audio file(s) generated.",
+  "settings_tts_cache_gen_cancelled": "Cancelled after {n} file(s)."
 }

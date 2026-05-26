@@ -231,5 +231,18 @@
   "settings_tts_normal": "السرعة العادية",
   "settings_tts_slow": "السرعة البطيئة",
   "settings_tts_sample": "الثعلب البني السريع يقفز فوق الكلب الكسول.",
-  "settings_tts_test": "اختبار"
+  "settings_tts_test": "اختبار",
+  "settings_tts_cache_title": "ذاكرة التخزين المؤقت TTS",
+  "settings_tts_cache_desc": "يتم تخزين ملفات الصوت المولدة مؤقتاً على القرص لتجنب تكرار طلبات API.",
+  "settings_tts_cache_empty": "لا توجد ملفات مخزنة مؤقتاً.",
+  "settings_tts_cache_info": "{files} ملف · {size} كيلوبايت",
+  "settings_tts_cache_purge": "مسح ذاكرة التخزين المؤقت",
+  "settings_tts_cache_confirm": "حذف جميع ملفات TTS المخزنة مؤقتاً لهذه اللغة؟",
+  "settings_tts_cache_purged": "تم حذف {n} ملف.",
+  "settings_tts_cache_speed_purged": "تم تغيير السرعة — تم حذف {n} ملفات TTS مخزنة مؤقتاً.",
+  "settings_tts_cache_generate": "توليد الذاكرة المؤقتة",
+  "settings_tts_cache_gen_empty": "لا توجد كلمات أو جمل لتوليدها لهذه اللغة.",
+  "settings_tts_cache_gen_running": "جارٍ التوليد…",
+  "settings_tts_cache_gen_done": "تم توليد {n} ملف صوتي.",
+  "settings_tts_cache_gen_cancelled": "تم الإلغاء بعد {n} ملف."
 }

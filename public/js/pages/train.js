@@ -257,8 +257,8 @@ function renderWordQuiz(q) {
   const wordEl = document.getElementById('qWord');
   const ttsWord = q.showNative ? q.answerText : q.promptText;
   wordEl.appendChild(document.createTextNode(' '));
-  wordEl.appendChild(TTS.button(ttsWord, lang));
-  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang));
+  wordEl.appendChild(TTS.button(ttsWord, lang, null, q && q.id));
+  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang, null, q && q.id));
 
   const grid = document.getElementById('choicesGrid');
   q.choices.forEach(choice => {
@@ -406,8 +406,8 @@ function renderPhraseQuiz(phrase) {
   // TTS for the translation (native lang)
   const transEl = document.getElementById('phraseTransEl');
   transEl.appendChild(document.createTextNode(' '));
-  transEl.appendChild(TTS.button(phrase.text, lang));
-  transEl.appendChild(TTS.buttonSlow(phrase.text, lang));
+  transEl.appendChild(TTS.button(phrase.text, lang, null, phrase && phrase.id));
+  transEl.appendChild(TTS.buttonSlow(phrase.text, lang, null, phrase && phrase.id));
 
   // In easy mode, auto-speak the phrase in the target language
   if (_writingEasyMode) {
@@ -623,7 +623,7 @@ function renderWritingQuiz(q) {
     return '<span class="writing-segment" data-seg="' + si + '">' + slots + '</span>';
   }).join('<span class="writing-space-sep"> </span>');
 
-  const ttsBtn = TTS.button(targetWord, lang);
+  const ttsBtn = TTS.button(targetWord, lang, null, _curWritingWord && _curWritingWord.id);
   // We'll inject the TTS button via JS after innerHTML
 
   area.innerHTML =
@@ -657,8 +657,8 @@ function renderWritingQuiz(q) {
     '</div>';
 
   // Inject TTS button into slot (always visible)
-  document.getElementById('writingTtsSlot').appendChild(TTS.button(targetWord, lang));
-  document.getElementById('writingTtsSlot').appendChild(TTS.buttonSlow(targetWord, lang));
+  document.getElementById('writingTtsSlot').appendChild(TTS.button(targetWord, lang, null, _curWritingWord && _curWritingWord.id));
+  document.getElementById('writingTtsSlot').appendChild(TTS.buttonSlow(targetWord, lang, null, _curWritingWord && _curWritingWord.id));
 
   // In easy mode, auto-speak the target word
   if (_writingEasyMode) {
