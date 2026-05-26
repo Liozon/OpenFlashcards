@@ -287,7 +287,7 @@ async function handleWordAnswer(btn, answer, q) {
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
 
-  TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode);
+  TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
 
   const card = document.getElementById('wordQuizCard');
 

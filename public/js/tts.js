@@ -9,8 +9,8 @@ window.TTS = {
   _getSpeed: function (langCode, mode) {
     const langs = (window.App && App.config && App.config.targetLangs) || [];
     const cfg = langs.find(l => l.isoCode === langCode);
-    if (mode === 'slow') return (cfg && cfg.ttsSpeedSlow  != null) ? cfg.ttsSpeedSlow  : 0.24;
-    return                       (cfg && cfg.ttsSpeedNormal != null) ? cfg.ttsSpeedNormal : 1.0;
+    if (mode === 'slow') return (cfg && cfg.ttsSpeedSlow != null) ? cfg.ttsSpeedSlow : 0.24;
+    return (cfg && cfg.ttsSpeedNormal != null) ? cfg.ttsSpeedNormal : 1.0;
   },
 
   // Build the TTS URL, always including id= for server-side caching.
@@ -18,11 +18,11 @@ window.TTS = {
   // the old cached file after writing the new one (lazy migration on first play).
   _url: function (text, langCode, mode, itemId, prevSpeed) {
     const speed = TTS._getSpeed(langCode, mode);
-    const id    = itemId || TTS._textId(text);
+    const id = itemId || TTS._textId(text);
     let url = '/api/tts?lang=' + encodeURIComponent(langCode) +
-              '&q='  + encodeURIComponent(text) +
-              '&id=' + encodeURIComponent(id) +
-              '&speed=' + speed.toFixed(2);
+      '&q=' + encodeURIComponent(text) +
+      '&id=' + encodeURIComponent(id) +
+      '&speed=' + speed.toFixed(2);
     if (prevSpeed != null && Math.abs(prevSpeed - speed) > 0.001) {
       url += '&prevSpeed=' + parseFloat(prevSpeed).toFixed(2);
     }
@@ -41,7 +41,7 @@ window.TTS = {
   speak: function (text, langCode, itemId) {
     if (!text) return;
     const lang = langCode || 'fr';
-    const url  = TTS._url(text, lang, 'normal', itemId);
+    const url = TTS._url(text, lang, 'normal', itemId);
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => TTS._webSpeech(text, lang, false));
@@ -51,7 +51,7 @@ window.TTS = {
   speakSlow: function (text, langCode, itemId) {
     if (!text) return;
     const lang = langCode || 'fr';
-    const url  = TTS._url(text, lang, 'slow', itemId);
+    const url = TTS._url(text, lang, 'slow', itemId);
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => TTS._webSpeech(text, lang, true));
