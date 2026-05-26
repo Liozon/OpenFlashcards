@@ -112,35 +112,213 @@ router.put('/languages/:code', (req, res) => {
   res.json({ ok: true, lang });
 });
 
-// GET /api/tts?lang=uk&q=молоко  – proxy Google TTS to avoid CORS/referer blocks
+// ── TTS helpers ───────────────────────────────────────────────────────────────
+// Uses msedge-tts (npm) — free, no API key, no Python required.
+// Install once: npm install msedge-tts
+// Full voice list: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+
+// Map ISO language codes → best msedge-tts voice (BCP-47 ShortName).
+const EDGE_TTS_VOICES = {
+  'af':    'af-ZA-AdriNeural',
+  'sq':    'sq-AL-AnilaNeural',
+  'am':    'am-ET-AmehaNeural',
+  'ar':    'ar-SA-ZariyahNeural',
+  'az':    'az-AZ-BabekNeural',
+  'bn':    'bn-BD-NabanitaNeural',
+  'bs':    'bs-BA-VesnaNeural',
+  'bg':    'bg-BG-KalinaNeural',
+  'my':    'my-MM-NilarNeural',
+  'ca':    'ca-ES-JoanaNeural',
+  'zh':    'zh-CN-XiaoxiaoNeural',
+  'zh-tw': 'zh-TW-HsiaoChenNeural',
+  'zh-hk': 'zh-HK-HiuGaaiNeural',
+  'hr':    'hr-HR-GabrijelaNeural',
+  'cs':    'cs-CZ-VlastaNeural',
+  'da':    'da-DK-ChristelNeural',
+  'nl':    'nl-NL-ColetteNeural',
+  'en':    'en-US-JennyNeural',
+  'et':    'et-EE-AnuNeural',
+  'fil':   'fil-PH-BlessicaNeural',
+  'fi':    'fi-FI-SelmaNeural',
+  'fr':    'fr-FR-DeniseNeural',
+  'gl':    'gl-ES-SabelaNeural',
+  'ka':    'ka-GE-EkaNeural',
+  'de':    'de-DE-KatjaNeural',
+  'el':    'el-GR-AthinaNeural',
+  'gu':    'gu-IN-DhwaniNeural',
+  'he':    'he-IL-HilaNeural',
+  'hi':    'hi-IN-SwaraNeural',
+  'hu':    'hu-HU-NoemiNeural',
+  'is':    'is-IS-GudrunNeural',
+  'id':    'id-ID-GadisNeural',
+  'ga':    'ga-IE-OrlaNeural',
+  'it':    'it-IT-ElsaNeural',
+  'ja':    'ja-JP-NanamiNeural',
+  'jv':    'jv-ID-SitiNeural',
+  'kn':    'kn-IN-SapnaNeural',
+  'kk':    'kk-KZ-AigulNeural',
+  'km':    'km-KH-SreymomNeural',
+  'ko':    'ko-KR-SunHiNeural',
+  'lo':    'lo-LA-KeomanyNeural',
+  'lv':    'lv-LV-EveritaNeural',
+  'lt':    'lt-LT-OnaNeural',
+  'mk':    'mk-MK-MarijaNeural',
+  'ms':    'ms-MY-YasminNeural',
+  'ml':    'ml-IN-SobhanaNeural',
+  'mt':    'mt-MT-GraceNeural',
+  'mr':    'mr-IN-AarohiNeural',
+  'mn':    'mn-MN-YesuiNeural',
+  'ne':    'ne-NP-HemkalaNeural',
+  'nb':    'nb-NO-PernilleNeural',
+  'ps':    'ps-AF-LatifaNeural',
+  'fa':    'fa-IR-DilaraNeural',
+  'pl':    'pl-PL-ZofiaNeural',
+  'pt':    'pt-PT-RaquelNeural',
+  'pt-br': 'pt-BR-FranciscaNeural',
+  'ro':    'ro-RO-AlinaNeural',
+  'ru':    'ru-RU-SvetlanaNeural',
+  'sr':    'sr-RS-SophieNeural',
+  'si':    'si-LK-ThiliniNeural',
+  'sk':    'sk-SK-ViktoriaNeural',
+  'sl':    'sl-SI-PetraNeural',
+  'so':    'so-SO-UbaxNeural',
+  'es':    'es-ES-ElviraNeural',
+  'su':    'su-ID-TutiNeural',
+  'sw':    'sw-KE-ZuriNeural',
+  'sv':    'sv-SE-SofieNeural',
+  'ta':    'ta-IN-PallaviNeural',
+  'te':    'te-IN-ShrutiNeural',
+  'th':    'th-TH-PremwadeeNeural',
+  'tr':    'tr-TR-EmelNeural',
+  'uk':    'uk-UA-PolinaNeural',
+  'ur':    'ur-PK-UzmaNeural',
+  'uz':    'uz-UZ-MadinaNeural',
+  'vi':    'vi-VN-HoaiMyNeural',
+  'cy':    'cy-GB-NiaNeural',
+  'zu':    'zu-ZA-ThandoNeural',
+};
+
+// Convert numeric speed (0.1–3.0, 1.0 = normal) to SSML prosody rate string.
+// msedge-tts accepts "+50%" / "-30%" relative values.
+function speedToEdgeRate(speed) {
+  const pct = Math.round((speed - 1) * 100);
+  return (pct >= 0 ? '+' : '') + pct + '%';
+}
+
+// Resolve ISO lang code → ShortName voice, stripping region subtag as fallback.
+function edgeVoiceFor(langCode) {
+  const lc = langCode.toLowerCase();
+  if (EDGE_TTS_VOICES[lc]) return EDGE_TTS_VOICES[lc];
+  const base = lc.split('-')[0];
+  return EDGE_TTS_VOICES[base] || null;
+}
+
+// Lazy-load msedge-tts to avoid crashing at startup if the package isn't
+// installed yet (the route will simply return 502 instead).
+let _MsEdgeTTS = null;
+let _OUTPUT_FORMAT = null;
+function loadMsEdgeTTS() {
+  if (!_MsEdgeTTS) {
+    try {
+      const mod = require('msedge-tts');
+      _MsEdgeTTS    = mod.MsEdgeTTS;
+      _OUTPUT_FORMAT = mod.OUTPUT_FORMAT;
+    } catch {
+      throw new Error('msedge-tts not installed — run: npm install msedge-tts');
+    }
+  }
+  return { MsEdgeTTS: _MsEdgeTTS, OUTPUT_FORMAT: _OUTPUT_FORMAT };
+}
+
+// Stream MP3 audio from msedge-tts into the Express response.
+async function edgeTTS(text, langCode, speed, res) {
+  const voice = edgeVoiceFor(langCode);
+  if (!voice) throw new Error(`No msedge-tts voice for language: ${langCode}`);
+
+  const { MsEdgeTTS, OUTPUT_FORMAT } = loadMsEdgeTTS();
+  const rate = speedToEdgeRate(speed);
+
+  const tts = new MsEdgeTTS();
+  await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+
+  if (!res.headersSent) {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+
+  // toStream() returns { audioStream, metadataStream, requestId } — not a stream directly
+  const { audioStream } = tts.toStream(text, { rate });
+  await new Promise((resolve, reject) => {
+    audioStream.on('close', resolve);
+    audioStream.on('error', reject);
+    audioStream.pipe(res, { end: true });
+  });
+}
+
+// GET /api/tts?lang=uk&q=молоко  – proxy TTS
+//   speed <= 1.0  → Google Translate (free, no install required)
+//   speed >  1.0  → edge-tts directly  (supports up to +100%, i.e. speed=2.0)
+//   if Google fails (non-200 or network error) → fallback to edge-tts
 router.get('/tts', async (req, res) => {
   const { lang, q, slow, speed } = req.query;
   if (!lang || !q) return res.status(400).json({ error: 'lang and q required' });
-  const https = require('https');
-  // `speed` is a numeric override (0.1–1.0); `slow=1` is the legacy boolean flag
-  let speedParam = '';
+
+  // Resolve numeric speed (default 1.0)
+  let numSpeed = 1.0;
   if (speed !== undefined) {
     const s = parseFloat(speed);
-    if (!isNaN(s)) speedParam = `&ttsspeed=${Math.min(2, Math.max(0.1, s)).toFixed(2)}`;
+    if (!isNaN(s)) numSpeed = Math.max(0.1, Math.min(3.0, s));
   } else if (slow === '1') {
-    speedParam = '&ttsspeed=0.1';
+    numSpeed = 0.1;
   }
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob${speedParam}`;
-  const request = https.get(url, {
+
+  // ── Path A: speed > 1.0  →  edge-tts directly (Google ignores > 1.0) ──────
+  if (numSpeed > 1.0) {
+    try {
+      await edgeTTS(q, lang, numSpeed, res);
+    } catch (err) {
+      console.error('[TTS] edge-tts error:', err.message);
+      if (!res.headersSent) res.status(502).json({ error: 'edge-tts failed', detail: err.message });
+    }
+    return;
+  }
+
+  // ── Path B: speed <= 1.0  →  try Google first, fallback to edge-tts ───────
+  const https = require('https');
+  const speedParam = numSpeed !== 1.0 ? `&ttsspeed=${numSpeed.toFixed(2)}` : '';
+  const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob${speedParam}`;
+
+  const request = https.get(googleUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; OpenFlashcards/1.0)',
       'Referer': 'https://translate.google.com/'
     }
-  }, (upstream) => {
-    if (upstream.statusCode !== 200) {
-      res.status(upstream.statusCode).end();
-      return;
+  }, async (upstream) => {
+    if (upstream.statusCode === 200) {
+      res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      upstream.pipe(res);
+    } else {
+      // Google returned an error → fallback to edge-tts
+      upstream.resume(); // drain the response body
+      try {
+        await edgeTTS(q, lang, numSpeed, res);
+      } catch (err) {
+        console.error('[TTS] edge-tts fallback error:', err.message);
+        if (!res.headersSent) res.status(502).json({ error: 'TTS unavailable' });
+      }
     }
-    res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    upstream.pipe(res);
   });
-  request.on('error', () => res.status(502).end());
+
+  request.on('error', async () => {
+    // Google network error → fallback to edge-tts
+    try {
+      await edgeTTS(q, lang, numSpeed, res);
+    } catch (err) {
+      console.error('[TTS] edge-tts fallback error:', err.message);
+      if (!res.headersSent) res.status(502).json({ error: 'TTS unavailable' });
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
