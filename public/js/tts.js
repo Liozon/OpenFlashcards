@@ -3,11 +3,21 @@
 
 window.TTS = {
 
+  // Retrieve per-language TTS speed config (falls back to defaults)
+  _getSpeed: function (langCode, mode) {
+    const langs = (window.App && App.config && App.config.targetLangs) || [];
+    const cfg = langs.find(l => l.isoCode === langCode);
+    if (mode === 'slow') return (cfg && cfg.ttsSpeedSlow  != null) ? cfg.ttsSpeedSlow  : 0.24;
+    return                       (cfg && cfg.ttsSpeedNormal != null) ? cfg.ttsSpeedNormal : 1.0;
+  },
+
   // Speaks the text via the server proxy → Google Translate TTS
   speak: function (text, langCode) {
     if (!text) return;
     const lang = langCode || 'fr';
-    const url = '/api/tts?lang=' + encodeURIComponent(lang) + '&q=' + encodeURIComponent(text);
+    const speed = TTS._getSpeed(lang, 'normal');
+    const speedSuffix = speed !== 1.0 ? '&speed=' + speed.toFixed(2) : '';
+    const url = '/api/tts?lang=' + encodeURIComponent(lang) + '&q=' + encodeURIComponent(text) + speedSuffix;
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => {
@@ -20,7 +30,8 @@ window.TTS = {
   speakSlow: function (text, langCode) {
     if (!text) return;
     const lang = langCode || 'fr';
-    const url = '/api/tts?lang=' + encodeURIComponent(lang) + '&q=' + encodeURIComponent(text) + '&slow=1';
+    const speed = TTS._getSpeed(lang, 'slow');
+    const url = '/api/tts?lang=' + encodeURIComponent(lang) + '&q=' + encodeURIComponent(text) + '&speed=' + speed.toFixed(2);
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => {
@@ -35,7 +46,7 @@ window.TTS = {
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = langCode;
-    utt.rate = slow ? 0.5 : 0.9;
+    utt.rate = slow ? TTS._getSpeed(langCode, 'slow') : TTS._getSpeed(langCode, 'normal');
     window.speechSynthesis.speak(utt);
   },
 

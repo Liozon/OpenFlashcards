@@ -225,5 +225,11 @@
   "train_writing_easy": "Facile (audio)",
   "train_writing_hard": "Difficile (muto)",
   "vocab_reset_confirm_title": "Reimpostare il progresso?",
-  "vocab_reset_confirm_body": "Verrà reimpostato definitivamente il progresso di apprendimento di questo elemento. Sei sicuro?"
+  "vocab_reset_confirm_body": "Verrà reimpostato definitivamente il progresso di apprendimento di questo elemento. Sei sicuro?",
+  "settings_tts_title": "Velocità TTS",
+  "settings_tts_desc": "Regola la velocità di riproduzione per i pulsanti normale (🔊) e lento (🐌).",
+  "settings_tts_normal": "Velocità normale",
+  "settings_tts_slow": "Velocità lenta",
+  "settings_tts_sample": "La volpe marrone veloce salta sopra il cane pigro.",
+  "settings_tts_test": "Prova"
 }

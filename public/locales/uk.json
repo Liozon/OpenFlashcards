@@ -225,5 +225,11 @@
   "train_writing_easy": "Легко (аудіо)",
   "train_writing_hard": "Важко (тихо)",
   "vocab_reset_confirm_title": "Скинути прогрес?",
-  "vocab_reset_confirm_body": "Це назавжди скине прогрес навчання для цього елемента. Ви впевнені?"
+  "vocab_reset_confirm_body": "Це назавжди скине прогрес навчання для цього елемента. Ви впевнені?",
+  "settings_tts_title": "Швидкості TTS",
+  "settings_tts_desc": "Налаштуйте швидкість відтворення для кнопок нормальної (🔊) та повільної (🐌) озвучки.",
+  "settings_tts_normal": "Нормальна швидкість",
+  "settings_tts_slow": "Повільна швидкість",
+  "settings_tts_sample": "Бистрий коричневий лис стрибає через ледачого пса.",
+  "settings_tts_test": "Тест"
 }

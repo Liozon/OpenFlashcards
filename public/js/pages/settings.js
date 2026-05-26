@@ -174,6 +174,8 @@ window.openLangConfig = function (isoCode) {
   let declensions = (lang.declensions || []).map(d => ({ ...d }));
   let verbGroups = (lang.verbGroups || []).map(g => ({ ...g }));
   let labels = (lang.labels || []).map(lb => ({ ...lb }));
+  let ttsSpeedNormal = lang.ttsSpeedNormal != null ? lang.ttsSpeedNormal : 1.0;
+  let ttsSpeedSlow   = lang.ttsSpeedSlow   != null ? lang.ttsSpeedSlow   : 0.24;
 
   const LABEL_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63', '#607d8b', '#795548'];
 
@@ -298,6 +300,32 @@ window.openLangConfig = function (isoCode) {
       <div id="labelsContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addLabelCfg()">➕ ${t('labels_add_btn')}</button>
     </div>
+    <div style="margin-top:20px">
+      <h3 style="font-size:1rem;margin-bottom:4px">🔊 ${t('settings_tts_title')}</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:12px">${t('settings_tts_desc')}</p>
+      <div style="margin-bottom:12px">
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-bottom:6px">
+          <span>${t('settings_tts_normal')}</span>
+          <span id="ttsNormalVal" style="font-weight:600;min-width:2.5rem;text-align:right">${(ttsSpeedNormal * 100).toFixed(0)}%</span>
+        </label>
+        <input type="range" id="ttsNormalSlider" min="0.5" max="2" step="0.01" value="${ttsSpeedNormal}"
+          style="width:100%;accent-color:var(--primary)">
+        <button type="button" id="ttsNormalTest" class="btn btn-secondary btn-sm" style="margin-top:8px">
+          🔊 ${t('settings_tts_test')}
+        </button>
+      </div>
+      <div style="margin-top:12px">
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-bottom:6px">
+          <span>${t('settings_tts_slow')}</span>
+          <span id="ttsSlowVal" style="font-weight:600;min-width:2.5rem;text-align:right">${(ttsSpeedSlow * 100).toFixed(0)}%</span>
+        </label>
+        <input type="range" id="ttsSlowSlider" min="0.1" max="0.8" step="0.01" value="${ttsSpeedSlow}"
+          style="width:100%;accent-color:var(--primary)">
+        <button type="button" id="ttsSlowTest" class="btn btn-secondary btn-sm" style="margin-top:8px">
+          🐌 ${t('settings_tts_test')}
+        </button>
+      </div>
+    </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
      <button class="btn btn-primary" onclick="saveLangConfig('${isoCode}')">${t('common_save')}</button>`
@@ -306,6 +334,48 @@ window.openLangConfig = function (isoCode) {
   renderDeclensionRows();
   renderVerbGroupRows();
   renderLabelRows();
+
+  // TTS speed sliders
+  const normalSlider = document.getElementById('ttsNormalSlider');
+  const slowSlider   = document.getElementById('ttsSlowSlider');
+  if (normalSlider) {
+    normalSlider.addEventListener('input', () => {
+      ttsSpeedNormal = parseFloat(normalSlider.value);
+      const el = document.getElementById('ttsNormalVal');
+      if (el) el.textContent = Math.round(ttsSpeedNormal * 100) + '%';
+    });
+  }
+  if (slowSlider) {
+    slowSlider.addEventListener('input', () => {
+      ttsSpeedSlow = parseFloat(slowSlider.value);
+      const el = document.getElementById('ttsSlowVal');
+      if (el) el.textContent = Math.round(ttsSpeedSlow * 100) + '%';
+    });
+  }
+
+  // TTS test buttons — use the UI language and a sample sentence from that locale
+  const ttsTestNormal = document.getElementById('ttsNormalTest');
+  const ttsTestSlow   = document.getElementById('ttsSlowTest');
+  function ttsTestSpeak(mode) {
+    const uiLang = window._uiLang || 'en';
+    const sample = t('settings_tts_sample');
+    const speed  = mode === 'slow' ? ttsSpeedSlow : ttsSpeedNormal;
+    const url = '/api/tts?lang=' + encodeURIComponent(uiLang) +
+                '&q=' + encodeURIComponent(sample) +
+                '&speed=' + speed.toFixed(2);
+    const audio = new Audio(url);
+    audio.volume = 1;
+    audio.play().catch(() => {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(sample);
+      utt.lang = uiLang;
+      utt.rate = speed;
+      window.speechSynthesis.speak(utt);
+    });
+  }
+  if (ttsTestNormal) ttsTestNormal.addEventListener('click', () => ttsTestSpeak('normal'));
+  if (ttsTestSlow)   ttsTestSlow.addEventListener('click',   () => ttsTestSpeak('slow'));
 
   let colorIdx = 0;
   window.addDeclension = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
@@ -333,7 +403,7 @@ window.openLangConfig = function (isoCode) {
       errEl.textContent = t('labels_add_ph'); errEl.classList.remove('hidden'); return;
     }
     try {
-      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels });
+      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow });
       await loadConfig();
       closeModal();
       renderLangChips();
