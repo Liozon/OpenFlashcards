@@ -41,6 +41,9 @@ const {
   getPhrases, savePhrases,
   getUserConfig, saveUserConfig
 } = require('../utils/storage');
+const {
+  getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem
+} = require('../utils/tts-cache');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -255,12 +258,63 @@ async function edgeTTS(text, langCode, speed, res) {
   });
 }
 
-// GET /api/tts?lang=uk&q=молоко  – proxy TTS
-//   speed <= 1.0  → Google Translate (free, no install required)
-//   speed >  1.0  → edge-tts directly  (supports up to +100%, i.e. speed=2.0)
-//   if Google fails (non-200 or network error) → fallback to edge-tts
+// ── Shared: generate TTS audio for one text, return a Buffer ─────────────────
+// Used by both GET /api/tts (live play) and POST /api/tts/generate (batch cache).
+// Tries Google first for speed ≤ 1.0, falls back to Edge TTS on failure.
+// For speed > 1.0 uses Edge TTS directly.
+// Creates a fresh MsEdgeTTS instance each call — Edge's WS is stateless per request.
+async function bufferTTS(text, langCode, speed) {
+  function fetchGoogle() {
+    return new Promise((resolve, reject) => {
+      const https = require('https');
+      const sp  = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' +
+                  encodeURIComponent(langCode) + '&q=' + encodeURIComponent(text) +
+                  '&client=tw-ob' + sp;
+      https.get(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://translate.google.com/' }
+      }, (r) => {
+        if (r.statusCode === 200) {
+          const chunks = [];
+          r.on('data', c => chunks.push(c));
+          r.on('end',  () => resolve(Buffer.concat(chunks)));
+          r.on('error', reject);
+        } else {
+          r.resume();
+          reject(new Error('Google TTS HTTP ' + r.statusCode));
+        }
+      }).on('error', reject);
+    });
+  }
+
+  async function fetchEdge() {
+    const voice = edgeVoiceFor(langCode);
+    if (!voice) throw new Error('No edge-tts voice for: ' + langCode);
+    const { MsEdgeTTS, OUTPUT_FORMAT } = loadMsEdgeTTS();
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+    const { audioStream } = tts.toStream(text, { rate: speedToEdgeRate(speed) });
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      audioStream.on('data', c => chunks.push(c));
+      audioStream.on('end',  () => resolve(Buffer.concat(chunks)));
+      audioStream.on('error', reject);
+    });
+  }
+
+  if (speed > 1.0) return fetchEdge();
+  try   { return await fetchGoogle(); }
+  catch { return fetchEdge(); }
+}
+
+// GET /api/tts?lang=uk&q=молоко[&id=UUID][&speed=0.24][&prevSpeed=1.00]
+//   id        → stable cache key (word/phrase UUID).  Falls back to SHA-1 of text.
+//   speed     → playback speed (default 1.0).  ≤1.0 = Google/fallback; >1.0 = edge-tts
+//   prevSpeed → if provided and different from speed, the old cached file at prevSpeed
+//               is deleted after the new file is written (lazy migration on first play)
+//   Disk cache: data/{userId}/tts/{lang}/spd{pct}/{id}.mp3
 router.get('/tts', async (req, res) => {
-  const { lang, q, slow, speed } = req.query;
+  const { lang, q, slow, speed, id, prevSpeed, nocache } = req.query;
   if (!lang || !q) return res.status(400).json({ error: 'lang and q required' });
 
   // Resolve numeric speed (default 1.0)
@@ -272,53 +326,162 @@ router.get('/tts', async (req, res) => {
     numSpeed = 0.1;
   }
 
-  // ── Path A: speed > 1.0  →  edge-tts directly (Google ignores > 1.0) ──────
-  if (numSpeed > 1.0) {
-    try {
-      await edgeTTS(q, lang, numSpeed, res);
-    } catch (err) {
-      console.error('[TTS] edge-tts error:', err.message);
-      if (!res.headersSent) res.status(502).json({ error: 'edge-tts failed', detail: err.message });
-    }
-    return;
+  // Optional: previous speed bucket to delete after writing the new file
+  let prevNumSpeed = null;
+  if (prevSpeed !== undefined) {
+    const ps = parseFloat(prevSpeed);
+    if (!isNaN(ps) && Math.abs(ps - numSpeed) > 0.001) prevNumSpeed = ps;
   }
 
-  // ── Path B: speed <= 1.0  →  try Google first, fallback to edge-tts ───────
-  const https = require('https');
-  const speedParam = numSpeed !== 1.0 ? `&ttsspeed=${numSpeed.toFixed(2)}` : '';
-  const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}&client=tw-ob${speedParam}`;
+  const uid  = userId(req);
+  const itemId = (id && id.trim()) ? id.trim() : textHash(q);
 
-  const request = https.get(googleUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; OpenFlashcards/1.0)',
-      'Referer': 'https://translate.google.com/'
+  // ── Cache hit (skip entirely when nocache=1) ─────────────────────────────
+  const bypassCache = nocache === '1';
+  if (!bypassCache) {
+    const cached = getCached(uid, lang, numSpeed, itemId);
+    if (cached) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+      res.setHeader('X-TTS-Cache', 'HIT');
+      return require('fs').createReadStream(cached).pipe(res);
     }
-  }, async (upstream) => {
-    if (upstream.statusCode === 200) {
-      res.setHeader('Content-Type', upstream.headers['content-type'] || 'audio/mpeg');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      upstream.pipe(res);
-    } else {
-      // Google returned an error → fallback to edge-tts
-      upstream.resume(); // drain the response body
+  }
+
+  res.setHeader('Content-Type', 'audio/mpeg');
+  res.setHeader('Cache-Control', bypassCache ? 'no-store' : 'public, max-age=86400');
+  if (!bypassCache) res.setHeader('X-TTS-Cache', 'MISS');
+
+  try {
+    const buf = await bufferTTS(q, lang, numSpeed);
+    if (!bypassCache) {
+      saveCachedBuffer(uid, lang, numSpeed, itemId, buf);
+      if (prevNumSpeed !== null) deleteItem(uid, lang, prevNumSpeed, itemId);
+    }
+    res.end(buf);
+  } catch (err) {
+    console.error('[TTS] error:', err.message);
+    if (!res.headersSent) res.status(502).json({ error: 'TTS unavailable', detail: err.message });
+  }
+});
+
+// GET /api/tts/cache?lang=fr  – cache stats for a language
+router.get('/tts/cache', (req, res) => {
+  const { lang } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  res.json(cacheStats(userId(req), lang));
+});
+
+// DELETE /api/tts/cache/item?lang=fr&id=UUID&speed=0.24  – delete a single cached file
+router.delete('/tts/cache/item', (req, res) => {
+  const { lang, id, speed } = req.query;
+  if (!lang || !id || speed === undefined) return res.status(400).json({ error: 'lang, id and speed required' });
+  const numSpeed = parseFloat(speed);
+  if (isNaN(numSpeed)) return res.status(400).json({ error: 'invalid speed' });
+  const deleted = deleteItem(userId(req), lang, numSpeed, id);
+  res.json({ ok: true, deleted });
+});
+
+// DELETE /api/tts/cache?lang=fr[&speed=0.24]  – purge TTS cache for a language
+//   Without speed: purges entire language cache
+//   With speed:    purges only the speed bucket matching that exact value (spd{pct})
+router.delete('/tts/cache', (req, res) => {
+  const { lang, speed } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  let numSpeed = null;
+  if (speed !== undefined) {
+    const s = parseFloat(speed);
+    if (!isNaN(s)) numSpeed = Math.max(0.1, Math.min(3.0, s));
+  }
+  const count = purgeCache(userId(req), lang, numSpeed);
+  res.json({ ok: true, deleted: count });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TTS BATCH GENERATION  (server-side, streamed via SSE)
+// POST /api/tts/generate
+//   Body: { lang, speedNormal, speedSlow, prevSpeedNormal?, prevSpeedSlow? }
+//   Streams Server-Sent Events:
+//     data: { type:"progress", done, total, mode, text }
+//     data: { type:"done", done, total }
+//     data: { type:"error", message }
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/tts/generate', async (req, res) => {
+  const { lang, speedNormal, speedSlow, prevSpeedNormal, prevSpeedSlow } = req.body;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+
+  const uid = userId(req);
+  const numNormal = parseFloat(speedNormal) || 1.0;
+  const numSlow   = parseFloat(speedSlow)   || 0.24;
+  const prevNorm  = prevSpeedNormal != null ? parseFloat(prevSpeedNormal) : null;
+  const prevSlow  = prevSpeedSlow   != null ? parseFloat(prevSpeedSlow)   : null;
+  const normalChanged = prevNorm !== null && Math.abs(numNormal - prevNorm) > 0.001;
+  const slowChanged   = prevSlow !== null && Math.abs(numSlow   - prevSlow) > 0.001;
+
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (obj) => {
+    if (!res.writableEnded) res.write('data: ' + JSON.stringify(obj) + '\n\n');
+  };
+
+  let cancelled = false;
+  res.on('close', () => { cancelled = true; });
+
+  try {
+    const { getWords, getPhrases } = require('../utils/storage');
+    const words   = getWords(uid, lang);
+    const phrases = getPhrases(uid, lang);
+
+    // Build task list
+    const tasks = [];
+    for (const w of words) {
+      const display = (w.article ? w.article + ' ' : '') +
+                      (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+      tasks.push({ text: display, id: w.id, mode: 'normal', speed: numNormal,
+                   prevSpeed: normalChanged ? prevNorm : null });
+      tasks.push({ text: display, id: w.id, mode: 'slow',   speed: numSlow,
+                   prevSpeed: slowChanged   ? prevSlow : null });
+    }
+    for (const p of phrases) {
+      tasks.push({ text: p.text, id: p.id, mode: 'normal', speed: numNormal,
+                   prevSpeed: normalChanged ? prevNorm : null });
+      tasks.push({ text: p.text, id: p.id, mode: 'slow',   speed: numSlow,
+                   prevSpeed: slowChanged   ? prevSlow : null });
+    }
+
+    const total = tasks.length;
+    let done = 0;
+
+    // Generate one item: skip if already cached, otherwise call shared bufferTTS
+    async function generateOne(task) {
+      if (!task.prevSpeed && getCached(uid, lang, task.speed, task.id)) return;
+      const buf = await bufferTTS(task.text, lang, task.speed);
+      saveCachedBuffer(uid, lang, task.speed, task.id, buf);
+      if (task.prevSpeed !== null) deleteItem(uid, lang, task.prevSpeed, task.id);
+    }
+
+    for (const task of tasks) {
+      if (cancelled) break;
       try {
-        await edgeTTS(q, lang, numSpeed, res);
+        await generateOne(task);
       } catch (err) {
-        console.error('[TTS] edge-tts fallback error:', err.message);
-        if (!res.headersSent) res.status(502).json({ error: 'TTS unavailable' });
+        console.error('[TTS generate] error on "' + task.text + '":', err.message);
+        // Non-fatal: keep going
       }
+      done++;
+      send({ type: 'progress', done, total, mode: task.mode, text: task.text });
     }
-  });
 
-  request.on('error', async () => {
-    // Google network error → fallback to edge-tts
-    try {
-      await edgeTTS(q, lang, numSpeed, res);
-    } catch (err) {
-      console.error('[TTS] edge-tts fallback error:', err.message);
-      if (!res.headersSent) res.status(502).json({ error: 'TTS unavailable' });
-    }
-  });
+    send({ type: 'done', done, total });
+  } catch (err) {
+    send({ type: 'error', message: err.message });
+  } finally {
+    res.end();
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

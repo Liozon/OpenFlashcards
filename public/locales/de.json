@@ -231,5 +231,18 @@
   "settings_tts_normal": "Normale Geschwindigkeit",
   "settings_tts_slow": "Langsame Geschwindigkeit",
   "settings_tts_sample": "Der schnelle braune Fuchs springt über den faulen Hund.",
-  "settings_tts_test": "Testen"
+  "settings_tts_test": "Testen",
+  "settings_tts_cache_title": "TTS-Cache",
+  "settings_tts_cache_desc": "Generierte Audiodateien werden auf der Festplatte zwischengespeichert, um wiederholte API-Aufrufe zu vermeiden.",
+  "settings_tts_cache_empty": "Keine Dateien im Cache.",
+  "settings_tts_cache_info": "{files} Datei(en) · {size} KB",
+  "settings_tts_cache_purge": "Cache leeren",
+  "settings_tts_cache_confirm": "Alle zwischengespeicherten TTS-Dateien für diese Sprache löschen?",
+  "settings_tts_cache_purged": "{n} Datei(en) gelöscht.",
+  "settings_tts_cache_speed_purged": "Geschwindigkeit geändert — {n} gecachte TTS-Datei(en) gelöscht.",
+  "settings_tts_cache_generate": "Cache generieren",
+  "settings_tts_cache_gen_empty": "Keine Wörter oder Phrasen für diese Sprache zu generieren.",
+  "settings_tts_cache_gen_running": "Wird generiert…",
+  "settings_tts_cache_gen_done": "{n} Audiodatei(en) generiert.",
+  "settings_tts_cache_gen_cancelled": "Abgebrochen nach {n} Datei(en)."
 }

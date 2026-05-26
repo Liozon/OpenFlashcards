@@ -231,5 +231,18 @@
   "settings_tts_normal": "Velocidad normal",
   "settings_tts_slow": "Velocidad lenta",
   "settings_tts_sample": "El veloz zorro marrón salta sobre el perro perezoso.",
-  "settings_tts_test": "Probar"
+  "settings_tts_test": "Probar",
+  "settings_tts_cache_title": "Caché TTS",
+  "settings_tts_cache_desc": "Los archivos de audio generados se almacenan en caché en el disco para evitar llamadas repetidas a la API.",
+  "settings_tts_cache_empty": "Sin archivos en caché.",
+  "settings_tts_cache_info": "{files} archivo(s) · {size} KB",
+  "settings_tts_cache_purge": "Vaciar caché",
+  "settings_tts_cache_confirm": "¿Eliminar todos los archivos TTS en caché para este idioma?",
+  "settings_tts_cache_purged": "{n} archivo(s) eliminado(s).",
+  "settings_tts_cache_speed_purged": "Velocidad cambiada — {n} archivo(s) TTS en caché eliminado(s).",
+  "settings_tts_cache_generate": "Generar caché",
+  "settings_tts_cache_gen_empty": "No hay palabras ni frases para generar en este idioma.",
+  "settings_tts_cache_gen_running": "Generando…",
+  "settings_tts_cache_gen_done": "{n} archivo(s) de audio generado(s).",
+  "settings_tts_cache_gen_cancelled": "Cancelado después de {n} archivo(s)."
 }

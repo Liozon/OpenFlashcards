@@ -231,5 +231,18 @@
   "settings_tts_normal": "正常語速",
   "settings_tts_slow": "慢速",
   "settings_tts_sample": "敏捷的棕色狐狸跳過了懶狗。",
-  "settings_tts_test": "測試"
+  "settings_tts_test": "測試",
+  "settings_tts_cache_title": "TTS 快取",
+  "settings_tts_cache_desc": "產生的音訊檔案會快取在磁碟上，以避免重複呼叫 API。",
+  "settings_tts_cache_empty": "目前沒有快取檔案。",
+  "settings_tts_cache_info": "{files} 個檔案 · {size} KB",
+  "settings_tts_cache_purge": "清除快取",
+  "settings_tts_cache_confirm": "刪除此語言所有已快取的 TTS 檔案？",
+  "settings_tts_cache_purged": "已刪除 {n} 個檔案。",
+  "settings_tts_cache_speed_purged": "速度已變更 — 已清除 {n} 個快取 TTS 檔案。",
+  "settings_tts_cache_generate": "產生快取",
+  "settings_tts_cache_gen_empty": "此語言沒有可產生的單字或短語。",
+  "settings_tts_cache_gen_running": "產生中…",
+  "settings_tts_cache_gen_done": "已產生 {n} 個音訊檔案。",
+  "settings_tts_cache_gen_cancelled": "已在 {n} 個檔案後取消。"
 }

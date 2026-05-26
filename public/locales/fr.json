@@ -231,5 +231,18 @@
   "settings_tts_normal": "Vitesse normale",
   "settings_tts_slow": "Vitesse lente",
   "settings_tts_sample": "Le renard brun rapide saute par-dessus le chien paresseux.",
-  "settings_tts_test": "Tester"
+  "settings_tts_test": "Tester",
+  "settings_tts_cache_title": "Cache TTS",
+  "settings_tts_cache_desc": "Les fichiers audio générés sont mis en cache sur le disque pour éviter les appels répétés à l'API.",
+  "settings_tts_cache_empty": "Aucun fichier en cache.",
+  "settings_tts_cache_info": "{files} fichier(s) · {size} Ko",
+  "settings_tts_cache_purge": "Vider le cache",
+  "settings_tts_cache_confirm": "Supprimer tous les fichiers TTS mis en cache pour cette langue ?",
+  "settings_tts_cache_purged": "{n} fichier(s) supprimé(s).",
+  "settings_tts_cache_speed_purged": "Vitesse modifiée — {n} fichier(s) TTS mis en cache supprimé(s).",
+  "settings_tts_cache_generate": "Générer le cache",
+  "settings_tts_cache_gen_empty": "Aucun mot ni phrase à générer pour cette langue.",
+  "settings_tts_cache_gen_running": "Génération en cours…",
+  "settings_tts_cache_gen_done": "{n} fichier(s) audio générés.",
+  "settings_tts_cache_gen_cancelled": "Annulé après {n} fichier(s)."
 }

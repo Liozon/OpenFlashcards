@@ -231,5 +231,18 @@
   "settings_tts_normal": "Нормальна швидкість",
   "settings_tts_slow": "Повільна швидкість",
   "settings_tts_sample": "Бистрий коричневий лис стрибає через ледачого пса.",
-  "settings_tts_test": "Тест"
+  "settings_tts_test": "Тест",
+  "settings_tts_cache_title": "Кеш TTS",
+  "settings_tts_cache_desc": "Згенеровані аудіофайли кешуються на диску для уникнення повторних API-запитів.",
+  "settings_tts_cache_empty": "Немає кешованих файлів.",
+  "settings_tts_cache_info": "{files} файл(ів) · {size} КБ",
+  "settings_tts_cache_purge": "Очистити кеш",
+  "settings_tts_cache_confirm": "Видалити всі кешовані TTS-файли для цієї мови?",
+  "settings_tts_cache_purged": "Видалено {n} файл(ів).",
+  "settings_tts_cache_speed_purged": "Швидкість змінено — видалено {n} кешованих TTS-файлів.",
+  "settings_tts_cache_generate": "Згенерувати кеш",
+  "settings_tts_cache_gen_empty": "Немає слів чи фраз для генерації цією мовою.",
+  "settings_tts_cache_gen_running": "Генерація…",
+  "settings_tts_cache_gen_done": "Згенеровано {n} аудіофайл(ів).",
+  "settings_tts_cache_gen_cancelled": "Скасовано після {n} файл(ів)."
 }
