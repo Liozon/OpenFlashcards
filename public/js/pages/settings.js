@@ -176,6 +176,7 @@ window.openLangConfig = function (isoCode) {
   let labels = (lang.labels || []).map(lb => ({ ...lb }));
   let ttsSpeedNormal = lang.ttsSpeedNormal != null ? lang.ttsSpeedNormal : 1.0;
   let ttsSpeedSlow   = lang.ttsSpeedSlow   != null ? lang.ttsSpeedSlow   : 0.24;
+  let ttsCacheEnabled = lang.ttsCache !== false; // default true if not set
 
   const LABEL_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63', '#607d8b', '#795548'];
 
@@ -329,6 +330,19 @@ window.openLangConfig = function (isoCode) {
     <div style="margin-top:20px">
       <h3 style="font-size:1rem;margin-bottom:4px">🗄️ ${t('settings_tts_cache_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_tts_cache_desc')}</p>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;user-select:none">
+        <div class="toggle-switch ${ttsCacheEnabled ? 'active' : ''}" id="ttsCacheToggle" style="
+          position:relative;width:40px;height:22px;border-radius:11px;
+          background:${ttsCacheEnabled ? 'var(--primary)' : 'var(--border)'};
+          transition:background .2s;flex-shrink:0;cursor:pointer">
+          <div style="
+            position:absolute;top:3px;left:${ttsCacheEnabled ? '21px' : '3px'};
+            width:16px;height:16px;border-radius:50%;background:#fff;
+            transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)" id="ttsCacheKnob"></div>
+        </div>
+        <span style="font-size:.9rem">${t('settings_tts_cache_enable')}</span>
+      </label>
+      <div id="ttsCacheSection" style="${ttsCacheEnabled ? '' : 'opacity:.45;pointer-events:none'}">
       <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm">
@@ -348,6 +362,7 @@ window.openLangConfig = function (isoCode) {
         </div>
         <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
       </div>
+    </div>
     </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
@@ -407,6 +422,19 @@ window.openLangConfig = function (isoCode) {
   // ── TTS speed change tracking: remember original speeds to detect changes ──
   const _origSpeedNormal = ttsSpeedNormal;
   const _origSpeedSlow   = ttsSpeedSlow;
+
+  // ── TTS cache toggle ──────────────────────────────────────────────────────
+  const cacheToggle = document.getElementById('ttsCacheToggle');
+  if (cacheToggle) {
+    cacheToggle.addEventListener('click', () => {
+      ttsCacheEnabled = !ttsCacheEnabled;
+      cacheToggle.style.background = ttsCacheEnabled ? 'var(--primary)' : 'var(--border)';
+      const knob = document.getElementById('ttsCacheKnob');
+      if (knob) knob.style.left = ttsCacheEnabled ? '21px' : '3px';
+      const section = document.getElementById('ttsCacheSection');
+      if (section) { section.style.opacity = ttsCacheEnabled ? '1' : '0.45'; section.style.pointerEvents = ttsCacheEnabled ? '' : 'none'; }
+    });
+  }
 
   // ── TTS cache: load stats on open ─────────────────────────────────────────
   (async () => {
@@ -592,7 +620,7 @@ window.openLangConfig = function (isoCode) {
       errEl.textContent = t('labels_add_ph'); errEl.classList.remove('hidden'); return;
     }
     try {
-      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow });
+      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow, ttsCache: ttsCacheEnabled });
       await loadConfig();
 
       // Purge ONLY the speed bucket(s) that actually changed, leave the other intact.
