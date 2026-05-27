@@ -44,6 +44,7 @@ const {
 const {
   getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem
 } = require('../utils/tts-cache');
+const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices } = require('../utils/tts-generate');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -79,7 +80,12 @@ router.post('/languages', (req, res) => {
   const cfg = getUserConfig(userId(req));
   if (!cfg.targetLangs) cfg.targetLangs = [];
   if (!cfg.targetLangs.find(l => l.isoCode === isoCode)) {
-    cfg.targetLangs.push({ isoCode, name, flag: flag || '🌐', nativeName: nativeName || name });
+    // Apply ttsCacheDefault from user account settings (set by admin)
+    const { getUsers } = require('../utils/storage');
+    const users = getUsers();
+    const userRecord = users[userId(req)];
+    const defaultCache = userRecord ? (userRecord.ttsCacheDefault === true) : false;
+    cfg.targetLangs.push({ isoCode, name, flag: flag || '🌐', nativeName: nativeName || name, ttsCache: defaultCache });
   }
   if (!cfg.currentLang) cfg.currentLang = isoCode;
   saveUserConfig(userId(req), cfg);
@@ -110,6 +116,8 @@ router.put('/languages/:code', (req, res) => {
   // TTS speeds: floats 0.1–1.0
   if (req.body.ttsSpeedNormal !== undefined) lang.ttsSpeedNormal = req.body.ttsSpeedNormal;
   if (req.body.ttsSpeedSlow !== undefined) lang.ttsSpeedSlow = req.body.ttsSpeedSlow;
+  // TTS cache toggle
+  if (req.body.ttsCache !== undefined) lang.ttsCache = req.body.ttsCache === true;
 
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, lang });
@@ -336,8 +344,11 @@ router.get('/tts', async (req, res) => {
   const uid  = userId(req);
   const itemId = (id && id.trim()) ? id.trim() : textHash(q);
 
-  // ── Cache hit (skip entirely when nocache=1) ─────────────────────────────
-  const bypassCache = nocache === '1';
+  // ── Cache hit (skip entirely when nocache=1 OR cache disabled for this language) ─────────────────────────
+  const cfg2 = getUserConfig(uid);
+  const langData = (cfg2.targetLangs || []).find(l => l.isoCode === lang);
+  const langCacheEnabled = langData ? (langData.ttsCache !== false) : true;
+  const bypassCache = nocache === '1' || !langCacheEnabled;
   if (!bypassCache) {
     const cached = getCached(uid, lang, numSpeed, itemId);
     if (cached) {
@@ -904,5 +915,9 @@ router.delete('/labels/:id', (req, res) => {
 
   res.json({ ok: true });
 });
+
+// Export helpers for admin route re-use
+router.EDGE_TTS_VOICES_EXPORT = EDGE_TTS_VOICES;
+router.bufferTTSExport = bufferTTS;
 
 module.exports = router;
