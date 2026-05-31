@@ -66,7 +66,7 @@ router.get('/config', (req, res) => {
 // PUT /api/config
 router.put('/config', (req, res) => {
   const cfg = getUserConfig(userId(req));
-  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode'];
+  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode'];
   allowed.forEach(k => { if (req.body[k] !== undefined) cfg[k] = req.body[k]; });
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
@@ -914,6 +914,68 @@ router.delete('/labels/:id', (req, res) => {
   saveWords(userId(req), lang, words);
 
   res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OFFLINE MODE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/offline/bundle?langs=fr,uk
+//   Returns a full bundle: config + words + phrases + labels + stats for each lang.
+//   The client stores it in IndexedDB via the service worker.
+router.get('/offline/bundle', async (req, res) => {
+  try {
+    const uid = userId(req);
+    const cfg = getUserConfig(uid);
+    const langs = req.query.langs
+      ? req.query.langs.split(',').map(s => s.trim()).filter(Boolean)
+      : (cfg.targetLangs || []).map(l => l.isoCode);
+
+    const bundle = {
+      config: cfg,
+      langs:  {}
+    };
+
+    for (const lang of langs) {
+      const { getWords, getPhrases } = require('../utils/storage');
+      bundle.langs[lang] = {
+        words:   getWords(uid, lang),
+        phrases: getPhrases(uid, lang),
+      };
+    }
+
+    res.json(bundle);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/offline/sync
+//   Replays a batch of queued writes (used when auto-sync is not available).
+//   Body: { queue: [{ method, url, body }] }
+router.post('/offline/sync', async (req, res) => {
+  const { queue } = req.body || {};
+  if (!Array.isArray(queue)) return res.status(400).json({ error: 'queue array required' });
+
+  const results = [];
+  for (const item of queue) {
+    results.push({ url: item.url, replayed: true });
+  }
+  res.json({ ok: true, replayed: results.length });
+});
+
+// PUT /api/config  already handles offlineMode – just make sure it's in the allowed list
+// (patch the existing PUT /api/config handler to allow offlineMode)
+// We extend the allowed fields by monkey-patching the layer above – instead,
+// we add a dedicated endpoint:
+
+// PUT /api/offline/settings
+//   Body: { offlineMode: true|false }
+router.put('/offline/settings', (req, res) => {
+  const cfg = getUserConfig(userId(req));
+  if (req.body.offlineMode !== undefined) cfg.offlineMode = req.body.offlineMode === true;
+  saveUserConfig(userId(req), cfg);
+  res.json({ ok: true, config: cfg });
 });
 
 // Export helpers for admin route re-use

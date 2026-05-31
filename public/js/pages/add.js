@@ -5,6 +5,17 @@ function renderAdd(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
+  // Block writes when offline
+  if (window.App && App.config && App.config.offlineMode && !navigator.onLine) {
+    el.innerHTML = `<div class="page-title">➕ ${t('nav_add')}</div>
+      <div class="card" style="text-align:center;padding:32px 20px">
+        <div style="font-size:3rem;margin-bottom:12px">📴</div>
+        <h3 style="margin-bottom:8px">${t('offline_no_connection')}</h3>
+        <p style="color:var(--text-muted)">${t('offline_readonly')}</p>
+      </div>`;
+    return;
+  }
+
   const langData = currentLangData();
   const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
   const declensions = (langData && langData.declensions) ? langData.declensions : [];

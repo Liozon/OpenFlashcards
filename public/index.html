@@ -48,6 +48,7 @@
         <a class="nav-link" data-page="settings" href="#" id="navSettings">⚙️ Settings</a>
         <a class="nav-link" id="adminLink" data-page="admin" href="#" style="display:none">🔑 Admin</a>
         <button class="btn-icon dark-toggle" id="darkToggle" title="Toggle dark mode">☀️</button>
+        <button class="btn-icon sync-offline-btn" id="syncOfflineBtn" title="Sync offline data" style="display:none" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">🔄</button>
         <button class="btn-icon" id="logoutBtn" title="Logout">🚪</button>
       </div>
     </nav>
@@ -69,6 +70,7 @@
   </div>
 
   <script src="/js/world-languages.js"></script>
+  <script src="/js/offline-db.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/pages/home.js"></script>
@@ -78,6 +80,25 @@
   <script src="/js/pages/settings.js"></script>
   <script src="/js/pages/admin.js"></script>
   <script src="/js/tts.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => {
+            // Check for updates on navigation
+            reg.addEventListener('updatefound', () => {
+              const newSW = reg.installing;
+              newSW && newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                  newSW.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('[SW] Registration failed:', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

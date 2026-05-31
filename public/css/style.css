@@ -1522,3 +1522,63 @@ img {
 .label-pick-btn:not(.active) {
   opacity: .7;
 }
+/* ── OFFLINE MODE ─────────────────────────────────────────────── */
+.sync-offline-btn {
+  position: relative;
+}
+
+.sync-offline-btn.sync-btn-offline {
+  color: var(--text-muted);
+  opacity: .7;
+}
+
+#syncOfflineBtn {
+  font-size: 1.1rem;
+  transition: transform .3s ease;
+}
+
+#syncOfflineBtn:disabled {
+  cursor: wait;
+}
+
+.offline-status-box {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: .875rem;
+  line-height: 1.6;
+}
+
+.offline-progress-bar-wrap {
+  width: 100%;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.offline-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--primary, #6366f1);
+  transition: width .25s ease;
+}
+
+/* Offline banner shown at top of page when navigating offline */
+.offline-banner {
+  position: fixed;
+  top: 56px;
+  left: 0; right: 0;
+  z-index: 200;
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--warning, #f59e0b);
+  color: var(--text-muted);
+  font-size: .82rem;
+  text-align: center;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

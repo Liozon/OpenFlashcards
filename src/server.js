@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const adminRoutes = require('./routes/admin');
 const i18nRoutes = require('./routes/i18n');
+const offlineRoutes = require('./routes/offline');
 const { requireAuth } = require('./middleware/auth');
 const { ensureDataDirs } = require('./utils/storage');
 const { runMigration }   = require('./utils/migrate');
@@ -28,6 +29,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // ── Routes ──────────────────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
 app.use('/i18n', i18nRoutes);          // public – no auth needed
+app.use('/api/offline', requireAuth, offlineRoutes);  // must be before /api
 app.use('/api', requireAuth, apiRoutes);
 app.use('/admin', requireAuth, adminRoutes);
 
