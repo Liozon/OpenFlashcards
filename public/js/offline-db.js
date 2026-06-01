@@ -6,7 +6,7 @@
 'use strict';
 
 (function () {
-  const DB_NAME    = 'openflashcards-offline';
+  const DB_NAME = 'openflashcards-offline';
   const DB_VERSION = 1;
   let _db = null;
 
@@ -18,38 +18,38 @@
       req.onupgradeneeded = e => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains('bundle')) db.createObjectStore('bundle', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('tts'))    db.createObjectStore('tts',    { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('tts')) db.createObjectStore('tts', { keyPath: 'id' });
       };
-      req.onsuccess  = e => { _db = e.target.result; resolve(_db); };
-      req.onerror    = e => reject(e.target.error);
+      req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+      req.onerror = e => reject(e.target.error);
     });
   }
   function idbGet(store, key) {
     return openDB().then(db => new Promise((res, rej) => {
       const r = db.transaction(store, 'readonly').objectStore(store).get(key);
       r.onsuccess = e => res(e.target.result || null);
-      r.onerror   = e => rej(e.target.error);
+      r.onerror = e => rej(e.target.error);
     }));
   }
   function idbPut(store, value) {
     return openDB().then(db => new Promise((res, rej) => {
       const r = db.transaction(store, 'readwrite').objectStore(store).put(value);
       r.onsuccess = e => res(e.target.result);
-      r.onerror   = e => rej(e.target.error);
+      r.onerror = e => rej(e.target.error);
     }));
   }
   function idbClearStore(store) {
     return openDB().then(db => new Promise((res, rej) => {
       const r = db.transaction(store, 'readwrite').objectStore(store).clear();
       r.onsuccess = () => res(true);
-      r.onerror   = e => rej(e.target.error);
+      r.onerror = e => rej(e.target.error);
     }));
   }
   function idbCountStore(store) {
     return openDB().then(db => new Promise((res, rej) => {
       const r = db.transaction(store, 'readonly').objectStore(store).count();
       r.onsuccess = e => res(e.target.result);
-      r.onerror   = e => rej(e.target.error);
+      r.onerror = e => rej(e.target.error);
     }));
   }
 
@@ -60,31 +60,31 @@
 
   // ── OfflineDB public API ─────────────────────────────────────────────────────
   window.OfflineDB = {
-    saveBundle:    async b  => idbPut('bundle', { id: 'latest', data: b, syncedAt: new Date().toISOString() }),
-    getBundle:     async () => { const r = await idbGet('bundle', 'latest'); return r ? r.data : null; },
+    saveBundle: async b => idbPut('bundle', { id: 'latest', data: b, syncedAt: new Date().toISOString() }),
+    getBundle: async () => { const r = await idbGet('bundle', 'latest'); return r ? r.data : null; },
     getBundleMeta: async () => { const r = await idbGet('bundle', 'latest'); return r ? { syncedAt: r.syncedAt, langs: Object.keys(r.data.languages || {}) } : null; },
-    saveTTS:       async (lang, speed, itemId, buf) => idbPut('tts', { id: ttsKey(lang, speed, itemId), audio: buf, lang, speed, itemId, savedAt: Date.now() }),
-    getTTS:        async (lang, speed, itemId)       => { const r = await idbGet('tts', ttsKey(lang, speed, itemId)); return r ? r.audio : null; },
-    countTTS:      async ()                          => idbCountStore('tts'),
-    clearAll:      async ()                          => { await idbClearStore('bundle'); await idbClearStore('tts'); },
-    clearTTS:      async ()                          => idbClearStore('tts'),
+    saveTTS: async (lang, speed, itemId, buf) => idbPut('tts', { id: ttsKey(lang, speed, itemId), audio: buf, lang, speed, itemId, savedAt: Date.now() }),
+    getTTS: async (lang, speed, itemId) => { const r = await idbGet('tts', ttsKey(lang, speed, itemId)); return r ? r.audio : null; },
+    countTTS: async () => idbCountStore('tts'),
+    clearAll: async () => { await idbClearStore('bundle'); await idbClearStore('tts'); },
+    clearTTS: async () => idbClearStore('tts'),
   };
 
   // ── Session persistence (survives page refresh offline) ──────────────────────
-  // We save { user, config } to sessionStorage after every successful online boot.
+  // We save { user, config } to localStorage after every successful online boot.
   // On page load offline, we restore from there so checkAuth() doesn't force login.
 
   const SESSION_KEY = 'ofc_offline_session';
 
   window.OfflineSession = {
     save(user, config) {
-      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, config })); } catch {}
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify({ user, config })); } catch { }
     },
     load() {
-      try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; }
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; }
     },
     clear() {
-      try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+      try { localStorage.removeItem(SESSION_KEY); } catch { }
     }
   };
 
@@ -92,14 +92,14 @@
   window.OfflineMode = {
     _online: navigator.onLine,
     _listeners: [],
-    get isOnline()  { return this._online; },
+    get isOnline() { return this._online; },
     get isOffline() { return !this._online; },
     init() {
-      window.addEventListener('online',  () => { this._online = true;  this._emit(); this._syncBadge(); updateOfflineSyncBtn && updateOfflineSyncBtn(); });
+      window.addEventListener('online', () => { this._online = true; this._emit(); this._syncBadge(); updateOfflineSyncBtn && updateOfflineSyncBtn(); });
       window.addEventListener('offline', () => { this._online = false; this._emit(); this._syncBadge(); updateOfflineSyncBtn && updateOfflineSyncBtn(); });
     },
     onChange(fn) { this._listeners.push(fn); },
-    _emit()      { this._listeners.forEach(fn => fn(this._online)); },
+    _emit() { this._listeners.forEach(fn => fn(this._online)); },
     _syncBadge() {
       const btn = document.getElementById('syncOfflineBtn');
       if (!btn) return;
@@ -119,7 +119,7 @@
   function _phraseMax(p) {
     const MIN = 50, MAX = 200, WK = 10, LK = 8;
     const words = (p.text || '').trim().split(/\s+/).filter(Boolean);
-    const wc  = words.length;
+    const wc = words.length;
     const avg = wc ? words.reduce((s, w) => s + w.length, 0) / wc : 0;
     return Math.max(MIN, Math.min(MAX, Math.round(MIN + wc * WK + avg * LK)));
   }
@@ -141,16 +141,16 @@
     if (labels && labels.length) pool = pool.filter(w => labels.some(lid => (w.labels || []).includes(lid)));
     if (pool.length < 2) return null;
 
-    const getMax    = w => w.maxProgress || _wordMax(w);
+    const getMax = w => w.maxProgress || _wordMax(w);
     const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
-    const active    = unmastered.length >= 2 ? unmastered : pool;
+    const active = unmastered.length >= 2 ? unmastered : pool;
     active.sort((a, b) => (a.progress || 0) / getMax(a) - (b.progress || 0) / getMax(b));
-    const topN   = Math.max(2, Math.ceil(active.length * 0.6));
+    const topN = Math.max(2, Math.ceil(active.length * 0.6));
     const question = active.slice(0, topN)[Math.floor(Math.random() * topN)];
 
     const showNative = direction === 'native' ? true : direction === 'target' ? false : Math.random() < 0.5;
-    const display    = (question.article ? question.article + ' ' : '') +
-                       (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
+    const display = (question.article ? question.article + ' ' : '') +
+      (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
     // Conjugation quiz (30%)
     const conjWithTrans = Object.entries(question.conjugation || {})
@@ -160,8 +160,8 @@
     if (conjWithTrans.length && Math.random() < 0.30) {
       const [pr, e] = conjWithTrans[Math.floor(Math.random() * conjWithTrans.length)];
       quizPronoun = pr;
-      promptText  = showNative ? e.translation : `${pr} ${e.form}`;
-      answerText  = showNative ? `${pr} ${e.form}` : e.translation;
+      promptText = showNative ? e.translation : `${pr} ${e.form}`;
+      answerText = showNative ? `${pr} ${e.form}` : e.translation;
     } else {
       promptText = showNative ? question.translation : display;
       answerText = showNative ? display : question.translation;
@@ -199,9 +199,9 @@
 
   // ── _serveFromBundle: route offline API calls to IDB data ───────────────────
   function _serveFromBundle(apiPath, bundle) {
-    const url  = new URL(apiPath, window.location.origin);
-    const p    = url.pathname;
-    const qs   = url.searchParams;
+    const url = new URL(apiPath, window.location.origin);
+    const p = url.pathname;
+    const qs = url.searchParams;
     const lang = qs.get('lang') || (bundle.config && bundle.config.currentLang);
     const langData = (bundle.languages && bundle.languages[lang]) || {};
 
@@ -211,7 +211,7 @@
     // ── /api/words ───────────────────────────────────────────────────────────
     if (p === '/api/words') {
       const words = langData.words || [];
-      const type  = qs.get('type');
+      const type = qs.get('type');
       return type ? words.filter(w => w.type === type) : words;
     }
 
@@ -226,10 +226,10 @@
 
     // ── /api/stats ───────────────────────────────────────────────────────────
     if (p === '/api/stats') {
-      const words   = langData.words   || [];
+      const words = langData.words || [];
       const phrases = langData.phrases || [];
-      const byType  = {};
-      ['noun','verb','adjective','adverb'].forEach(tp => { byType[tp] = words.filter(w => w.type === tp).length; });
+      const byType = {};
+      ['noun', 'verb', 'adjective', 'adverb'].forEach(tp => { byType[tp] = words.filter(w => w.type === tp).length; });
       return {
         totalWords: words.length, totalPhrases: phrases.length, byType,
         mastered: words.filter(w => (w.progress || 0) >= _wordMax(w)).length,
@@ -239,11 +239,11 @@
 
     // ── /api/quiz ────────────────────────────────────────────────────────────
     if (p === '/api/quiz') {
-      const words   = langData.words || [];
-      const types   = qs.get('types')     ? qs.get('types').split(',')   : null;
-      const labels  = qs.get('labels')    ? qs.get('labels').split(',')  : [];
-      const dir     = qs.get('direction') || 'random';
-      const result  = _buildQuizWord(words, lang, dir, types, labels);
+      const words = langData.words || [];
+      const types = qs.get('types') ? qs.get('types').split(',') : null;
+      const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
+      const dir = qs.get('direction') || 'random';
+      const result = _buildQuizWord(words, lang, dir, types, labels);
       if (!result) throw { error: 'Add at least 2 words to start!' };
       return result;
     }
@@ -251,8 +251,8 @@
     // ── /api/quiz/phrase ─────────────────────────────────────────────────────
     if (p === '/api/quiz/phrase') {
       const phrases = langData.phrases || [];
-      const labels  = qs.get('labels') ? qs.get('labels').split(',') : [];
-      const result  = _buildQuizPhrase(phrases, lang, labels);
+      const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
+      const result = _buildQuizPhrase(phrases, lang, labels);
       if (!result) throw { error: 'No phrases yet.' };
       return result;
     }
@@ -271,52 +271,87 @@
     return {};
   }
 
+  // ── Reliable offline detection ────────────────────────────────────────────────
+  // navigator.onLine is unreliable on localhost: it stays true even when internet
+  // is cut because the loopback interface is always up. We maintain our own flag,
+  // seeded from navigator.onLine but updated on every real request outcome.
+  let _detectedOffline = !navigator.onLine;
+
+  function _isOffline() { return _detectedOffline; }
+  function _markOnline() {
+    if (!_detectedOffline) return;
+    _detectedOffline = false;
+    if (window.OfflineMode) { OfflineMode._online = true; }
+    if (window.updateOfflineSyncBtn) updateOfflineSyncBtn();
+  }
+  function _markOffline() {
+    if (_detectedOffline) return;
+    _detectedOffline = true;
+    if (window.OfflineMode) { OfflineMode._online = false; }
+    if (window.updateOfflineSyncBtn) updateOfflineSyncBtn();
+  }
+
+  // Expose so app.js OfflineMode.isOnline stays accurate
+  window._isReallyOffline = _isOffline;
+
   // ── API interceptor ──────────────────────────────────────────────────────────
   window._offlineApiInterceptor = async function (method, path, body) {
     const offlineEnabled = window.App && window.App.config && window.App.config.offlineMode;
+    const isAuthMe = path === '/auth/me' || path.endsWith('/auth/me');
+    const isAuthLogin = path === '/auth/login' || path.endsWith('/auth/login');
+    const WRITES = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
-    // ── Offline-specific auth handling ───────────────────────────────────────
-    if (!navigator.onLine) {
-      // GET /auth/me → restore from sessionStorage
-      if (path === '/auth/me' || path.endsWith('/auth/me')) {
+    // ── Helper: serve auth/data offline ─────────────────────────────────────
+    async function _handleOffline() {
+      if (isAuthMe && method.toUpperCase() === 'GET') {
         const sess = OfflineSession.load();
         if (sess && sess.user) return sess.user;
         throw { error: 'offline' };
       }
-
-      // POST /auth/login → validate against saved session (no network needed)
-      if ((path === '/auth/login' || path.endsWith('/auth/login')) && method.toUpperCase() === 'POST') {
+      if (isAuthLogin && method.toUpperCase() === 'POST') {
         const sess = OfflineSession.load();
         if (sess && sess.user && body && body.username === sess.user.username) {
-          // We can't check the password offline — accept any login attempt for the
-          // saved user (the session cookie will be validated when back online)
           return { ok: true, user: sess.user };
         }
         throw { error: window.t ? window.t('offline_no_connection') : 'Cannot login while offline' };
       }
+      if (offlineEnabled) {
+        if (method.toUpperCase() === 'GET') {
+          const bundle = await OfflineDB.getBundle();
+          if (bundle) return _serveFromBundle(path, bundle);
+          throw { error: 'No offline data. Please sync while online.' };
+        }
+        if (WRITES.includes(method.toUpperCase())) {
+          if (path.includes('/quiz/answer') || path.includes('/quiz/phrase/answer')) return { ok: true };
+          throw { error: window.t ? window.t('offline_readonly') : 'Offline: read-only mode' };
+        }
+      }
+      throw { error: 'offline', offline: true };
     }
 
-    if (!offlineEnabled || navigator.onLine) {
+    // ── Fast-path if we already know we're offline ───────────────────────────
+    if (_isOffline()) return _handleOffline();
+
+    // ── Try network ──────────────────────────────────────────────────────────
+    try {
       const result = await window._realApi(method, path, body);
-      // Persist session after every successful online auth
-      if ((path === '/auth/me' || path.endsWith('/auth/me')) && result && result.id) {
+      _markOnline();
+      // Persist session after every successful /auth/me
+      if (isAuthMe && result && result.id) {
         OfflineSession.save(result, window.App && window.App.config);
       }
       return result;
+    } catch (err) {
+      // Detect offline: TypeError = network fail; err.offline = SW 503 sentinel
+      const isNetworkFailure = (err instanceof TypeError) ||
+        (err && err.offline === true) ||
+        (err && err.error === 'offline');
+      if (isNetworkFailure) {
+        _markOffline();
+        return _handleOffline();
+      }
+      throw err;
     }
-
-    // ── Offline & mode active ────────────────────────────────────────────────
-    const WRITES = ['POST', 'PUT', 'DELETE', 'PATCH'];
-    if (WRITES.includes(method.toUpperCase())) {
-      // Allow quiz answer writes silently offline (progress lost, but no crash)
-      if (path.includes('/quiz/answer') || path.includes('/quiz/phrase/answer')) return { ok: true };
-      throw { error: window.t ? window.t('offline_readonly') : 'Offline: read-only mode' };
-    }
-
-    const bundle = await OfflineDB.getBundle();
-    if (!bundle) throw { error: 'No offline data. Please sync while online.' };
-
-    return _serveFromBundle(path, bundle);
   };
 
   // ── TTS offline hook ─────────────────────────────────────────────────────────
@@ -393,7 +428,7 @@
       });
       if (!resp.ok) throw new Error('TTS generate HTTP ' + resp.status);
 
-      const reader  = resp.body.getReader();
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
       while (true) {
@@ -435,7 +470,7 @@
       async function downloadOne(entry) {
         const r = await fetch(`/api/offline/tts/${encodeURIComponent(entry.lang)}/${encodeURIComponent(entry.speedKey)}/${encodeURIComponent(entry.itemId)}`, { credentials: 'same-origin', signal });
         if (!r.ok) return;
-        const buf   = await r.arrayBuffer();
+        const buf = await r.arrayBuffer();
         const speed = (parseInt((entry.speedKey || 'spd100').replace('spd', ''), 10) || 100) / 100;
         await OfflineDB.saveTTS(entry.lang, speed, entry.itemId, buf);
         saved++;
@@ -453,23 +488,23 @@
 
     async fullSync(langs, configByLang, onProgress) {
       if (this._running) return;
-      this._running   = true;
+      this._running = true;
       this._abortCtrl = new AbortController();
-      const signal    = this._abortCtrl.signal;
+      const signal = this._abortCtrl.signal;
       try {
         const bundle = await this.syncBundle(p => onProgress && onProgress({ phase: 'data', ...p }));
         for (const lang of langs) {
           if (signal.aborted) break;
-          const lc          = configByLang[lang] || {};
+          const lc = configByLang[lang] || {};
           const speedNormal = lc.ttsSpeedNormal != null ? lc.ttsSpeedNormal : 1.0;
-          const speedSlow   = lc.ttsSpeedSlow   != null ? lc.ttsSpeedSlow   : 0.24;
+          const speedSlow = lc.ttsSpeedSlow != null ? lc.ttsSpeedSlow : 0.24;
           await this.generateTTSCache(lang, speedNormal, speedSlow, signal,
             p => onProgress && onProgress({ phase: 'tts_gen', lang, ...p }));
           if (signal.aborted) break;
           await this.syncTTSFiles(lang, signal,
             p => onProgress && onProgress({ phase: 'tts_dl', lang, ...p }));
         }
-        // Save current session into sessionStorage so offline refresh works
+        // Save current session into localStorage so offline refresh works
         if (window.App && window.App.user && window.App.config) {
           OfflineSession.save(window.App.user, window.App.config);
         }

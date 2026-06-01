@@ -8,9 +8,9 @@
 //   - API writes: Queue in IDB sync-queue; replay on sync
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'ofc-v1';
-const STATIC_CACHE  = CACHE_VERSION + '-static';
-const TTS_CACHE     = CACHE_VERSION + '-tts';
+const CACHE_VERSION = 'ofc-v4';
+const STATIC_CACHE = CACHE_VERSION + '-static';
+const TTS_CACHE = CACHE_VERSION + '-tts';
 
 const STATIC_ASSETS = [
   '/',
@@ -26,18 +26,27 @@ const STATIC_ASSETS = [
   '/js/pages/train.js',
   '/js/pages/settings.js',
   '/js/pages/admin.js',
-  '/js/offline.js',
+  '/js/offline-db.js',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INSTALL – cache static assets
+// INSTALL – cache static assets individually (never fail install)
 // ─────────────────────────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    // Cache each asset individually — one failure must not abort the whole install.
+    // Do NOT use { cache: 'reload' }: that forces a network request and fails offline.
+    // Use default cache mode so the browser serves from HTTP cache when network is down.
+    await Promise.allSettled(
+      STATIC_ASSETS.map(url =>
+        fetch(url)
+          .then(res => { if (res.ok) return cache.put(url, res); })
+          .catch(() => { }) // offline during install — assets already in previous cache
+      )
+    );
+    await self.skipWaiting();
+  })())
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,7 +57,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(keys =>
       Promise.all(
         keys.filter(k => k.startsWith('ofc-') && k !== STATIC_CACHE && k !== TTS_CACHE)
-            .map(k => caches.delete(k))
+          .map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   );
@@ -68,54 +77,54 @@ function openDB() {
         db.createObjectStore('queue', { autoIncrement: true }); // pending writes
     };
     req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
+    req.onerror = e => reject(e.target.error);
   });
 }
 
 async function idbGet(db, store, key) {
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction(store, 'readonly');
+    const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).get(key);
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
 async function idbPut(db, store, key, value) {
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction(store, 'readwrite');
+    const tx = db.transaction(store, 'readwrite');
     const req = store === 'queue'
       ? tx.objectStore(store).add(value)         // autoIncrement
       : tx.objectStore(store).put(value, key);
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
 async function idbGetAll(db, store) {
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction(store, 'readonly');
+    const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).getAll();
     req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
 async function idbClear(db, store) {
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction(store, 'readwrite');
+    const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).clear();
     req.onsuccess = () => resolve();
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
 async function idbDelete(db, store, key) {
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction(store, 'readwrite');
+    const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).delete(key);
     req.onsuccess = () => resolve();
-    req.onerror   = () => reject(req.error);
+    req.onerror = () => reject(req.error);
   });
 }
 
@@ -129,8 +138,8 @@ function isStaticAsset(url) {
 
 function isApiRead(url) {
   return url.pathname.startsWith('/api/') &&
-         !url.pathname.startsWith('/api/tts') &&
-         ['GET'].includes(url._method || 'GET');
+    !url.pathname.startsWith('/api/tts') &&
+    ['GET'].includes(url._method || 'GET');
 }
 
 function isTtsRequest(url) {
@@ -147,6 +156,43 @@ function isI18n(url) {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // ── 0. Navigation requests (page load, Ctrl+R, Ctrl+Shift+R) ────────────
+  // Serve index.html from cache — critical path for offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      // Try the cache first (check both the exact URL and '/index.html')
+      const cached = await caches.match('/index.html', { ignoreVary: true })
+        || await caches.match(event.request, { ignoreVary: true });
+      if (cached) {
+        // Refresh in background when possible
+        fetch('/index.html').then(res => {
+          if (res && res.ok) caches.open(STATIC_CACHE).then(c => c.put('/index.html', res));
+        }).catch(() => { });
+        return cached;
+      }
+      // Not yet cached — must be first visit, try network
+      try {
+        const res = await fetch(event.request);
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(STATIC_CACHE).then(c => {
+            c.put('/index.html', clone.clone());
+            c.put(event.request, clone);
+          });
+        }
+        return res;
+      } catch {
+        return new Response(
+          '<!doctype html><html><head><meta charset="utf-8"><title>OpenFlashcards</title></head>' +
+          '<body><p style="font-family:sans-serif;padding:2rem">OpenFlashcards is loading — ' +
+          'please visit the page once while online so assets can be cached.</p></body></html>',
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      }
+    })());
+    return;
+  }
+
   // ── 1. Static assets: cache-first ───────────────────────────────────────
   if (isStaticAsset(url) || isI18n(url)) {
     event.respondWith(
@@ -156,7 +202,16 @@ self.addEventListener('fetch', event => {
           const clone = res.clone();
           caches.open(STATIC_CACHE).then(c => c.put(event.request, clone));
           return res;
-        }).catch(() => new Response('Offline', { status: 503 }));
+        }).catch(() => {
+          // For i18n JSON requests return a valid JSON error so the app can handle it
+          if (isI18n(url)) {
+            return new Response(JSON.stringify({ error: 'offline', offline: true }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
+            });
+          }
+          return new Response('', { status: 503 });
+        });
       })
     );
     return;
@@ -190,16 +245,16 @@ self.addEventListener('fetch', event => {
         // Cache successful API reads into IDB
         if (res.ok) {
           try {
-            const db   = await openDB();
+            const db = await openDB();
             const body = await res.clone().json();
             await idbPut(db, 'data', url.pathname + url.search, JSON.stringify(body));
-          } catch {}
+          } catch { }
         }
         return res;
       }).catch(async () => {
         // Offline: serve from IDB
         try {
-          const db  = await openDB();
+          const db = await openDB();
           const val = await idbGet(db, 'data', url.pathname + url.search);
           if (val) {
             return new Response(val, {
@@ -207,7 +262,7 @@ self.addEventListener('fetch', event => {
               headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
             });
           }
-        } catch {}
+        } catch { }
         return new Response(JSON.stringify({ error: 'offline', offline: true }), {
           status: 503, headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
         });
@@ -217,21 +272,21 @@ self.addEventListener('fetch', event => {
   }
 
   // ── 4. API writes (POST/PUT/DELETE): queue if offline ───────────────────
-  if (['POST','PUT','DELETE','PATCH'].includes(event.request.method) && url.pathname.startsWith('/api/')) {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(event.request.method) && url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request.clone()).catch(async () => {
         // Queue the write for later sync
         try {
-          const db   = await openDB();
+          const db = await openDB();
           const body = await event.request.clone().text();
           await idbPut(db, 'queue', null, {
-            method:  event.request.method,
-            url:     event.request.url,
+            method: event.request.method,
+            url: event.request.url,
             headers: Object.fromEntries(event.request.headers.entries()),
             body,
             ts: Date.now()
           });
-        } catch {}
+        } catch { }
         return new Response(JSON.stringify({ ok: false, queued: true, offline: true }), {
           status: 202,
           headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
@@ -273,7 +328,7 @@ self.addEventListener('message', async event => {
         try {
           const res = await fetch(url);
           if (res.ok) { await cache.put(url, res); done++; }
-        } catch {}
+        } catch { }
         event.ports[0].postMessage({ type: 'progress', done, total: urls.length });
       }
       event.ports[0].postMessage({ type: 'done', done, total: urls.length });
@@ -286,15 +341,15 @@ self.addEventListener('message', async event => {
   // ── Flush the pending write queue ────────────────────────────────────────
   if (type === 'SYNC_QUEUE') {
     try {
-      const db    = await openDB();
+      const db = await openDB();
       const items = await idbGetAll(db, 'queue');
       let replayed = 0, failed = 0;
       for (const item of items) {
         try {
           await fetch(item.url, {
-            method:  item.method,
+            method: item.method,
             headers: item.headers,
-            body:    item.body || undefined,
+            body: item.body || undefined,
             credentials: 'same-origin'
           });
           replayed++;
@@ -313,7 +368,7 @@ self.addEventListener('message', async event => {
   // ── Query pending queue size ──────────────────────────────────────────────
   if (type === 'QUEUE_SIZE') {
     try {
-      const db    = await openDB();
+      const db = await openDB();
       const items = await idbGetAll(db, 'queue');
       event.ports[0].postMessage({ size: items.length });
     } catch {
@@ -348,16 +403,16 @@ self.addEventListener('sync', event => {
 
 async function replayQueue() {
   try {
-    const db    = await openDB();
+    const db = await openDB();
     const items = await idbGetAll(db, 'queue');
     for (const item of items) {
       await fetch(item.url, {
-        method:  item.method,
+        method: item.method,
         headers: item.headers,
-        body:    item.body || undefined,
+        body: item.body || undefined,
         credentials: 'same-origin'
       });
     }
     await idbClear(db, 'queue');
-  } catch {}
+  } catch { }
 }

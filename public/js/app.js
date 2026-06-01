@@ -30,31 +30,24 @@ window.api = async function (method, path, body) {
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 async function checkAuth() {
-  console.log('[auth] checkAuth — online:', navigator.onLine, '| api patched:', window.api !== window._realApi && !!window._realApi);
+  const offline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  console.log('[auth] checkAuth — offline:', offline, '| api patched:', window.api !== window._realApi && !!window._realApi);
   try {
     App.user = await api('GET', '/auth/me');
     console.log('[auth] /auth/me success:', App.user && App.user.username);
     // If offline and config not yet loaded, restore it from IDB bundle
-    if (!navigator.onLine && !App.config && window.OfflineDB) {
+    const isOfflineNow = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+    if (isOfflineNow && !App.config && window.OfflineDB) {
       const bundle = await OfflineDB.getBundle().catch(() => null);
       if (bundle && bundle.config) App.config = bundle.config;
     }
     // Persist for offline refresh (only when online)
-    if (navigator.onLine && window.OfflineSession && App.config) OfflineSession.save(App.user, App.config);
+    if (!isOfflineNow && window.OfflineSession && App.config) OfflineSession.save(App.user, App.config);
     return true;
   } catch (e) {
     console.warn('[auth] /auth/me failed:', e);
-    // Belt-and-suspenders offline fallback
-    if (!navigator.onLine && window.OfflineSession) {
-      const sess   = OfflineSession.load();
-      const bundle = window.OfflineDB ? await OfflineDB.getBundle().catch(() => null) : null;
-      console.log('[auth] offline fallback — sess:', !!sess, '| bundle:', !!bundle, '| offlineMode:', bundle && bundle.config && bundle.config.offlineMode);
-      if (sess && sess.user && bundle && bundle.config && bundle.config.offlineMode) {
-        App.user   = sess.user;
-        App.config = bundle.config;
-        return true;
-      }
-    }
+    // The interceptor already handled the offline /auth/me case and returned the
+    // user if a session was saved. If we still got an error, no session is available.
     return false;
   }
 }
@@ -65,7 +58,7 @@ async function doLogin(username, password) {
 }
 
 async function doLogout() {
-  if (navigator.onLine) await api('POST', '/auth/logout').catch(() => {});
+  if (navigator.onLine) await api('POST', '/auth/logout').catch(() => { });
   App.user = null;
   App.config = null;
   if (window.OfflineSession) OfflineSession.clear();
@@ -77,7 +70,8 @@ async function doLogout() {
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadConfig() {
   // If offline boot already loaded config from IDB bundle, skip network fetch
-  if (App.config && !navigator.onLine) {
+  const isOffline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  if (App.config && isOffline) {
     applyTheme();
     updateOfflineSyncBtn();
     return;
@@ -86,7 +80,8 @@ async function loadConfig() {
   applyTheme();
   updateOfflineSyncBtn();
   // Persist session for offline refresh
-  if (window.OfflineSession && App.user) OfflineSession.save(App.user, App.config);
+  const isOfflineNow = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  if (!isOfflineNow && window.OfflineSession && App.user) OfflineSession.save(App.user, App.config);
 }
 
 async function saveConfig(patch) {
@@ -245,11 +240,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const bundle = window._offlineLocaleBundle ||
         (window.OfflineDB ? (await OfflineDB.getBundle().catch(() => null) || {}).locales : null);
       if (bundle) {
-        const code   = (navigator.language || 'en').split('-')[0].toLowerCase();
+        const code = (navigator.language || 'en').split('-')[0].toLowerCase();
         const locale = bundle[code] || bundle['en'];
         if (locale) { window._i18nStrings = locale; window._uiLang = code; window._i18nCache = window._i18nCache || {}; window._i18nCache[code] = locale; }
       }
-    } catch {}
+    } catch { }
   }
 
   // Detect browser language for login screen before user logs in
@@ -341,15 +336,15 @@ window._triggerOfflineSync = async function () {
   btn.textContent = '⏳';
   btn.disabled = true;
   try {
-    const targetLangs  = (App.config && App.config.targetLangs) || [];
-    const langs        = targetLangs.map(l => l.isoCode);
+    const targetLangs = (App.config && App.config.targetLangs) || [];
+    const langs = targetLangs.map(l => l.isoCode);
     const configByLang = {};
     targetLangs.forEach(l => { configByLang[l.isoCode] = l; });
 
     await OfflineSync.fullSync(langs, configByLang, progress => {
-      if      (progress.phase === 'data')    btn.textContent = '📦';
+      if (progress.phase === 'data') btn.textContent = '📦';
       else if (progress.phase === 'tts_gen') btn.textContent = '🎙️';
-      else if (progress.phase === 'tts_dl')  btn.textContent = '📥';
+      else if (progress.phase === 'tts_dl') btn.textContent = '📥';
     });
     btn.textContent = '✅';
     toast(window.t ? t('offline_sync_done') : 'Sync complete ✓');

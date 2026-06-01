@@ -1,7 +1,7 @@
 /* service-worker.js – OpenFlashcards offline support v3 */
 'use strict';
 
-const SW_VERSION   = 'ofc-sw-v3';
+const SW_VERSION = 'ofc-sw-v3';
 const STATIC_CACHE = SW_VERSION + '-static';
 
 const PRECACHE_URLS = [
@@ -41,7 +41,7 @@ self.addEventListener('activate', event => {
 
 // ── Fetch ────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
-  const url  = new URL(event.request.url);
+  const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
   const path = url.pathname;
@@ -58,7 +58,7 @@ self.addEventListener('fetch', event => {
             if (resp && resp.status === 200) {
               caches.open(STATIC_CACHE).then(c => c.put('/index.html', resp));
             }
-          }).catch(() => {});
+          }).catch(() => { });
           return cached;
         }
         // Not in cache yet → try network
@@ -72,8 +72,45 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // ── API / Auth / i18n: network-first, offline → 503 JSON ────────────────
-  if (path.startsWith('/api/') || path.startsWith('/auth/') || path.startsWith('/i18n/')) {
+  // ── i18n: cache-first (populated on bundle download) ────────────────────
+  if (path.startsWith('/i18n/')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(resp => {
+          if (resp && resp.status === 200) {
+            caches.open(STATIC_CACHE).then(c => c.put(event.request, resp.clone()));
+          }
+          return resp;
+        }).catch(() =>
+          new Response(JSON.stringify({ error: 'offline', offline: true }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
+          })
+        );
+      })
+    );
+    return;
+  }
+
+  // ── Auth: network-first, fall back to IDB session ────────────────────────
+  // /auth/me is intercepted by the JS-layer (offline-db.js) before fetch()
+  // but if the network request reaches the SW (e.g. server down), return a
+  // special offline sentinel so the JS interceptor can handle it gracefully.
+  if (path.startsWith('/auth/')) {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        new Response(JSON.stringify({ error: 'offline', offline: true }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', 'X-Offline': '1' }
+        })
+      )
+    );
+    return;
+  }
+
+  // ── API: network-first, fall back to IDB (handled by offline-db.js) ─────
+  if (path.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({ error: 'offline', offline: true }), {

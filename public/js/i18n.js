@@ -1,9 +1,9 @@
 // i18n.js – Locale loader for OpenFlashcards
 'use strict';
 
-window._i18nCache   = {};
+window._i18nCache = {};
 window._i18nStrings = {};
-window._uiLang      = 'en';
+window._uiLang = 'en';
 
 window.t = function (key) {
   return window._i18nStrings[key] || key;
@@ -19,37 +19,37 @@ window.loadLocale = async function (langCode) {
   // Already in memory cache
   if (window._i18nCache[code]) {
     window._i18nStrings = window._i18nCache[code];
-    window._uiLang      = code;
+    window._uiLang = code;
     return;
   }
 
-  // Try network
-  if (navigator.onLine) {
-    try {
-      const res    = await fetch('/i18n/' + encodeURIComponent(code));
-      const data   = await res.json();
-      const locale = data.locale || {};
-      window._i18nCache[code]      = locale;
-      window._i18nCache[data.lang] = locale;
-      window._i18nStrings = locale;
-      window._uiLang      = data.lang || code;
-      if (data.fallback) console.warn('[i18n] No locale for:', code, '– using EN fallback.');
-      return;
-    } catch (e) {
-      console.warn('[i18n] Network load failed for:', code, e);
-    }
+  // Try network (always — SW serves from cache when offline)
+  try {
+    const res = await fetch('/i18n/' + encodeURIComponent(code));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.offline || data.error) throw new Error('offline');
+    const locale = data.locale || {};
+    window._i18nCache[code] = locale;
+    window._i18nCache[data.lang] = locale;
+    window._i18nStrings = locale;
+    window._uiLang = data.lang || code;
+    if (data.fallback) console.warn('[i18n] No locale for:', code, '– using EN fallback.');
+    return;
+  } catch (e) {
+    console.warn('[i18n] Network load failed for:', code, e.message || e);
   }
 
   // Offline fallback: IDB bundle locales
-  // offline-db.js exposes window._offlineLocaleBundle once IDB is ready,
-  // OR we read it synchronously from the pre-populated cache set by offline-db.js boot.
-  const bundleLocales = window._offlineLocaleBundle;
+  const bundleLocales = window._offlineLocaleBundle ||
+    (window.OfflineDB ? await OfflineDB.getBundle().then(b => b && b.locales).catch(() => null) : null);
   if (bundleLocales) {
     const locale = bundleLocales[code] || bundleLocales[code.split('-')[0]] || bundleLocales['en'];
     if (locale) {
-      window._i18nCache[code]  = locale;
-      window._i18nStrings      = locale;
-      window._uiLang           = code;
+      window._i18nCache[code] = locale;
+      window._i18nStrings = locale;
+      window._uiLang = code;
+      window._offlineLocaleBundle = bundleLocales; // warm cache
       return;
     }
   }
@@ -57,7 +57,7 @@ window.loadLocale = async function (langCode) {
   // Last resort: already-cached English
   if (window._i18nCache['en']) {
     window._i18nStrings = window._i18nCache['en'];
-    window._uiLang      = 'en';
+    window._uiLang = 'en';
   }
 };
 
