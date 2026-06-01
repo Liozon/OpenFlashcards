@@ -286,5 +286,6 @@
   "offline_progress_tts": "Download audio",
   "offline_readonly": "Offline: solo lettura. Connettiti per aggiungere o modificare parole.",
   "offline_progress_tts_gen": "Generazione audio",
-  "offline_progress_tts_dl": "Download audio"
+  "offline_progress_tts_dl": "Download audio",
+  "offline_pending_sync": "modifiche in attesa di sincronizzazione"
 }

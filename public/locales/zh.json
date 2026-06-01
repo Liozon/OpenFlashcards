@@ -286,5 +286,6 @@
   "offline_progress_tts": "正在下载音频",
   "offline_readonly": "离线：只读模式。连接网络以添加或编辑单词。",
   "offline_progress_tts_gen": "正在生成音频",
-  "offline_progress_tts_dl": "正在下载音频"
+  "offline_progress_tts_dl": "正在下载音频",
+  "offline_pending_sync": "更改待同步"
 }

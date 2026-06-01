@@ -286,5 +286,6 @@
   "offline_progress_tts": "Завантаження аудіо",
   "offline_readonly": "Офлайн: режим лише читання. Підключіться для додавання чи редагування.",
   "offline_progress_tts_gen": "Генерація аудіо",
-  "offline_progress_tts_dl": "Завантаження аудіо"
+  "offline_progress_tts_dl": "Завантаження аудіо",
+  "offline_pending_sync": "зміни очікують синхронізації"
 }

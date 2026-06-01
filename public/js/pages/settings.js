@@ -93,14 +93,24 @@ async function renderSettings(el) {
     if (!offlineStatus) return;
     const meta = await OfflineDB.getBundleMeta();
     const ttsCount = await OfflineDB.countTTS();
+    const queue = await OfflineDB.getProgressQueue();
+    const pending = queue.reduce((sum, e) => sum + Math.abs(e.delta), 0);
+
+    let pendingHtml = '';
+    if (pending > 0) {
+      const label = window.t ? t('offline_pending_sync') : 'answer(s) pending sync';
+      pendingHtml = `<br><span style="color:var(--warning,#ff9800);font-weight:600">⏳ ${pending} ${label}</span>`;
+    }
+
     if (!meta) {
-      offlineStatus.innerHTML = `<span style="color:var(--text-muted)">⚠️ ${t('offline_not_synced')}</span>`;
+      offlineStatus.innerHTML = `<span style="color:var(--text-muted)">⚠️ ${t('offline_not_synced')}</span>${pendingHtml}`;
     } else {
       const d = new Date(meta.syncedAt);
       const fmt = d.toLocaleString();
       offlineStatus.innerHTML =
         `<span style="color:var(--success,#4caf50)">✓ ${t('offline_last_sync')}: <strong>${fmt}</strong></span><br>` +
-        `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>`;
+        `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>` +
+        pendingHtml;
     }
   }
 

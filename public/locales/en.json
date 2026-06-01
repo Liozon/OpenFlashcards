@@ -286,5 +286,6 @@
   "offline_progress_tts": "Downloading audio",
   "offline_readonly": "Offline: read-only mode. Connect to add or edit words.",
   "offline_progress_tts_gen": "Generating audio",
-  "offline_progress_tts_dl": "Downloading audio"
+  "offline_progress_tts_dl": "Downloading audio",
+  "offline_pending_sync": "changes pending sync"
 }

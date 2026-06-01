@@ -1,13 +1,16 @@
 /* offline-db.js – IndexedDB layer for OpenFlashcards offline mode
    Stores:
-     - 'bundle'  : { id:'latest', data: <full bundle JSON>, syncedAt }
-     - 'tts'     : { id: '<lang>/<speedKey>/<itemId>', audio: ArrayBuffer }
+     - 'bundle'         : { id:'latest', data: <full bundle JSON>, syncedAt }
+     - 'tts'            : { id: '<lang>/<speedKey>/<itemId>', audio: ArrayBuffer }
+     - 'progress_queue' : { id: '<lang>/<type>/<itemId>', lang, type, itemId, delta }
+       type = 'word' | 'phrase'
+       delta = net signed integer (correct answers - wrong answers accumulated offline)
 */
 'use strict';
 
 (function () {
   const DB_NAME = 'openflashcards-offline';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;   // bumped: adds progress_queue store
   let _db = null;
 
   // ── IndexedDB helpers ────────────────────────────────────────────────────────
@@ -19,6 +22,7 @@
         const db = e.target.result;
         if (!db.objectStoreNames.contains('bundle')) db.createObjectStore('bundle', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('tts')) db.createObjectStore('tts', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('progress_queue')) db.createObjectStore('progress_queue', { keyPath: 'id' });
       };
       req.onsuccess = e => { _db = e.target.result; resolve(_db); };
       req.onerror = e => reject(e.target.error);
@@ -58,6 +62,19 @@
     return `${lang}/spd${Math.round(parseFloat(speed) * 100)}/${itemId}`;
   }
 
+  // ── Progress queue helpers ───────────────────────────────────────────────────
+  function progressKey(lang, type, itemId) {
+    return `${lang}/${type}/${itemId}`;
+  }
+
+  function idbGetAll(store) {
+    return openDB().then(db => new Promise((res, rej) => {
+      const r = db.transaction(store, 'readonly').objectStore(store).getAll();
+      r.onsuccess = e => res(e.target.result || []);
+      r.onerror = e => rej(e.target.error);
+    }));
+  }
+
   // ── OfflineDB public API ─────────────────────────────────────────────────────
   window.OfflineDB = {
     saveBundle: async b => idbPut('bundle', { id: 'latest', data: b, syncedAt: new Date().toISOString() }),
@@ -66,8 +83,21 @@
     saveTTS: async (lang, speed, itemId, buf) => idbPut('tts', { id: ttsKey(lang, speed, itemId), audio: buf, lang, speed, itemId, savedAt: Date.now() }),
     getTTS: async (lang, speed, itemId) => { const r = await idbGet('tts', ttsKey(lang, speed, itemId)); return r ? r.audio : null; },
     countTTS: async () => idbCountStore('tts'),
-    clearAll: async () => { await idbClearStore('bundle'); await idbClearStore('tts'); },
+    clearAll: async () => { await idbClearStore('bundle'); await idbClearStore('tts'); await idbClearStore('progress_queue'); },
     clearTTS: async () => idbClearStore('tts'),
+
+    // ── Progress queue (accumulated offline quiz answers) ──────────────────
+    // Stores signed deltas: correct=+1, wrong=-1, accumulated per item.
+    addProgressDelta: async (lang, type, itemId, delta) => {
+      const key = progressKey(lang, type, itemId);
+      const existing = await idbGet('progress_queue', key);
+      return idbPut('progress_queue', {
+        id: key, lang, type, itemId,
+        delta: ((existing && existing.delta) || 0) + delta
+      });
+    },
+    getProgressQueue: async () => idbGetAll('progress_queue'),
+    clearProgressQueue: async () => idbClearStore('progress_queue'),
   };
 
   // ── Session persistence (survives page refresh offline) ──────────────────────
@@ -198,7 +228,7 @@
   }
 
   // ── _serveFromBundle: route offline API calls to IDB data ───────────────────
-  function _serveFromBundle(apiPath, bundle) {
+  function _serveFromBundle(apiPath, bundle, body) {
     const url = new URL(apiPath, window.location.origin);
     const p = url.pathname;
     const qs = url.searchParams;
@@ -248,6 +278,40 @@
       return result;
     }
 
+    // ── /api/quiz/answer (POST) ──────────────────────────────────────────────
+    // body is passed as the third argument to _serveFromBundle (see interceptor)
+    if (p === '/api/quiz/answer') {
+      const { id, answer, expectedAnswer } = (arguments[2] || {});
+      if (!id) return { ok: true };
+      const words = langData.words || [];
+      const word = words.find(w => w.id === id);
+      if (!word) return { ok: true };
+
+      const display = (word.article ? word.article + ' ' : '') +
+        (word.type === 'verb' && word.infinitive ? word.infinitive : word.literal);
+      const correct = answer && (
+        word.translation.trim().toLowerCase() === answer.trim().toLowerCase() ||
+        display.trim().toLowerCase() === answer.trim().toLowerCase()
+      );
+      const delta = correct ? 1 : -1;
+      const max = word.maxProgress || _wordMax(word);
+
+      // Update in-memory bundle so next quiz question reflects current progress
+      word.progress = Math.max(0, Math.min(max, (word.progress || 0) + delta));
+
+      // Persist updated bundle and queue the delta for server sync
+      OfflineDB.saveBundle(bundle).catch(() => { });
+      OfflineDB.addProgressDelta(lang, 'word', id, delta)
+        .then(() => { if (window.updateOfflineSyncBtn) updateOfflineSyncBtn(); })
+        .catch(() => { });
+
+      return {
+        correct,
+        correctAnswer: expectedAnswer || word.translation,
+        message: correct ? '✓ Correct!' : '✗ Wrong. The answer was:'
+      };
+    }
+
     // ── /api/quiz/phrase ─────────────────────────────────────────────────────
     if (p === '/api/quiz/phrase') {
       const phrases = langData.phrases || [];
@@ -255,6 +319,27 @@
       const result = _buildQuizPhrase(phrases, lang, labels);
       if (!result) throw { error: 'No phrases yet.' };
       return result;
+    }
+
+    // ── /api/quiz/phrase/answer (POST) ───────────────────────────────────────
+    if (p === '/api/quiz/phrase/answer') {
+      const { id, correct } = (arguments[2] || {});
+      if (!id) return { ok: true };
+      const phrases = langData.phrases || [];
+      const phrase = phrases.find(ph => ph.id === id);
+      if (!phrase) return { ok: true };
+
+      const delta = correct ? 1 : -1;
+      const max = phrase.maxProgress || _phraseMax(phrase);
+
+      phrase.progress = Math.max(0, Math.min(max, (phrase.progress || 0) + delta));
+
+      OfflineDB.saveBundle(bundle).catch(() => { });
+      OfflineDB.addProgressDelta(lang, 'phrase', id, delta)
+        .then(() => { if (window.updateOfflineSyncBtn) updateOfflineSyncBtn(); })
+        .catch(() => { });
+
+      return { ok: true };
     }
 
     // ── /api/labels ──────────────────────────────────────────────────────────
@@ -318,11 +403,16 @@
       if (offlineEnabled) {
         if (method.toUpperCase() === 'GET') {
           const bundle = await OfflineDB.getBundle();
-          if (bundle) return _serveFromBundle(path, bundle);
+          if (bundle) return _serveFromBundle(path, bundle, body);
           throw { error: 'No offline data. Please sync while online.' };
         }
+        // Quiz answers: route through _serveFromBundle so progress is tracked
+        if (path.includes('/quiz/answer') || path.includes('/quiz/phrase/answer')) {
+          const bundle = await OfflineDB.getBundle();
+          if (bundle) return _serveFromBundle(path, bundle, body);
+          return { ok: true }; // no bundle yet, silently discard
+        }
         if (WRITES.includes(method.toUpperCase())) {
-          if (path.includes('/quiz/answer') || path.includes('/quiz/phrase/answer')) return { ok: true };
           throw { error: window.t ? window.t('offline_readonly') : 'Offline: read-only mode' };
         }
       }
@@ -492,6 +582,32 @@
       this._abortCtrl = new AbortController();
       const signal = this._abortCtrl.signal;
       try {
+        // ── Step 1: push offline progress deltas BEFORE refreshing bundle ──────
+        // Must happen first so the fresh bundle reflects the synced progress.
+        const queue = await OfflineDB.getProgressQueue();
+        if (queue.length > 0) {
+          onProgress && onProgress({ phase: 'progress', pct: 0, count: queue.length });
+          try {
+            const resp = await fetch('/api/progress/sync', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deltas: queue })
+            });
+            if (resp.ok) {
+              await OfflineDB.clearProgressQueue();
+              if (window.updateOfflineSyncBtn) updateOfflineSyncBtn();
+              onProgress && onProgress({ phase: 'progress', pct: 100, count: queue.length });
+            } else {
+              console.warn('[OfflineSync] progress sync HTTP', resp.status);
+            }
+          } catch (e) {
+            console.warn('[OfflineSync] progress sync failed:', e);
+            // Non-fatal: continue with bundle refresh; deltas remain queued
+          }
+        }
+
+        // ── Step 2: download fresh bundle (now includes synced progress) ──────
         const bundle = await this.syncBundle(p => onProgress && onProgress({ phase: 'data', ...p }));
         for (const lang of langs) {
           if (signal.aborted) break;

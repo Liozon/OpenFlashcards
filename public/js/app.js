@@ -103,6 +103,30 @@ function updateOfflineSyncBtn() {
   }
   // Show/hide offline banner
   _updateOfflineBanner(enabled && window.OfflineMode && !OfflineMode.isOnline);
+
+  // Pending-sync badge
+  if (enabled && window.OfflineDB) {
+    OfflineDB.getProgressQueue().then(queue => {
+      let badge = document.getElementById('syncPendingBadge');
+      const count = queue.length;
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.id = 'syncPendingBadge';
+          badge.style.cssText =
+            'position:absolute;top:-5px;right:-5px;background:var(--warning,#ff9800);' +
+            'color:#fff;border-radius:99px;font-size:.65rem;font-weight:700;' +
+            'min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;pointer-events:none';
+          btn.style.position = 'relative';
+          btn.appendChild(badge);
+        }
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = '';
+      } else if (badge) {
+        badge.style.display = 'none';
+      }
+    }).catch(() => { });
+  }
 }
 
 function _updateOfflineBanner(show) {

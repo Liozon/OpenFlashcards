@@ -286,5 +286,6 @@
   "offline_progress_tts": "Descargando audio",
   "offline_readonly": "Sin conexión: modo solo lectura. Conéctate para agregar o editar palabras.",
   "offline_progress_tts_gen": "Generando audio",
-  "offline_progress_tts_dl": "Descargando audio"
+  "offline_progress_tts_dl": "Descargando audio",
+  "offline_pending_sync": "cambios pendientes de sincronización"
 }

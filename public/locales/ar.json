@@ -286,5 +286,6 @@
   "offline_progress_tts": "تنزيل الصوت",
   "offline_readonly": "غير متصل: وضع القراءة فقط. اتصل بالإنترنت للإضافة أو التعديل.",
   "offline_progress_tts_gen": "إنشاء الصوت",
-  "offline_progress_tts_dl": "تنزيل الصوت"
+  "offline_progress_tts_dl": "تنزيل الصوت",
+  "offline_pending_sync": "التعديلات التي تنتظر المزامنة"
 }
