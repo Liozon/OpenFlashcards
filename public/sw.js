@@ -8,13 +8,14 @@
 //   - API writes: Queue in IDB sync-queue; replay on sync
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'ofc-v4';
+const CACHE_VERSION = 'ofc-v2.4';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const TTS_CACHE = CACHE_VERSION + '-tts';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/manifest.json',
   '/css/style.css',
   '/js/app.js',
   '/js/i18n.js',
