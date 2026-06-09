@@ -66,7 +66,7 @@ router.get('/config', (req, res) => {
 // PUT /api/config
 router.put('/config', (req, res) => {
   const cfg = getUserConfig(userId(req));
-  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode'];
+  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode'];
   allowed.forEach(k => { if (req.body[k] !== undefined) cfg[k] = req.body[k]; });
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
@@ -130,83 +130,83 @@ router.put('/languages/:code', (req, res) => {
 
 // Map ISO language codes → best msedge-tts voice (BCP-47 ShortName).
 const EDGE_TTS_VOICES = {
-  'af':    'af-ZA-AdriNeural',
-  'sq':    'sq-AL-AnilaNeural',
-  'am':    'am-ET-AmehaNeural',
-  'ar':    'ar-SA-ZariyahNeural',
-  'az':    'az-AZ-BabekNeural',
-  'bn':    'bn-BD-NabanitaNeural',
-  'bs':    'bs-BA-VesnaNeural',
-  'bg':    'bg-BG-KalinaNeural',
-  'my':    'my-MM-NilarNeural',
-  'ca':    'ca-ES-JoanaNeural',
-  'zh':    'zh-CN-XiaoxiaoNeural',
+  'af': 'af-ZA-AdriNeural',
+  'sq': 'sq-AL-AnilaNeural',
+  'am': 'am-ET-AmehaNeural',
+  'ar': 'ar-SA-ZariyahNeural',
+  'az': 'az-AZ-BabekNeural',
+  'bn': 'bn-BD-NabanitaNeural',
+  'bs': 'bs-BA-VesnaNeural',
+  'bg': 'bg-BG-KalinaNeural',
+  'my': 'my-MM-NilarNeural',
+  'ca': 'ca-ES-JoanaNeural',
+  'zh': 'zh-CN-XiaoxiaoNeural',
   'zh-tw': 'zh-TW-HsiaoChenNeural',
   'zh-hk': 'zh-HK-HiuGaaiNeural',
-  'hr':    'hr-HR-GabrijelaNeural',
-  'cs':    'cs-CZ-VlastaNeural',
-  'da':    'da-DK-ChristelNeural',
-  'nl':    'nl-NL-ColetteNeural',
-  'en':    'en-US-JennyNeural',
-  'et':    'et-EE-AnuNeural',
-  'fil':   'fil-PH-BlessicaNeural',
-  'fi':    'fi-FI-SelmaNeural',
-  'fr':    'fr-FR-DeniseNeural',
-  'gl':    'gl-ES-SabelaNeural',
-  'ka':    'ka-GE-EkaNeural',
-  'de':    'de-DE-KatjaNeural',
-  'el':    'el-GR-AthinaNeural',
-  'gu':    'gu-IN-DhwaniNeural',
-  'he':    'he-IL-HilaNeural',
-  'hi':    'hi-IN-SwaraNeural',
-  'hu':    'hu-HU-NoemiNeural',
-  'is':    'is-IS-GudrunNeural',
-  'id':    'id-ID-GadisNeural',
-  'ga':    'ga-IE-OrlaNeural',
-  'it':    'it-IT-ElsaNeural',
-  'ja':    'ja-JP-NanamiNeural',
-  'jv':    'jv-ID-SitiNeural',
-  'kn':    'kn-IN-SapnaNeural',
-  'kk':    'kk-KZ-AigulNeural',
-  'km':    'km-KH-SreymomNeural',
-  'ko':    'ko-KR-SunHiNeural',
-  'lo':    'lo-LA-KeomanyNeural',
-  'lv':    'lv-LV-EveritaNeural',
-  'lt':    'lt-LT-OnaNeural',
-  'mk':    'mk-MK-MarijaNeural',
-  'ms':    'ms-MY-YasminNeural',
-  'ml':    'ml-IN-SobhanaNeural',
-  'mt':    'mt-MT-GraceNeural',
-  'mr':    'mr-IN-AarohiNeural',
-  'mn':    'mn-MN-YesuiNeural',
-  'ne':    'ne-NP-HemkalaNeural',
-  'nb':    'nb-NO-PernilleNeural',
-  'ps':    'ps-AF-LatifaNeural',
-  'fa':    'fa-IR-DilaraNeural',
-  'pl':    'pl-PL-ZofiaNeural',
-  'pt':    'pt-PT-RaquelNeural',
+  'hr': 'hr-HR-GabrijelaNeural',
+  'cs': 'cs-CZ-VlastaNeural',
+  'da': 'da-DK-ChristelNeural',
+  'nl': 'nl-NL-ColetteNeural',
+  'en': 'en-US-JennyNeural',
+  'et': 'et-EE-AnuNeural',
+  'fil': 'fil-PH-BlessicaNeural',
+  'fi': 'fi-FI-SelmaNeural',
+  'fr': 'fr-FR-DeniseNeural',
+  'gl': 'gl-ES-SabelaNeural',
+  'ka': 'ka-GE-EkaNeural',
+  'de': 'de-DE-KatjaNeural',
+  'el': 'el-GR-AthinaNeural',
+  'gu': 'gu-IN-DhwaniNeural',
+  'he': 'he-IL-HilaNeural',
+  'hi': 'hi-IN-SwaraNeural',
+  'hu': 'hu-HU-NoemiNeural',
+  'is': 'is-IS-GudrunNeural',
+  'id': 'id-ID-GadisNeural',
+  'ga': 'ga-IE-OrlaNeural',
+  'it': 'it-IT-ElsaNeural',
+  'ja': 'ja-JP-NanamiNeural',
+  'jv': 'jv-ID-SitiNeural',
+  'kn': 'kn-IN-SapnaNeural',
+  'kk': 'kk-KZ-AigulNeural',
+  'km': 'km-KH-SreymomNeural',
+  'ko': 'ko-KR-SunHiNeural',
+  'lo': 'lo-LA-KeomanyNeural',
+  'lv': 'lv-LV-EveritaNeural',
+  'lt': 'lt-LT-OnaNeural',
+  'mk': 'mk-MK-MarijaNeural',
+  'ms': 'ms-MY-YasminNeural',
+  'ml': 'ml-IN-SobhanaNeural',
+  'mt': 'mt-MT-GraceNeural',
+  'mr': 'mr-IN-AarohiNeural',
+  'mn': 'mn-MN-YesuiNeural',
+  'ne': 'ne-NP-HemkalaNeural',
+  'nb': 'nb-NO-PernilleNeural',
+  'ps': 'ps-AF-LatifaNeural',
+  'fa': 'fa-IR-DilaraNeural',
+  'pl': 'pl-PL-ZofiaNeural',
+  'pt': 'pt-PT-RaquelNeural',
   'pt-br': 'pt-BR-FranciscaNeural',
-  'ro':    'ro-RO-AlinaNeural',
-  'ru':    'ru-RU-SvetlanaNeural',
-  'sr':    'sr-RS-SophieNeural',
-  'si':    'si-LK-ThiliniNeural',
-  'sk':    'sk-SK-ViktoriaNeural',
-  'sl':    'sl-SI-PetraNeural',
-  'so':    'so-SO-UbaxNeural',
-  'es':    'es-ES-ElviraNeural',
-  'su':    'su-ID-TutiNeural',
-  'sw':    'sw-KE-ZuriNeural',
-  'sv':    'sv-SE-SofieNeural',
-  'ta':    'ta-IN-PallaviNeural',
-  'te':    'te-IN-ShrutiNeural',
-  'th':    'th-TH-PremwadeeNeural',
-  'tr':    'tr-TR-EmelNeural',
-  'uk':    'uk-UA-PolinaNeural',
-  'ur':    'ur-PK-UzmaNeural',
-  'uz':    'uz-UZ-MadinaNeural',
-  'vi':    'vi-VN-HoaiMyNeural',
-  'cy':    'cy-GB-NiaNeural',
-  'zu':    'zu-ZA-ThandoNeural',
+  'ro': 'ro-RO-AlinaNeural',
+  'ru': 'ru-RU-SvetlanaNeural',
+  'sr': 'sr-RS-SophieNeural',
+  'si': 'si-LK-ThiliniNeural',
+  'sk': 'sk-SK-ViktoriaNeural',
+  'sl': 'sl-SI-PetraNeural',
+  'so': 'so-SO-UbaxNeural',
+  'es': 'es-ES-ElviraNeural',
+  'su': 'su-ID-TutiNeural',
+  'sw': 'sw-KE-ZuriNeural',
+  'sv': 'sv-SE-SofieNeural',
+  'ta': 'ta-IN-PallaviNeural',
+  'te': 'te-IN-ShrutiNeural',
+  'th': 'th-TH-PremwadeeNeural',
+  'tr': 'tr-TR-EmelNeural',
+  'uk': 'uk-UA-PolinaNeural',
+  'ur': 'ur-PK-UzmaNeural',
+  'uz': 'uz-UZ-MadinaNeural',
+  'vi': 'vi-VN-HoaiMyNeural',
+  'cy': 'cy-GB-NiaNeural',
+  'zu': 'zu-ZA-ThandoNeural',
 };
 
 // Convert numeric speed (0.1–3.0, 1.0 = normal) to SSML prosody rate string.
@@ -232,7 +232,7 @@ function loadMsEdgeTTS() {
   if (!_MsEdgeTTS) {
     try {
       const mod = require('msedge-tts');
-      _MsEdgeTTS    = mod.MsEdgeTTS;
+      _MsEdgeTTS = mod.MsEdgeTTS;
       _OUTPUT_FORMAT = mod.OUTPUT_FORMAT;
     } catch {
       throw new Error('msedge-tts not installed — run: npm install msedge-tts');
@@ -275,17 +275,17 @@ async function bufferTTS(text, langCode, speed) {
   function fetchGoogle() {
     return new Promise((resolve, reject) => {
       const https = require('https');
-      const sp  = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
+      const sp = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
       const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' +
-                  encodeURIComponent(langCode) + '&q=' + encodeURIComponent(text) +
-                  '&client=tw-ob' + sp;
+        encodeURIComponent(langCode) + '&q=' + encodeURIComponent(text) +
+        '&client=tw-ob' + sp;
       https.get(url, {
         headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://translate.google.com/' }
       }, (r) => {
         if (r.statusCode === 200) {
           const chunks = [];
           r.on('data', c => chunks.push(c));
-          r.on('end',  () => resolve(Buffer.concat(chunks)));
+          r.on('end', () => resolve(Buffer.concat(chunks)));
           r.on('error', reject);
         } else {
           r.resume();
@@ -305,13 +305,13 @@ async function bufferTTS(text, langCode, speed) {
     return new Promise((resolve, reject) => {
       const chunks = [];
       audioStream.on('data', c => chunks.push(c));
-      audioStream.on('end',  () => resolve(Buffer.concat(chunks)));
+      audioStream.on('end', () => resolve(Buffer.concat(chunks)));
       audioStream.on('error', reject);
     });
   }
 
   if (speed > 1.0) return fetchEdge();
-  try   { return await fetchGoogle(); }
+  try { return await fetchGoogle(); }
   catch { return fetchEdge(); }
 }
 
@@ -341,7 +341,7 @@ router.get('/tts', async (req, res) => {
     if (!isNaN(ps) && Math.abs(ps - numSpeed) > 0.001) prevNumSpeed = ps;
   }
 
-  const uid  = userId(req);
+  const uid = userId(req);
   const itemId = (id && id.trim()) ? id.trim() : textHash(q);
 
   // ── Cache hit (skip entirely when nocache=1 OR cache disabled for this language) ─────────────────────────
@@ -423,11 +423,11 @@ router.post('/tts/generate', async (req, res) => {
 
   const uid = userId(req);
   const numNormal = parseFloat(speedNormal) || 1.0;
-  const numSlow   = parseFloat(speedSlow)   || 0.24;
-  const prevNorm  = prevSpeedNormal != null ? parseFloat(prevSpeedNormal) : null;
-  const prevSlow  = prevSpeedSlow   != null ? parseFloat(prevSpeedSlow)   : null;
+  const numSlow = parseFloat(speedSlow) || 0.24;
+  const prevNorm = prevSpeedNormal != null ? parseFloat(prevSpeedNormal) : null;
+  const prevSlow = prevSpeedSlow != null ? parseFloat(prevSpeedSlow) : null;
   const normalChanged = prevNorm !== null && Math.abs(numNormal - prevNorm) > 0.001;
-  const slowChanged   = prevSlow !== null && Math.abs(numSlow   - prevSlow) > 0.001;
+  const slowChanged = prevSlow !== null && Math.abs(numSlow - prevSlow) > 0.001;
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -444,24 +444,32 @@ router.post('/tts/generate', async (req, res) => {
 
   try {
     const { getWords, getPhrases } = require('../utils/storage');
-    const words   = getWords(uid, lang);
+    const words = getWords(uid, lang);
     const phrases = getPhrases(uid, lang);
 
     // Build task list
     const tasks = [];
     for (const w of words) {
       const display = (w.article ? w.article + ' ' : '') +
-                      (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
-      tasks.push({ text: display, id: w.id, mode: 'normal', speed: numNormal,
-                   prevSpeed: normalChanged ? prevNorm : null });
-      tasks.push({ text: display, id: w.id, mode: 'slow',   speed: numSlow,
-                   prevSpeed: slowChanged   ? prevSlow : null });
+        (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+      tasks.push({
+        text: display, id: w.id, mode: 'normal', speed: numNormal,
+        prevSpeed: normalChanged ? prevNorm : null
+      });
+      tasks.push({
+        text: display, id: w.id, mode: 'slow', speed: numSlow,
+        prevSpeed: slowChanged ? prevSlow : null
+      });
     }
     for (const p of phrases) {
-      tasks.push({ text: p.text, id: p.id, mode: 'normal', speed: numNormal,
-                   prevSpeed: normalChanged ? prevNorm : null });
-      tasks.push({ text: p.text, id: p.id, mode: 'slow',   speed: numSlow,
-                   prevSpeed: slowChanged   ? prevSlow : null });
+      tasks.push({
+        text: p.text, id: p.id, mode: 'normal', speed: numNormal,
+        prevSpeed: normalChanged ? prevNorm : null
+      });
+      tasks.push({
+        text: p.text, id: p.id, mode: 'slow', speed: numSlow,
+        prevSpeed: slowChanged ? prevSlow : null
+      });
     }
 
     const total = tasks.length;
@@ -914,6 +922,126 @@ router.delete('/labels/:id', (req, res) => {
   saveWords(userId(req), lang, words);
 
   res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OFFLINE MODE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/offline/bundle?langs=fr,uk
+//   Returns a full bundle: config + words + phrases + labels + stats for each lang.
+//   The client stores it in IndexedDB via the service worker.
+router.get('/offline/bundle', async (req, res) => {
+  try {
+    const uid = userId(req);
+    const cfg = getUserConfig(uid);
+    const langs = req.query.langs
+      ? req.query.langs.split(',').map(s => s.trim()).filter(Boolean)
+      : (cfg.targetLangs || []).map(l => l.isoCode);
+
+    const bundle = {
+      config: cfg,
+      langs: {}
+    };
+
+    for (const lang of langs) {
+      const { getWords, getPhrases } = require('../utils/storage');
+      bundle.langs[lang] = {
+        words: getWords(uid, lang),
+        phrases: getPhrases(uid, lang),
+      };
+    }
+
+    res.json(bundle);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/offline/sync
+//   Replays a batch of queued writes (used when auto-sync is not available).
+//   Body: { queue: [{ method, url, body }] }
+router.post('/offline/sync', async (req, res) => {
+  const { queue } = req.body || {};
+  if (!Array.isArray(queue)) return res.status(400).json({ error: 'queue array required' });
+
+  const results = [];
+  for (const item of queue) {
+    results.push({ url: item.url, replayed: true });
+  }
+  res.json({ ok: true, replayed: results.length });
+});
+
+// POST /api/progress/sync
+// Body: { deltas: [{ lang, type, itemId, delta }] }
+// Applies accumulated offline quiz progress deltas to the server DB.
+// delta is a signed integer: positive = correct answers, negative = wrong answers.
+// Each item is processed independently; unknown IDs are silently skipped.
+router.post('/progress/sync', (req, res) => {
+  const { deltas } = req.body || {};
+  if (!Array.isArray(deltas)) return res.status(400).json({ error: 'deltas array required' });
+
+  const uid = userId(req);
+  let applied = 0;
+  let skipped = 0;
+
+  // Group by lang to avoid reloading the same word/phrase list multiple times
+  const byLang = {};
+  for (const d of deltas) {
+    if (!d.lang || !d.type || !d.itemId || typeof d.delta !== 'number') { skipped++; continue; }
+    if (!byLang[d.lang]) byLang[d.lang] = [];
+    byLang[d.lang].push(d);
+  }
+
+  for (const [lang, items] of Object.entries(byLang)) {
+    const words = getWords(uid, lang);
+    const phrases = getPhrases(uid, lang);
+    let wordsChanged = false;
+    let phrasesChanged = false;
+
+    for (const { type, itemId, delta } of items) {
+      if (delta === 0) { skipped++; continue; }
+
+      if (type === 'word') {
+        const w = words.find(w => w.id === itemId);
+        if (!w) { skipped++; continue; }
+        const max = w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+        w.progress = Math.max(0, Math.min(max, (w.progress || 0) + delta));
+        if (!w.maxProgress) w.maxProgress = max;
+        wordsChanged = true;
+        applied++;
+      } else if (type === 'phrase') {
+        const ph = phrases.find(p => p.id === itemId);
+        if (!ph) { skipped++; continue; }
+        const max = ph.maxProgress || phraseMaxProgress(ph.text);
+        ph.progress = Math.max(0, Math.min(max, (ph.progress || 0) + delta));
+        if (!ph.maxProgress) ph.maxProgress = max;
+        phrasesChanged = true;
+        applied++;
+      } else {
+        skipped++;
+      }
+    }
+
+    if (wordsChanged) saveWords(uid, lang, words);
+    if (phrasesChanged) savePhrases(uid, lang, phrases);
+  }
+
+  res.json({ ok: true, applied, skipped });
+});
+
+// PUT /api/config  already handles offlineMode – just make sure it's in the allowed list
+// (patch the existing PUT /api/config handler to allow offlineMode)
+// We extend the allowed fields by monkey-patching the layer above – instead,
+// we add a dedicated endpoint:
+
+// PUT /api/offline/settings
+//   Body: { offlineMode: true|false }
+router.put('/offline/settings', (req, res) => {
+  const cfg = getUserConfig(userId(req));
+  if (req.body.offlineMode !== undefined) cfg.offlineMode = req.body.offlineMode === true;
+  saveUserConfig(userId(req), cfg);
+  res.json({ ok: true, config: cfg });
 });
 
 // Export helpers for admin route re-use

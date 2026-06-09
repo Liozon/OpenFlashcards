@@ -7,6 +7,13 @@
   <title>OpenFlashcards</title>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <!-- iOS Safari PWA hints -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Flashcards">
+  <meta name="theme-color" content="#1a1a2e">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 
@@ -48,6 +55,7 @@
         <a class="nav-link" data-page="settings" href="#" id="navSettings">⚙️ Settings</a>
         <a class="nav-link" id="adminLink" data-page="admin" href="#" style="display:none">🔑 Admin</a>
         <button class="btn-icon dark-toggle" id="darkToggle" title="Toggle dark mode">☀️</button>
+        <button class="btn-icon sync-offline-btn" id="syncOfflineBtn" title="Sync offline data" style="display:none" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">🔄</button>
         <button class="btn-icon" id="logoutBtn" title="Logout">🚪</button>
       </div>
     </nav>
@@ -69,6 +77,7 @@
   </div>
 
   <script src="/js/world-languages.js"></script>
+  <script src="/js/offline-db.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/pages/home.js"></script>
@@ -78,6 +87,34 @@
   <script src="/js/pages/settings.js"></script>
   <script src="/js/pages/admin.js"></script>
   <script src="/js/tts.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Register sw.js — the full offline SW with IDB support
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(reg => {
+            // Check for updates on navigation
+            reg.addEventListener('updatefound', () => {
+              const newSW = reg.installing;
+              newSW && newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                  newSW.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('[SW] Registration failed:', err));
+
+        // Ask the browser to protect offline storage from eviction (critical on iOS Safari,
+        // which clears IndexedDB and SW caches after ~7 days of inactivity otherwise).
+        if (navigator.storage && navigator.storage.persist) {
+          navigator.storage.persist().then(granted => {
+            console.log('[Storage] Persistent storage:', granted ? 'granted' : 'denied');
+          });
+        }
+      });
+    }
+  </script>
 </body>
 
 </html>

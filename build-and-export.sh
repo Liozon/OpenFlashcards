@@ -21,8 +21,8 @@
 set -e
 
 IMAGE_NAME="openflashcards"
-IMAGE_TAG="latest"
-ARCHIVE="Docker.OpenFlashcards.v${IMAGE_TAG}.tar.gz"
+IMAGE_TAG=$(node -p "require('./package.json').version")
+ARCHIVE="Docker.OpenFlashcards.v2.4"
 
 echo "🔨 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
 docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .

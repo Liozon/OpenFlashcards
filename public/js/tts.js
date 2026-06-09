@@ -38,9 +38,30 @@ window.TTS = {
   },
 
   // Play text via proxy (normal speed). itemId = word/phrase UUID for cache key.
-  speak: function (text, langCode, itemId) {
+  speak: async function (text, langCode, itemId) {
     if (!text) return;
     const lang = langCode || 'fr';
+    const speed = TTS._getSpeed(lang, 'normal');
+    const offlineMode = window.App && App.config && App.config.offlineMode;
+    const isOffline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+    // If offline mode enabled, always try IDB first (avoids a doomed network request)
+    if (window.OfflineDB && offlineMode) {
+      const id = itemId || TTS._textId(text);
+      const buf = await OfflineDB.getTTS(lang, speed, id);
+      if (buf) {
+        const blob = new Blob([buf], { type: 'audio/mpeg' });
+        const burl = URL.createObjectURL(blob);
+        const audio = new Audio(burl);
+        audio.volume = 1;
+        audio.play().catch(() => TTS._webSpeech(text, lang, false));
+        return;
+      }
+      // Not in IDB — if offline, fall back to Web Speech; if online, try network
+      if (isOffline) {
+        TTS._webSpeech(text, lang, false);
+        return;
+      }
+    }
     const url = TTS._url(text, lang, 'normal', itemId);
     const audio = new Audio(url);
     audio.volume = 1;
@@ -48,9 +69,28 @@ window.TTS = {
   },
 
   // Play text slowly. itemId = word/phrase UUID for cache key.
-  speakSlow: function (text, langCode, itemId) {
+  speakSlow: async function (text, langCode, itemId) {
     if (!text) return;
     const lang = langCode || 'fr';
+    const speed = TTS._getSpeed(lang, 'slow');
+    const offlineMode = window.App && App.config && App.config.offlineMode;
+    const isOffline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+    if (window.OfflineDB && offlineMode) {
+      const id = itemId || TTS._textId(text);
+      const buf = await OfflineDB.getTTS(lang, speed, id);
+      if (buf) {
+        const blob = new Blob([buf], { type: 'audio/mpeg' });
+        const burl = URL.createObjectURL(blob);
+        const audio = new Audio(burl);
+        audio.volume = 1;
+        audio.play().catch(() => TTS._webSpeech(text, lang, true));
+        return;
+      }
+      if (isOffline) {
+        TTS._webSpeech(text, lang, true);
+        return;
+      }
+    }
     const url = TTS._url(text, lang, 'slow', itemId);
     const audio = new Audio(url);
     audio.volume = 1;

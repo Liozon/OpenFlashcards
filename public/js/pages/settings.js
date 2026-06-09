@@ -41,6 +41,39 @@ async function renderSettings(el) {
       <h2>🔐 ${t('settings_account')}</h2>
       <p style="color:var(--text-muted);margin-bottom:16px">${t('settings_logged_as')} <strong>${esc(App.user.username)}</strong></p>
       <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">${t('settings_change_pw')}</button>
+    </div>
+
+    <div class="card settings-section" id="offlineSection">
+      <h2>📴 ${t('offline_title')}</h2>
+      <p style="color:var(--text-muted);margin-bottom:12px;font-size:.9rem">${t('offline_desc')}</p>
+
+      <div class="toggle-row" style="margin-bottom:16px">
+        <span>${t('offline_enable')}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="offlineModeToggle" ${cfg.offlineMode ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div id="offlineControls" style="display:${cfg.offlineMode ? '' : 'none'}">
+        <div id="offlineStatus" class="offline-status-box" style="margin-bottom:14px"></div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
+            🔄 ${t('offline_sync_now')}
+          </button>
+          <button class="btn btn-secondary btn-sm" id="offlineClearBtn">
+            🗑️ ${t('offline_clear')}
+          </button>
+        </div>
+
+        <div id="offlineSyncProgress" style="display:none;margin-top:12px">
+          <div class="offline-progress-bar-wrap">
+            <div class="offline-progress-bar" id="offlineProgressBar" style="width:0%"></div>
+          </div>
+          <p id="offlineProgressText" style="font-size:.82rem;color:var(--text-muted);margin-top:6px"></p>
+        </div>
+      </div>
     </div>`;
 
   renderLangChips();
@@ -50,6 +83,131 @@ async function renderSettings(el) {
     await saveConfig({ darkMode: this.checked });
     document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
   });
+
+  // ── Offline mode toggle ────────────────────────────────────────────────────
+  const offlineToggle = document.getElementById('offlineModeToggle');
+  const offlineControls = document.getElementById('offlineControls');
+  const offlineStatus = document.getElementById('offlineStatus');
+
+  async function refreshOfflineStatus() {
+    if (!offlineStatus) return;
+    const meta = await OfflineDB.getBundleMeta();
+    const ttsCount = await OfflineDB.countTTS();
+    const queue = await OfflineDB.getProgressQueue();
+    const pending = queue.reduce((sum, e) => sum + Math.abs(e.delta), 0);
+
+    let pendingHtml = '';
+    if (pending > 0) {
+      const label = window.t ? t('offline_pending_sync') : 'answer(s) pending sync';
+      pendingHtml = `<br><span style="color:var(--warning,#ff9800);font-weight:600">⏳ ${pending} ${label}</span>`;
+    }
+
+    if (!meta) {
+      offlineStatus.innerHTML = `<span style="color:var(--text-muted)">⚠️ ${t('offline_not_synced')}</span>${pendingHtml}`;
+    } else {
+      const d = new Date(meta.syncedAt);
+      const fmt = d.toLocaleString();
+      offlineStatus.innerHTML =
+        `<span style="color:var(--success,#4caf50)">✓ ${t('offline_last_sync')}: <strong>${fmt}</strong></span><br>` +
+        `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>` +
+        pendingHtml;
+    }
+  }
+
+  offlineToggle.addEventListener('change', async function () {
+    const enabled = this.checked;
+    await saveConfig({ offlineMode: enabled });
+    offlineControls.style.display = enabled ? '' : 'none';
+    if (enabled) {
+      await refreshOfflineStatus();
+      toast(t('offline_enabled_toast'));
+    } else {
+      toast(t('offline_disabled_toast'));
+    }
+  });
+
+  if (cfg.offlineMode) refreshOfflineStatus();
+
+  // Clear offline data
+  document.getElementById('offlineClearBtn') && document.getElementById('offlineClearBtn').addEventListener('click', async () => {
+    if (!confirm(t('offline_clear_confirm'))) return;
+    await OfflineDB.clearAll();
+    await refreshOfflineStatus();
+    toast(t('offline_cleared'));
+  });
+
+  // Hook sync progress into the in-page progress bar
+  const _origSync = window._triggerOfflineSync;
+  window._triggerOfflineSync = async function () {
+    const btn = document.getElementById('syncOfflineBtn');
+    const syncNowBtn = document.getElementById('offlineSyncNowBtn');
+    const progressWrap = document.getElementById('offlineSyncProgress');
+    const progressBar = document.getElementById('offlineProgressBar');
+    const progressText = document.getElementById('offlineProgressText');
+
+    if (!navigator.onLine) {
+      toast(t('offline_no_connection'), 'danger'); return;
+    }
+
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    if (syncNowBtn) { syncNowBtn.disabled = true; }
+    if (progressWrap) { progressWrap.style.display = ''; }
+
+    function setProgress(pct, label) {
+      if (progressBar) progressBar.style.width = pct + '%';
+      if (progressText) progressText.textContent = label;
+    }
+
+    try {
+      const targetLangs = App.config && App.config.targetLangs || [];
+      const langs = targetLangs.map(l => l.isoCode);
+      // Build speed lookup { isoCode: { ttsSpeedNormal, ttsSpeedSlow } }
+      const configByLang = {};
+      targetLangs.forEach(l => { configByLang[l.isoCode] = l; });
+
+      // Each lang takes roughly equal share of the 30–100% range.
+      // Structure per lang: 50% gen, 50% download
+      const langShare = langs.length > 0 ? 70 / langs.length : 70;
+
+      await OfflineSync.fullSync(langs, configByLang, prog => {
+        if (prog.phase === 'data') {
+          setProgress(Math.round(prog.pct * 0.3), t('offline_progress_data'));
+          if (btn) btn.textContent = '📦';
+
+        } else if (prog.phase === 'tts_gen') {
+          const langIdx = langs.indexOf(prog.lang);
+          const base = 30 + langIdx * langShare;
+          const pct = Math.round(base + (prog.pct / 100) * langShare * 0.5);
+          const label = prog.total > 0
+            ? `🎙️ ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()} (${prog.done}/${prog.total})`
+            : `🎙️ ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()}…`;
+          setProgress(pct, label);
+          if (btn) btn.textContent = '🎙️';
+
+        } else if (prog.phase === 'tts_dl') {
+          const langIdx = langs.indexOf(prog.lang);
+          const base = 30 + langIdx * langShare + langShare * 0.5;
+          const pct = Math.round(base + (prog.pct / 100) * langShare * 0.5);
+          const label = prog.total > 0
+            ? `📥 ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()} (${prog.done || 0}/${prog.total})`
+            : `📥 ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()}…`;
+          setProgress(pct, label);
+          if (btn) btn.textContent = '📥';
+        }
+      });
+      setProgress(100, t('offline_sync_done'));
+      toast(t('offline_sync_done'));
+      await refreshOfflineStatus();
+      if (btn) { btn.textContent = '✅'; setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000); }
+      if (syncNowBtn) { syncNowBtn.disabled = false; }
+      setTimeout(() => { if (progressWrap) progressWrap.style.display = 'none'; }, 3000);
+    } catch (err) {
+      console.error('[offline sync]', err);
+      toast(t('offline_sync_error'), 'danger');
+      if (btn) { btn.textContent = '❌'; setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000); }
+      if (syncNowBtn) syncNowBtn.disabled = false;
+    }
+  };
 
   // Add language
   let selectedNewLang = null;
@@ -175,7 +333,7 @@ window.openLangConfig = function (isoCode) {
   let verbGroups = (lang.verbGroups || []).map(g => ({ ...g }));
   let labels = (lang.labels || []).map(lb => ({ ...lb }));
   let ttsSpeedNormal = lang.ttsSpeedNormal != null ? lang.ttsSpeedNormal : 1.0;
-  let ttsSpeedSlow   = lang.ttsSpeedSlow   != null ? lang.ttsSpeedSlow   : 0.24;
+  let ttsSpeedSlow = lang.ttsSpeedSlow != null ? lang.ttsSpeedSlow : 0.24;
   let ttsCacheEnabled = lang.ttsCache !== false; // default true if not set
 
   const LABEL_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e91e63', '#607d8b', '#795548'];
@@ -375,7 +533,7 @@ window.openLangConfig = function (isoCode) {
 
   // TTS speed sliders
   const normalSlider = document.getElementById('ttsNormalSlider');
-  const slowSlider   = document.getElementById('ttsSlowSlider');
+  const slowSlider = document.getElementById('ttsSlowSlider');
   if (normalSlider) {
     normalSlider.addEventListener('input', () => {
       ttsSpeedNormal = parseFloat(normalSlider.value);
@@ -393,18 +551,18 @@ window.openLangConfig = function (isoCode) {
 
   // TTS test buttons — use the UI language and a sample sentence from that locale
   const ttsTestNormal = document.getElementById('ttsNormalTest');
-  const ttsTestSlow   = document.getElementById('ttsSlowTest');
+  const ttsTestSlow = document.getElementById('ttsSlowTest');
   function ttsTestSpeak(mode) {
     // The sample phrase is in the UI language → use _uiLang for the TTS lang param
     // so the voice matches the text being read.
     // nocache=1 → server skips cache read AND write; test audio is never stored on disk.
     const uiLang = window._uiLang || 'en';
     const sample = t('settings_tts_sample');
-    const speed  = mode === 'slow' ? ttsSpeedSlow : ttsSpeedNormal;
+    const speed = mode === 'slow' ? ttsSpeedSlow : ttsSpeedNormal;
     const url = '/api/tts?lang=' + encodeURIComponent(uiLang) +
-                '&q='       + encodeURIComponent(sample) +
-                '&speed='   + speed.toFixed(2) +
-                '&nocache=1';
+      '&q=' + encodeURIComponent(sample) +
+      '&speed=' + speed.toFixed(2) +
+      '&nocache=1';
     const audio = new Audio(url);
     audio.volume = 1;
     audio.play().catch(() => {
@@ -417,11 +575,11 @@ window.openLangConfig = function (isoCode) {
     });
   }
   if (ttsTestNormal) ttsTestNormal.addEventListener('click', () => ttsTestSpeak('normal'));
-  if (ttsTestSlow)   ttsTestSlow.addEventListener('click',   () => ttsTestSpeak('slow'));
+  if (ttsTestSlow) ttsTestSlow.addEventListener('click', () => ttsTestSpeak('slow'));
 
   // ── TTS speed change tracking: remember original speeds to detect changes ──
   const _origSpeedNormal = ttsSpeedNormal;
-  const _origSpeedSlow   = ttsSpeedSlow;
+  const _origSpeedSlow = ttsSpeedSlow;
 
   // ── TTS cache toggle ──────────────────────────────────────────────────────
   const cacheToggle = document.getElementById('ttsCacheToggle');
@@ -447,7 +605,7 @@ window.openLangConfig = function (isoCode) {
       const kb = (stats.sizeBytes / 1024).toFixed(1);
       infoEl.textContent = t('settings_tts_cache_info')
         .replace('{files}', stats.files)
-        .replace('{size}',  kb);
+        .replace('{size}', kb);
     }
   })();
 
@@ -475,20 +633,20 @@ window.openLangConfig = function (isoCode) {
   }
 
   async function _startTTSGeneration(langCode) {
-    const genBtn    = document.getElementById('ttsCacheGenBtn');
+    const genBtn = document.getElementById('ttsCacheGenBtn');
     const purgeBtn2 = document.getElementById('ttsCachePurgeBtn');
     const progressEl = document.getElementById('ttsCacheGenProgress');
-    const barEl     = document.getElementById('ttsCacheGenBar');
-    const labelEl   = document.getElementById('ttsCacheGenLabel');
-    const countEl   = document.getElementById('ttsCacheGenCount');
+    const barEl = document.getElementById('ttsCacheGenBar');
+    const labelEl = document.getElementById('ttsCacheGenLabel');
+    const countEl = document.getElementById('ttsCacheGenCount');
     const cancelBtn = document.getElementById('ttsCacheGenCancelBtn');
     if (!genBtn || !progressEl) return;
 
     // Lock UI
-    genBtn.disabled    = true;
+    genBtn.disabled = true;
     purgeBtn2.disabled = true;
     progressEl.style.display = '';
-    barEl.style.width  = '0%';
+    barEl.style.width = '0%';
     labelEl.textContent = t('settings_tts_cache_gen_running');
     countEl.textContent = '…';
 
@@ -496,11 +654,11 @@ window.openLangConfig = function (isoCode) {
     // We pass current speeds + previous speeds so it can skip unchanged cached items
     // and lazily delete stale files for speed-changed items.
     const body = JSON.stringify({
-      lang:            langCode,
-      speedNormal:     ttsSpeedNormal,
-      speedSlow:       ttsSpeedSlow,
+      lang: langCode,
+      speedNormal: ttsSpeedNormal,
+      speedSlow: ttsSpeedSlow,
       prevSpeedNormal: _origSpeedNormal,
-      prevSpeedSlow:   _origSpeedSlow
+      prevSpeedSlow: _origSpeedSlow
     });
 
     let abortCtrl = new AbortController();
@@ -539,16 +697,16 @@ window.openLangConfig = function (isoCode) {
           try { evt = JSON.parse(line.slice(6)); } catch { continue; }
 
           if (evt.type === 'progress') {
-            done  = evt.done;
+            done = evt.done;
             total = evt.total;
             const pct = total > 0 ? Math.round(done / total * 100) : 0;
-            barEl.style.width  = pct + '%';
+            barEl.style.width = pct + '%';
             countEl.textContent = done + ' / ' + total;
             const icon = evt.mode === 'slow' ? '🐌' : '🔊';
             const label = evt.text || '';
             labelEl.textContent = icon + ' ' + label.slice(0, 38) + (label.length > 38 ? '…' : '');
           } else if (evt.type === 'done') {
-            done  = evt.done;
+            done = evt.done;
             total = evt.total;
             barEl.style.width = '100%';
             countEl.textContent = done + ' / ' + total;
@@ -567,7 +725,7 @@ window.openLangConfig = function (isoCode) {
     }
 
     // Restore UI
-    genBtn.disabled    = false;
+    genBtn.disabled = false;
     purgeBtn2.disabled = false;
     progressEl.style.display = 'none';
 
@@ -589,7 +747,7 @@ window.openLangConfig = function (isoCode) {
         const kb2 = (stats2.sizeBytes / 1024).toFixed(1);
         infoEl2.textContent = t('settings_tts_cache_info')
           .replace('{files}', stats2.files)
-          .replace('{size}',  kb2);
+          .replace('{size}', kb2);
       }
     }
   }
@@ -602,7 +760,7 @@ window.openLangConfig = function (isoCode) {
   window.addLabelCfg = () => {
     const color = LABEL_COLORS[colorIdx % LABEL_COLORS.length];
     colorIdx++;
-    labels.push({ id: 'new-' + Date.now(), name: '', color });
+    labels.push({ id: crypto.randomUUID(), name: '', color });
     renderLabelRows();
   };
   window.removeLabelCfg = (i) => { labels.splice(i, 1); renderLabelRows(); };
@@ -626,7 +784,7 @@ window.openLangConfig = function (isoCode) {
       // Purge ONLY the speed bucket(s) that actually changed, leave the other intact.
       // We purge the OLD speed value so newly-generated files (at new speed) are unaffected.
       const normalChanged = Math.abs(ttsSpeedNormal - _origSpeedNormal) > 0.001;
-      const slowChanged   = Math.abs(ttsSpeedSlow   - _origSpeedSlow)   > 0.001;
+      const slowChanged = Math.abs(ttsSpeedSlow - _origSpeedSlow) > 0.001;
       let totalPurged = 0;
       if (normalChanged) {
         const r = await TTS.purgeCache(code, _origSpeedNormal);

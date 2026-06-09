@@ -30,10 +30,24 @@ window.api = async function (method, path, body) {
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 async function checkAuth() {
+  const offline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  console.log('[auth] checkAuth — offline:', offline, '| api patched:', window.api !== window._realApi && !!window._realApi);
   try {
     App.user = await api('GET', '/auth/me');
+    console.log('[auth] /auth/me success:', App.user && App.user.username);
+    // If offline and config not yet loaded, restore it from IDB bundle
+    const isOfflineNow = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+    if (isOfflineNow && !App.config && window.OfflineDB) {
+      const bundle = await OfflineDB.getBundle().catch(() => null);
+      if (bundle && bundle.config) App.config = bundle.config;
+    }
+    // Persist for offline refresh (only when online)
+    if (!isOfflineNow && window.OfflineSession && App.config) OfflineSession.save(App.user, App.config);
     return true;
-  } catch {
+  } catch (e) {
+    console.warn('[auth] /auth/me failed:', e);
+    // The interceptor already handled the offline /auth/me case and returned the
+    // user if a session was saved. If we still got an error, no session is available.
     return false;
   }
 }
@@ -44,9 +58,10 @@ async function doLogin(username, password) {
 }
 
 async function doLogout() {
-  await api('POST', '/auth/logout');
+  if (navigator.onLine) await api('POST', '/auth/logout').catch(() => { });
   App.user = null;
   App.config = null;
+  if (window.OfflineSession) OfflineSession.clear();
   showLoginScreen();
 }
 
@@ -54,14 +69,104 @@ async function doLogout() {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadConfig() {
+  // If offline boot already loaded config from IDB bundle, skip network fetch
+  const isOffline = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  if (App.config && isOffline) {
+    applyTheme();
+    updateOfflineSyncBtn();
+    return;
+  }
   App.config = await api('GET', '/api/config');
   applyTheme();
+  updateOfflineSyncBtn();
+  // Persist session for offline refresh
+  const isOfflineNow = window._isReallyOffline ? window._isReallyOffline() : !navigator.onLine;
+  if (!isOfflineNow && window.OfflineSession && App.user) OfflineSession.save(App.user, App.config);
 }
 
 async function saveConfig(patch) {
   App.config = (await api('PUT', '/api/config', patch)).config;
   applyTheme();
   updateNavLangBadge();
+  updateOfflineSyncBtn();
+  if (window.OfflineSession && App.user) OfflineSession.save(App.user, App.config);
+}
+
+function updateOfflineSyncBtn() {
+  const btn = document.getElementById('syncOfflineBtn');
+  if (!btn) return;
+  const enabled = App.config && App.config.offlineMode;
+  btn.style.display = enabled ? '' : 'none';
+  if (enabled && window.OfflineMode) {
+    btn.classList.toggle('sync-btn-offline', !OfflineMode.isOnline);
+    btn.title = window.t ? t(OfflineMode.isOnline ? 'offline_sync_now' : 'offline_no_connection') : 'Sync';
+  }
+  // Show/hide offline banner
+  _updateOfflineBanner(enabled && window.OfflineMode && !OfflineMode.isOnline);
+
+  // Pending-sync badge
+  if (enabled && window.OfflineDB) {
+    OfflineDB.getProgressQueue().then(queue => {
+      let badge = document.getElementById('syncPendingBadge');
+      const count = queue.length;
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.id = 'syncPendingBadge';
+          badge.style.cssText =
+            'position:absolute;top:-5px;right:-5px;background:var(--warning,#ff9800);' +
+            'color:#fff;border-radius:99px;font-size:.65rem;font-weight:700;' +
+            'min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;pointer-events:none';
+          btn.style.position = 'relative';
+          btn.appendChild(badge);
+        }
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = '';
+      } else if (badge) {
+        badge.style.display = 'none';
+      }
+    }).catch(() => { });
+  }
+}
+
+function _updateOfflineBanner(show) {
+  let banner = document.getElementById('offlineBanner');
+  if (show) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'offlineBanner';
+      banner.className = 'offline-banner';
+
+      const msg = document.createElement('span');
+      msg.textContent = `📴 ${window.t ? t('offline_no_connection') : 'You are offline'} – ${window.t ? t('offline_readonly') : 'read-only mode'}`;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'offline-banner-close';
+      closeBtn.setAttribute('aria-label', 'Close');
+      closeBtn.textContent = 'X';
+      closeBtn.addEventListener('click', () => {
+        banner.remove();
+        if (banner._autoTimer) clearTimeout(banner._autoTimer);
+      });
+
+      banner.appendChild(msg);
+      banner.appendChild(closeBtn);
+      document.body.appendChild(banner);
+
+      // Auto-dismiss after 30 seconds
+      banner._autoTimer = setTimeout(() => {
+        if (document.getElementById('offlineBanner')) {
+          banner.classList.add('offline-banner-hiding');
+          banner.addEventListener('animationend', () => banner.remove(), { once: true });
+        }
+      }, 30000);
+    }
+  } else {
+    if (banner) {
+      if (banner._autoTimer) clearTimeout(banner._autoTimer);
+      banner.remove();
+    }
+  }
 }
 
 function applyTheme() {
@@ -173,8 +278,23 @@ window.toast = function (msg, type = 'success') {
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Wait for English locale to be ready before anything renders
+  // Wait for English locale to be ready before anything renders.
+  // offline-db.js may still be populating _offlineLocaleBundle from IDB,
+  // so we give it a short extra tick before resolving i18nReady.
   await window._i18nReady;
+
+  // If offline and locale strings are still empty, try loading from IDB bundle directly
+  if (!navigator.onLine && Object.keys(window._i18nStrings || {}).length < 5) {
+    try {
+      const bundle = window._offlineLocaleBundle ||
+        (window.OfflineDB ? (await OfflineDB.getBundle().catch(() => null) || {}).locales : null);
+      if (bundle) {
+        const code = (navigator.language || 'en').split('-')[0].toLowerCase();
+        const locale = bundle[code] || bundle['en'];
+        if (locale) { window._i18nStrings = locale; window._uiLang = code; window._i18nCache = window._i18nCache || {}; window._i18nCache[code] = locale; }
+      }
+    } catch { }
+  }
 
   // Detect browser language for login screen before user logs in
   const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
@@ -241,12 +361,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check existing session
   const authed = await checkAuth();
   if (authed) {
+    // If we have config already (offline restore), apply the user's language
+    // immediately so the UI renders in the right language from the start
+    if (App.config) {
+      const uiLang = App.config.uiLang || App.config.nativeLang;
+      if (uiLang) await window.setUiLang(uiLang);
+    }
     await bootApp();
   } else {
     showLoginScreen();
     loginUser.focus();
   }
 });
+
+// ── Offline sync trigger (called by navbar sync button) ───────────────────────
+window._triggerOfflineSync = async function () {
+  const btn = document.getElementById('syncOfflineBtn');
+  if (!btn) return;
+  if (!navigator.onLine) {
+    toast(window.t ? t('offline_no_connection') : 'No connection', 'danger');
+    return;
+  }
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const targetLangs = (App.config && App.config.targetLangs) || [];
+    const langs = targetLangs.map(l => l.isoCode);
+    const configByLang = {};
+    targetLangs.forEach(l => { configByLang[l.isoCode] = l; });
+
+    await OfflineSync.fullSync(langs, configByLang, progress => {
+      if (progress.phase === 'data') btn.textContent = '📦';
+      else if (progress.phase === 'tts_gen') btn.textContent = '🎙️';
+      else if (progress.phase === 'tts_dl') btn.textContent = '📥';
+    });
+    btn.textContent = '✅';
+    toast(window.t ? t('offline_sync_done') : 'Sync complete ✓');
+    setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000);
+  } catch (err) {
+    console.error('[offline sync]', err);
+    btn.textContent = '❌';
+    toast(window.t ? t('offline_sync_error') : 'Sync failed', 'danger');
+    setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000);
+  }
+};
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
