@@ -284,7 +284,7 @@
   "offline_sync_error": "Synchronisierung fehlgeschlagen – Verbindung prüfen",
   "offline_progress_data": "Vokabular wird heruntergeladen…",
   "offline_progress_tts": "Audio wird heruntergeladen",
-  "offline_readonly": "Offline: Nur-Lese-Modus. Verbinde dich, um Wörter hinzuzufügen.",
+  "offline_readonly": "Offline: Nur-Lese-Modus. Verbinde dich, um Wörter hinzuzufügen. Diese Meldung verschwindet in 30 Sekunden automatisch.",
   "offline_progress_tts_gen": "Audio wird generiert",
   "offline_progress_tts_dl": "Audio wird heruntergeladen",
   "offline_pending_sync": "änderungen warten auf Synchronisierung"

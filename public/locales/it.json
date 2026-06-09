@@ -284,7 +284,7 @@
   "offline_sync_error": "Sincronizzazione fallita – verifica la connessione",
   "offline_progress_data": "Download vocabolario…",
   "offline_progress_tts": "Download audio",
-  "offline_readonly": "Offline: solo lettura. Connettiti per aggiungere o modificare parole.",
+  "offline_readonly": "Offline: solo lettura. Connettiti per aggiungere o modificare parole. Questo messaggio scomparirà automaticamente tra 30 secondi.",
   "offline_progress_tts_gen": "Generazione audio",
   "offline_progress_tts_dl": "Download audio",
   "offline_pending_sync": "modifiche in attesa di sincronizzazione"

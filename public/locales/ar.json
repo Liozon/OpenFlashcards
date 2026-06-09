@@ -284,7 +284,7 @@
   "offline_sync_error": "فشلت المزامنة – تحقق من الاتصال",
   "offline_progress_data": "تنزيل المفردات…",
   "offline_progress_tts": "تنزيل الصوت",
-  "offline_readonly": "غير متصل: وضع القراءة فقط. اتصل بالإنترنت للإضافة أو التعديل.",
+  "offline_readonly": "غير متصل: وضع القراءة فقط. اتصل بالإنترنت للإضافة أو التعديل. سيختفي هذا الإشعار تلقائيًا خلال 30 ثانية.",
   "offline_progress_tts_gen": "إنشاء الصوت",
   "offline_progress_tts_dl": "تنزيل الصوت",
   "offline_pending_sync": "التعديلات التي تنتظر المزامنة"

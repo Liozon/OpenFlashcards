@@ -284,7 +284,7 @@
   "offline_sync_error": "同步失敗 – 請檢查網路連線",
   "offline_progress_data": "正在下載詞彙…",
   "offline_progress_tts": "正在下載音訊",
-  "offline_readonly": "離線：唯讀模式。連線以新增或編輯單字。",
+  "offline_readonly": "離線：唯讀模式。連線以新增或編輯單字。此訊息將在 30 秒後自動消失。",
   "offline_progress_tts_gen": "正在生成音訊",
   "offline_progress_tts_dl": "正在下載音訊",
   "offline_pending_sync": "變更待同步"

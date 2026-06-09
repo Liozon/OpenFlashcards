@@ -136,11 +136,36 @@ function _updateOfflineBanner(show) {
       banner = document.createElement('div');
       banner.id = 'offlineBanner';
       banner.className = 'offline-banner';
-      banner.innerHTML = `📴 <span>${window.t ? t('offline_no_connection') : 'You are offline'} – ${window.t ? t('offline_readonly') : 'read-only mode'}</span>`;
+
+      const msg = document.createElement('span');
+      msg.textContent = `📴 ${window.t ? t('offline_no_connection') : 'You are offline'} – ${window.t ? t('offline_readonly') : 'read-only mode'}`;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'offline-banner-close';
+      closeBtn.setAttribute('aria-label', 'Close');
+      closeBtn.textContent = 'X';
+      closeBtn.addEventListener('click', () => {
+        banner.remove();
+        if (banner._autoTimer) clearTimeout(banner._autoTimer);
+      });
+
+      banner.appendChild(msg);
+      banner.appendChild(closeBtn);
       document.body.appendChild(banner);
+
+      // Auto-dismiss after 30 seconds
+      banner._autoTimer = setTimeout(() => {
+        if (document.getElementById('offlineBanner')) {
+          banner.classList.add('offline-banner-hiding');
+          banner.addEventListener('animationend', () => banner.remove(), { once: true });
+        }
+      }, 30000);
     }
   } else {
-    banner && banner.remove();
+    if (banner) {
+      if (banner._autoTimer) clearTimeout(banner._autoTimer);
+      banner.remove();
+    }
   }
 }
 
