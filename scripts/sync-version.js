@@ -63,7 +63,7 @@ updateFile('public/sw.js', src =>
 // ── build-and-export.sh ──────────────────────────────────────────────────────
 updateFile('build-and-export.sh', src =>
     src.replace(
-        /^(ARCHIVE="Docker\.OpenFlashcards\.v)[^"]*(")/m,
+        /^(BASE="Docker\.OpenFlashcards\.v)[^"]*(")/m,
         `$1${version}$2`
     )
 );

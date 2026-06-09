@@ -8,7 +8,7 @@
 //   - API writes: Queue in IDB sync-queue; replay on sync
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'ofc-v2.4';
+const CACHE_VERSION = 'ofc-v2.5';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const TTS_CACHE = CACHE_VERSION + '-tts';
 
