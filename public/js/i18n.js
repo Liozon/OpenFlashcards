@@ -14,7 +14,7 @@ window.t = function (key) {
 // populates window._offlineLocaleBundle during its own boot, before this runs).
 window.loadLocale = async function (langCode) {
   if (!langCode) langCode = 'en';
-  const code = langCode.toLowerCase().split('-')[0];
+  const code = langCode.toLowerCase() === 'zh-tw' ? 'zh-tw' : langCode.toLowerCase().split('-')[0];
 
   // Already in memory cache
   if (window._i18nCache[code]) {
@@ -63,7 +63,7 @@ window.loadLocale = async function (langCode) {
 
 window.setUiLang = async function (langCode) {
   if (!langCode) return;
-  await window.loadLocale(langCode.toLowerCase().split('-')[0]);
+  await window.loadLocale(langCode);
 };
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
