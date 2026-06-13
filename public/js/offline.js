@@ -88,7 +88,7 @@ window.Offline = (() => {
     }
 
     // 3. Locales
-    const locales = ['en', 'fr', 'de', 'es', 'it', 'ar', 'zh', 'zh-TW', 'uk'];
+    const locales = ['en', 'fr', 'de', 'es', 'it', 'ar', 'zh', 'zh-tw', 'uk'];
     for (const loc of locales) {
       try {
         const res  = await fetch(`/i18n/${loc}`);

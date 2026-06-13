@@ -15,7 +15,7 @@ window.WORLD_LANGUAGES = [
   { code: "ca", name: "Catalan", native: "Català", flag: "🏴" },
   { code: "ceb", name: "Cebuano", native: "Cebuano", flag: "🇵🇭" },
   { code: "zh", name: "Chinese (Simplified)", native: "中文(简体)", flag: "🇨🇳" },
-  { code: "zh-TW", name: "Chinese (Traditional)", native: "中文(繁體)", flag: "🇹🇼" },
+  { code: "zh-tw", name: "Chinese (Traditional)", native: "中文(繁體)", flag: "🇹🇼" },
   { code: "co", name: "Corsican", native: "Corsu", flag: "🇫🇷" },
   { code: "hr", name: "Croatian", native: "Hrvatski", flag: "🇭🇷" },
   { code: "cs", name: "Czech", native: "Čeština", flag: "🇨🇿" },

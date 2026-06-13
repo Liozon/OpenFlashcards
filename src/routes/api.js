@@ -764,7 +764,8 @@ router.post('/quiz/answer', (req, res) => {
   const display = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const correct = answer && (
     w.translation.trim().toLowerCase() === answer.trim().toLowerCase() ||
-    display.trim().toLowerCase() === answer.trim().toLowerCase()
+    display.trim().toLowerCase() === answer.trim().toLowerCase() ||
+    (expectedAnswer && expectedAnswer.trim().toLowerCase() === answer.trim().toLowerCase())
   );
 
   if (correct) {

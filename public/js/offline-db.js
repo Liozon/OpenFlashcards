@@ -291,7 +291,8 @@
         (word.type === 'verb' && word.infinitive ? word.infinitive : word.literal);
       const correct = answer && (
         word.translation.trim().toLowerCase() === answer.trim().toLowerCase() ||
-        display.trim().toLowerCase() === answer.trim().toLowerCase()
+        display.trim().toLowerCase() === answer.trim().toLowerCase() ||
+        (expectedAnswer && expectedAnswer.trim().toLowerCase() === answer.trim().toLowerCase())
       );
       const delta = correct ? 1 : -1;
       const max = word.maxProgress || _wordMax(word);

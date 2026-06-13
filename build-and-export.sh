@@ -25,11 +25,11 @@ IMAGE_TAG=$(node -p "require('./package.json').version")
 BASE="Docker.OpenFlashcards.v2.5"
 ARCHIVE="${BASE}.tar.gz"
 
-echo "🔨 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
-docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
+echo "🔨 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG} and ${IMAGE_NAME}:latest"
+docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -t "${IMAGE_NAME}:latest" .
 
 echo "💾 Exporting image to ${ARCHIVE}…"
-docker save "${IMAGE_NAME}:${IMAGE_TAG}" | gzip > "${ARCHIVE}"
+docker save "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" | gzip > "${ARCHIVE}"
 
 SIZE=$(du -sh "${ARCHIVE}" | cut -f1)
 echo ""
