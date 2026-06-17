@@ -82,6 +82,29 @@
     getBundleMeta: async () => { const r = await idbGet('bundle', 'latest'); return r ? { syncedAt: r.syncedAt, langs: Object.keys(r.data.languages || {}) } : null; },
     saveTTS: async (lang, speed, itemId, buf) => idbPut('tts', { id: ttsKey(lang, speed, itemId), audio: buf, lang, speed, itemId, savedAt: Date.now() }),
     getTTS: async (lang, speed, itemId) => { const r = await idbGet('tts', ttsKey(lang, speed, itemId)); return r ? r.audio : null; },
+    deleteTTS: async (lang, itemId) => {
+      const baseKey = `${lang}/spd`;
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('tts', 'readwrite');
+        const store = tx.objectStore('tts');
+        const req = store.openCursor();
+        let count = 0;
+        req.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            if (cursor.key.startsWith(baseKey) && cursor.key.endsWith(`/${itemId}`)) {
+              cursor.delete();
+              count++;
+            }
+            cursor.continue();
+          } else {
+            resolve(count);
+          }
+        };
+        req.onerror = e => reject(e.target.error);
+      });
+    },
     countTTS: async () => idbCountStore('tts'),
     clearAll: async () => { await idbClearStore('bundle'); await idbClearStore('tts'); await idbClearStore('progress_queue'); },
     clearTTS: async () => idbClearStore('tts'),

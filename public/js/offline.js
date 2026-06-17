@@ -175,6 +175,11 @@ window.Offline = (() => {
     return swMessage('CLEAR_OFFLINE', {});
   }
 
+  // ── Delete specific TTS cache entry in Service Worker ───────────────────────
+  async function deleteTtsCacheEntry(lang, speedKey, itemId) {
+    return swMessage('DELETE_TTS_CACHE', { lang, speedKey, itemId });
+  }
+
   // ── Navbar sync button management ────────────────────────────────────────
 
   function injectSyncButton() {
@@ -260,6 +265,7 @@ window.Offline = (() => {
     sync,
     queueSize,
     clearOfflineData,
+    deleteTtsCacheEntry,
     applyOfflineMode,
     refreshSyncBadge,
     injectSyncButton,

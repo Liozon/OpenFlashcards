@@ -378,6 +378,22 @@ self.addEventListener('message', async event => {
     return;
   }
 
+  // ── Delete a specific TTS cache entry ──────────────────────────────────────
+  if (type === 'DELETE_TTS_CACHE') {
+    try {
+      const { lang, speedKey, itemId } = payload;
+      const cache = await caches.open(TTS_CACHE);
+      // Match the URL pattern: /api/tts?lang=...&id=...&speed=...
+      // We need to construct the URL to match
+      const url = `/api/tts?lang=${encodeURIComponent(lang)}&id=${encodeURIComponent(itemId)}&speed=${(parseInt(speedKey.replace('spd', ''), 10) / 100).toFixed(2)}`;
+      await cache.delete(url);
+      event.ports[0].postMessage({ ok: true });
+    } catch (err) {
+      event.ports[0].postMessage({ ok: false, error: err.message });
+    }
+    return;
+  }
+
   // ── Clear all offline data ────────────────────────────────────────────────
   if (type === 'CLEAR_OFFLINE') {
     try {
