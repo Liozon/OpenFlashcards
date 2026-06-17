@@ -139,4 +139,23 @@ function deleteItem(userId, langCode, speed, itemId) {
   try { fs.unlinkSync(fp); return 1; } catch { return 0; }
 }
 
-module.exports = { getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem };
+/**
+ * Delete the cached file for a single item across ALL speed buckets.
+ * Returns the number of files deleted (0, 1, or 2 typically).
+ */
+function deleteItemAllSpeeds(userId, langCode, itemId) {
+  const basePath = path.join(DATA_DIR, userId, 'tts', langCode);
+  let count = 0;
+  if (!fs.existsSync(basePath)) return count;
+
+  for (const speedDir of fs.readdirSync(basePath, { withFileTypes: true })) {
+    if (!speedDir.isDirectory()) continue;
+    const fp = path.join(basePath, speedDir.name, itemId + '.mp3');
+    if (fs.existsSync(fp)) {
+      try { fs.unlinkSync(fp); count++; } catch {}
+    }
+  }
+  return count;
+}
+
+module.exports = { getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds };

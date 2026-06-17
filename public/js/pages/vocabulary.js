@@ -580,6 +580,15 @@ window.saveWordEdit = async function (id, lang) {
   }
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
+    // Invalidate offline TTS cache for this word (IDB + SW Cache Storage)
+    if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
+    if (window.Offline) {
+      const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+      const speedNormal = (langData.ttsSpeedNormal ?? 1.0).toFixed(2);
+      const speedSlow = (langData.ttsSpeedSlow ?? 0.24).toFixed(2);
+      await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedNormal * 100), id);
+      await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
+    }
     closeModal();
     toast(`✓ ${t('vocab_updated')}`);
     const idx = _vocabWords.findIndex(x => x.id === id);
@@ -653,6 +662,15 @@ window.savePhraseEdit = async function (id, lang) {
   }
   try {
     await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
+    // Invalidate offline TTS cache for this phrase (IDB + SW Cache Storage)
+    if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
+    if (window.Offline) {
+      const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+      const speedNormal = (langData.ttsSpeedNormal ?? 1.0).toFixed(2);
+      const speedSlow = (langData.ttsSpeedSlow ?? 0.24).toFixed(2);
+      await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedNormal * 100), id);
+      await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
+    }
     closeModal();
     toast(`✓ ${t('vocab_phrase_updated')}`);
     const idx = _vocabPhrases.findIndex(p => p.id === id);

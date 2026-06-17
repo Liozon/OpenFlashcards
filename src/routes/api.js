@@ -42,7 +42,7 @@ const {
   getUserConfig, saveUserConfig
 } = require('../utils/storage');
 const {
-  getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem
+  getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
 } = require('../utils/tts-cache');
 const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices } = require('../utils/tts-generate');
 
@@ -568,6 +568,10 @@ router.put('/words/:id', (req, res) => {
   });
   w.updatedAt = new Date().toISOString();
   saveWords(userId(req), lang, words);
+
+  // Invalidate TTS cache for this word (text may have changed)
+  deleteItemAllSpeeds(userId(req), lang, req.params.id);
+
   res.json({ ok: true, word: w });
 });
 
@@ -639,6 +643,10 @@ router.put('/phrases/:id', (req, res) => {
   });
   phrases[idx].updatedAt = new Date().toISOString();
   savePhrases(userId(req), lang, phrases);
+
+  // Invalidate TTS cache for this phrase (text may have changed)
+  deleteItemAllSpeeds(userId(req), lang, req.params.id);
+
   res.json({ ok: true, phrase: phrases[idx] });
 });
 
