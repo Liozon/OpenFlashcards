@@ -217,7 +217,7 @@ function showAppShell() {
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
-window.navigate = function (page, params) {
+window.navigate = function (page, params, _fromPopState) {
   // Close mobile menu
   document.getElementById('navLinks').classList.remove('open');
 
@@ -227,6 +227,14 @@ window.navigate = function (page, params) {
   document.querySelectorAll('.nav-link').forEach(l => {
     l.classList.toggle('active', l.dataset.page === page);
   });
+
+  // Push page to browser history so back/forward buttons work
+  if (!_fromPopState) {
+    const hash = '#/' + page;
+    if (window.location.hash !== hash) {
+      history.pushState({ page, params }, '', hash);
+    }
+  }
 
   const content = document.getElementById('pageContent');
   content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading…</p></div>';
@@ -242,6 +250,34 @@ window.navigate = function (page, params) {
 
   (renderers[page] || renderHome)(content, params || {});
 };
+
+// Handle browser back/forward buttons and manual hash changes
+window.addEventListener('popstate', function (e) {
+  if (!App.user) return;
+  const page = (e.state && e.state.page) || getPageFromHash();
+  if (page) {
+    navigate(page, (e.state && e.state.params) || {}, true);
+  }
+});
+
+window.addEventListener('hashchange', function () {
+  if (!App.user) return;
+  const page = getPageFromHash();
+  if (page && page !== App.currentPage) {
+    navigate(page, {}, true);
+  }
+});
+
+function getPageFromHash() {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#/')) {
+    const page = hash.slice(2).split('?')[0];
+    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin'].includes(page)) {
+      return page;
+    }
+  }
+  return null;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODAL HELPERS
@@ -479,7 +515,10 @@ async function bootApp() {
   // Admin → direct to admin panel, no language tools
   if (App.user.role === 'admin') {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
-    navigate('admin');
+    const hashPage = getPageFromHash();
+    const targetPage = hashPage || 'admin';
+    history.replaceState({ page: targetPage }, '', '#/' + targetPage);
+    navigate(targetPage, {}, true);
     return;
   }
 
@@ -490,7 +529,10 @@ async function bootApp() {
   } else {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     updateNavLangBadge();
-    navigate('home');
+    const hashPage = getPageFromHash();
+    const targetPage = hashPage || 'home';
+    history.replaceState({ page: targetPage }, '', '#/' + targetPage);
+    navigate(targetPage, {}, true);
   }
 }
 
@@ -622,7 +664,8 @@ function renderOnboarding(el) {
         applyNavLabels();
         document.getElementById('appShell').querySelector('.navbar').style.display = '';
         updateNavLangBadge();
-        navigate('home');
+        history.replaceState({ page: 'home' }, '', '#/home');
+        navigate('home', {}, true);
       } catch (e) {
         errEl.textContent = e.error || 'Setup failed.';
         errEl.classList.remove('hidden');
