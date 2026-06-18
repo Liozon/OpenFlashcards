@@ -248,7 +248,8 @@ function getLabels() {
 
 function buildWordCard(w) {
   const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}` };
-  const display = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+  const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
+  const display = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const progress = w.progress || 0;
   const maxProg = w.maxProgress || wordMaxProgressClient(w.literal, w.infinitive);
   const mastered = progress >= maxProg;

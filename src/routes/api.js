@@ -44,7 +44,7 @@ const {
 const {
   getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
 } = require('../utils/tts-cache');
-const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices } = require('../utils/tts-generate');
+const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices, wordDisplay } = require('../utils/tts-generate');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -450,8 +450,7 @@ router.post('/tts/generate', async (req, res) => {
     // Build task list
     const tasks = [];
     for (const w of words) {
-      const display = (w.article ? w.article + ' ' : '') +
-        (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+      const display = wordDisplay(w);
       tasks.push({
         text: display, id: w.id, mode: 'normal', speed: numNormal,
         prevSpeed: normalChanged ? prevNorm : null
@@ -696,9 +695,7 @@ router.get('/quiz', (req, res) => {
       : Math.random() < 0.5;
 
   // For verbs with conjugation: randomly decide to quiz on a specific conjugated form
-  let display = (question.article && question.article.trim())
-    ? `${question.article} ${question.literal}`
-    : (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
+  let display = wordDisplay(question);
 
   let promptText, answerText;
   let quizPronoun = null;  // set if quizzing on a specific conjugated form
@@ -732,7 +729,7 @@ router.get('/quiz', (req, res) => {
   const others = pool.filter(w => w.id !== question.id);
   shuffle(others);
   const decoys = others.slice(0, 3).map(w => {
-    const wDisplay = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+    const wDisplay = wordDisplay(w);
     return showNative ? wDisplay : w.translation;
   });
 
@@ -769,7 +766,7 @@ router.post('/quiz/answer', (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  const display = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+  const display = wordDisplay(w);
   const correct = answer && (
     w.translation.trim().toLowerCase() === answer.trim().toLowerCase() ||
     display.trim().toLowerCase() === answer.trim().toLowerCase() ||

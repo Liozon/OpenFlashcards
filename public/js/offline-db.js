@@ -222,7 +222,8 @@
 
     // Decoys
     const others = _shuffle(pool.filter(w => w.id !== question.id)).slice(0, 3).map(w => {
-      const wd = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+      const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
+      const wd = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
       return showNative ? wd : w.translation;
     });
     const choices = _shuffle([answerText, ...others]);
