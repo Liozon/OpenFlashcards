@@ -476,10 +476,22 @@ window.editWord = function (id, lang) {
   const langPronouns = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataBase.isoCode]) || langDataBase.pronouns || [];
   const langData = langPronouns.length ? { ...langDataBase, pronouns: langPronouns } : langDataBase;
   const declensions = langData.declensions || [];
+  const tenses = (langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
   const verbGroups = langData.verbGroups || [];
   const existingDecl = w.declensions || {};
   const existingConj = w.conjugation || {};
   const nativeLang = App.config.nativeLang || 'en';
+
+  // Detect if conjugation is old flat format or new tense-keyed format
+  function isTenseKeyedConj(conj) {
+    const keys = Object.keys(conj || {});
+    if (!keys.length) return false;
+    return keys.some(k => {
+      const v = conj[k];
+      return v && typeof v === 'object' && !v.hasOwnProperty('form');
+    });
+  }
+  const conjIsTenseKeyed = isTenseKeyedConj(existingConj);
 
   const vgHtml = (isVerb && verbGroups.length)
     ? `<div class="field-group">
@@ -490,32 +502,45 @@ window.editWord = function (id, lang) {
         </select>
       </div>` : '';
 
-  // Conjugation section for verbs — per-pronoun form + translation
-  // Use existing conjugation keys if present, otherwise fall back to the language's pronoun list
+  // Conjugation section for verbs — tense-keyed grids
   const configPronouns = langData.pronouns || [];
-  const existingKeys = Object.keys(existingConj);
-  const pronounKeys = existingKeys.length ? existingKeys : configPronouns;
-  const conjHtml = isVerb && pronounKeys.length
-    ? `<details style="margin-bottom:14px">
-        <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-          ${t('add_conjugation')} <span style="font-size:.8rem;font-weight:400">(optional)</span>
-        </summary>
-        <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
-          <span style="font-weight:600">${t('add_conj_pronoun')}</span>
-          <span>${t('add_conj_form')}</span>
-          <span>${t('add_conj_translation_ph')}</span>
-        </div>
-        ${pronounKeys.map(p => {
-      const e = normConj(existingConj[p]);
-      return `<div class="field-group" style="margin-bottom:6px">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center">
-              <label style="font-size:.82rem;font-weight:600;margin:0">${esc(p)}</label>
-              <input type="text" id="meConj_${esc(p)}" value="${esc(e.form)}" autocomplete="off" placeholder="…" style="padding:6px 8px">
-              <input type="text" id="meCT_${esc(p)}" value="${esc(e.translation)}" autocomplete="off" placeholder="${t('add_conj_translation_ph')}" style="padding:6px 8px;font-size:.82rem;color:var(--text-muted)">
-            </div>
-          </div>`;
-    }).join('')}
-      </details>` : '';
+  const conjHtml = isVerb
+    ? tenses.map((tense, ti) => {
+        // Get conjugation data for this tense (new format uses String(ti), old format shown as Present)
+        let tenseConjData;
+        if (conjIsTenseKeyed) {
+          tenseConjData = existingConj[String(ti)] || {};
+        } else if (ti === 0) {
+          // Old flat format: show all under first tense
+          tenseConjData = existingConj;
+        } else {
+          tenseConjData = {};
+        }
+        const tenseKeys = Object.keys(tenseConjData);
+        const pronounsForTense = tenseKeys.length ? tenseKeys : configPronouns;
+        if (!pronounsForTense.length) return '';
+        return `<details style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:6px">
+            ${esc(tense.targetName || tense.nativeName)} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">/ ${esc(tense.nativeName)}</span> <span style="font-size:.8rem;font-weight:400">(optional)</span>
+          </summary>
+          <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
+            <span style="font-weight:600">${t('add_conj_pronoun')}</span>
+            <span>${t('add_conj_form')}</span>
+            <span>${t('add_conj_translation_ph')}</span>
+          </div>
+          ${pronounsForTense.map(p => {
+        const e = normConj(tenseConjData[p]);
+        return `<div class="field-group" style="margin-bottom:6px">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center">
+                <label style="font-size:.82rem;font-weight:600;margin:0">${esc(p)}</label>
+                <input type="text" id="meConj_${ti}_${esc(p)}" value="${esc(e.form)}" autocomplete="off" placeholder="…" style="padding:6px 8px">
+                <input type="text" id="meCT_${ti}_${esc(p)}" value="${esc(e.translation)}" autocomplete="off" placeholder="${t('add_conj_translation_ph')}" style="padding:6px 8px;font-size:.82rem;color:var(--text-muted)">
+              </div>
+            </div>`;
+      }).join('')}
+        </details>`;
+      }).join('')
+    : '';
 
   // Declensions only for non-verbs
   const declHtml = !isVerb && declensions.length
@@ -573,26 +598,34 @@ window.saveWordEdit = async function (id, lang) {
   if (vgEl) body.verbGroup = vgEl.value;
   if (conjTrEl) body.verbConjugationTranslation = conjTrEl.value.trim();
 
-  // Collect conjugation edits (per-pronoun form + translation)
+  // Collect conjugation edits (tense-keyed format)
   const w = _vocabWords.find(x => x.id === id);
   if (w && w.type === 'verb') {
     const langDataSaveBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
     const langPronounsSave = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataSaveBase.isoCode]) || langDataSaveBase.pronouns || [];
     const langDataSave = langPronounsSave.length ? { ...langDataSaveBase, pronouns: langPronounsSave } : langDataSaveBase;
-    const existingConjSave = w.conjugation || {};
-    const existingKeysSave = Object.keys(existingConjSave);
-    const pronounKeysSave = existingKeysSave.length ? existingKeysSave : (langDataSave.pronouns || []);
-    if (pronounKeysSave.length) {
-      const conj = {};
-      pronounKeysSave.forEach(p => {
-        const formEl = document.getElementById('meConj_' + p);
-        const trEl = document.getElementById('meCT_' + p);
-        const form = formEl ? formEl.value.trim() : normConj(existingConjSave[p]).form;
-        const tr = trEl ? trEl.value.trim() : normConj(existingConjSave[p]).translation;
-        if (form || tr) conj[p] = { form, translation: tr };
+    const tenses = (langDataSave.tenses && langDataSave.tenses.length) ? langDataSave.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
+    const configPronouns = langDataSave.pronouns || [];
+    const conj = {};
+    tenses.forEach((tense, ti) => {
+      const tenseConj = {};
+      // Detect pronouns from existing fields or use configured pronouns
+      const existingKeys = Object.keys(w.conjugation || {});
+      const existingTenseData = existingKeys.some(k => {
+        const v = w.conjugation[k];
+        return v && typeof v === 'object' && !v.hasOwnProperty('form');
+      }) ? (w.conjugation[String(ti)] || {}) : (ti === 0 ? w.conjugation : {});
+      const pronounsForTense = Object.keys(existingTenseData).length ? Object.keys(existingTenseData) : configPronouns;
+      pronounsForTense.forEach(p => {
+        const formEl = document.getElementById('meConj_' + ti + '_' + p);
+        const trEl = document.getElementById('meCT_' + ti + '_' + p);
+        const form = formEl ? formEl.value.trim() : (normConj(existingTenseData[p] || {}).form || '');
+        const tr = trEl ? trEl.value.trim() : (normConj(existingTenseData[p] || {}).translation || '');
+        if (form || tr) tenseConj[p] = { form, translation: tr };
       });
-      body.conjugation = conj;
-    }
+      if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
+    });
+    body.conjugation = conj;
   }
 
   // Collect declensions

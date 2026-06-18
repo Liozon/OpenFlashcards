@@ -321,19 +321,58 @@ async function handleWordAnswer(btn, answer, q) {
     const conjBox = document.createElement('div');
     conjBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
 
-    const headerRow = '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' +
-      t('train_conjugation') + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+    // Detect if tense-keyed or flat
+    const conjVal = q.conjugation;
+    const conjKeys = Object.keys(conjVal);
+    const isTenseKeyed = conjKeys.some(k => {
+      const v = conjVal[k];
+      return v && typeof v === 'object' && !v.hasOwnProperty('form');
+    });
 
-    const conjRows = Object.entries(q.conjugation).map(([pronoun, entry]) => {
-      const e = normConj(entry);
-      return '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
-        '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
-        '<span style="font-weight:600">' + esc(e.form) + '</span>' +
-        (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
-        '</div>';
-    }).join('');
+    // Get lang data for tense names
+    const langDataForConj = (App.config.targetLangs || []).find(l => l.isoCode === q.langCode) || {};
+    const tensesForConj = (langDataForConj.tenses && langDataForConj.tenses.length) ? langDataForConj.tenses : [];
 
-    conjBox.innerHTML = headerRow + conjRows;
+    let conjHtml = '';
+
+    if (isTenseKeyed) {
+      // Tense-keyed format: show each tense section
+      conjKeys.forEach((tenseIdx, idx) => {
+        const tenseData = conjVal[tenseIdx];
+        if (!tenseData || typeof tenseData !== 'object') return;
+        const tenseConfig = tensesForConj[parseInt(tenseIdx)] || null;
+        const tenseLabel = tenseConfig
+          ? esc(tenseConfig.targetName || tenseConfig.nativeName)
+          : (t('train_conjugation') + ' ' + (parseInt(tenseIdx) + 1));
+
+        conjHtml += '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;margin-top:' + (idx > 0 ? '12px' : '0') + ';text-transform:uppercase;letter-spacing:.05em">' +
+          tenseLabel + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+
+        Object.entries(tenseData).forEach(([pronoun, entry]) => {
+          const e = normConj(entry);
+          conjHtml += '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
+            '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+            '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+            (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
+            '</div>';
+        });
+      });
+    } else {
+      // Flat format: backward compat
+      conjHtml = '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' +
+        t('train_conjugation') + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+
+      conjHtml += Object.entries(conjVal).map(([pronoun, entry]) => {
+        const e = normConj(entry);
+        return '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
+          '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+          '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+          (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
+          '</div>';
+      }).join('');
+    }
+
+    conjBox.innerHTML = conjHtml;
     card.appendChild(conjBox);
   }
 
