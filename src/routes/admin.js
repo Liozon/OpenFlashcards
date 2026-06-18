@@ -5,7 +5,7 @@ const { randomUUID } = require('crypto');
 const { getUsers, saveUsers, getUserConfig, saveUserConfig, getWords, getPhrases } = require('../utils/storage');
 const { requireAdmin } = require('../middleware/auth');
 const { purgeCache, cacheStats, getCached, saveCachedBuffer } = require('../utils/tts-cache');
-const { bufferTTS } = require('../utils/tts-generate');
+const { bufferTTS, wordDisplay } = require('../utils/tts-generate');
 
 router.use(requireAdmin);
 
@@ -159,8 +159,7 @@ router.post('/users/:id/tts-cache/generate', async (req, res) => {
       const words   = getWords(uid, lang.isoCode);
       const phrases = getPhrases(uid, lang.isoCode);
       for (const w of words) {
-        const display = (w.article ? w.article + ' ' : '') +
-          (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+        const display = wordDisplay(w);
         tasks.push({ text: display, id: w.id, mode: 'normal', speed: speedNormal, lang: lang.isoCode });
         tasks.push({ text: display, id: w.id, mode: 'slow',   speed: speedSlow,   lang: lang.isoCode });
       }

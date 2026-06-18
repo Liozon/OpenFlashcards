@@ -112,7 +112,8 @@ window.Offline = (() => {
       const words   = entries.find(e => e.key === `/api/words?lang=${lang}`)?.value || [];
       const phrases = entries.find(e => e.key === `/api/phrases?lang=${lang}`)?.value || [];
       for (const w of words) {
-        const text = (w.article ? w.article + ' ' : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+        const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
+        const text = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
         ttsTasks.push(`/api/tts?lang=${lang}&q=${encodeURIComponent(text)}&id=${w.id}&speed=${speedNormal}`);
         ttsTasks.push(`/api/tts?lang=${lang}&q=${encodeURIComponent(text)}&id=${w.id}&speed=${speedSlow}`);
       }

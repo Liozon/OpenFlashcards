@@ -33,6 +33,13 @@ const EDGE_TTS_VOICES = {
   'cy':'cy-GB-NiaNeural'
 };
 
+function wordDisplay(w) {
+  const article = w.article || '';
+  const separator = article && !article.endsWith("'") && !article.endsWith("\u2019") ? ' ' : '';
+  return (article ? article + separator : '') +
+    (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+}
+
 function speedToEdgeRate(speed) {
   const pct = Math.round(speed * 100);
   return pct >= 100 ? `+${pct - 100}%` : `-${100 - pct}%`;
@@ -86,4 +93,4 @@ async function bufferTTS(text, langCode, speed) {
   });
 }
 
-module.exports = { bufferTTS, EDGE_TTS_VOICES };
+module.exports = { bufferTTS, EDGE_TTS_VOICES, wordDisplay };
