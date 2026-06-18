@@ -330,6 +330,7 @@ window.openLangConfig = function (isoCode) {
   if (!lang) return;
 
   let declensions = (lang.declensions || []).map(d => ({ ...d }));
+  let tenses = (lang.tenses && lang.tenses.length) ? lang.tenses.map(t => ({ ...t })) : [{ nativeName: 'Present', targetName: 'Present' }];
   let verbGroups = (lang.verbGroups || []).map(g => ({ ...g }));
   let labels = (lang.labels || []).map(lb => ({ ...lb }));
   let ttsSpeedNormal = lang.ttsSpeedNormal != null ? lang.ttsSpeedNormal : 1.0;
@@ -357,6 +358,27 @@ window.openLangConfig = function (isoCode) {
       inp.addEventListener('input', () => { declensions[+inp.dataset.i].nativeName = inp.value; }));
     container.querySelectorAll('.decl-target').forEach(inp =>
       inp.addEventListener('input', () => { declensions[+inp.dataset.i].targetName = inp.value; }));
+  }
+
+  function renderTenseRows() {
+    const container = document.getElementById('tenseContainer');
+    if (!container) return;
+    if (!tenses.length) {
+      container.innerHTML = `<p style="color:var(--text-faint);font-size:.85rem;margin:4px 0">${t('settings_tenses_empty')}</p>`;
+      return;
+    }
+    container.innerHTML = tenses.map((d, i) => `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <input type="text" class="tense-native" data-i="${i}" value="${esc(d.nativeName)}" placeholder="${t('settings_tenses_ph_native')}"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+        <input type="text" class="tense-target" data-i="${i}" value="${esc(d.targetName)}" placeholder="${t('settings_tenses_ph_target')}"
+          style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+        <button onclick="removeTense(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+      </div>`).join('');
+    container.querySelectorAll('.tense-native').forEach(inp =>
+      inp.addEventListener('input', () => { tenses[+inp.dataset.i].nativeName = inp.value; }));
+    container.querySelectorAll('.tense-target').forEach(inp =>
+      inp.addEventListener('input', () => { tenses[+inp.dataset.i].targetName = inp.value; }));
   }
 
   function renderVerbGroupRows() {
@@ -448,6 +470,12 @@ window.openLangConfig = function (isoCode) {
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addDeclension()">${t('settings_decl_add')}</button>
     </div>
     <div style="margin-bottom:20px">
+      <h3 style="font-size:1rem;margin-bottom:4px">⏳ ${t('settings_tenses_title')}</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_tenses_desc')}</p>
+      <div id="tenseContainer"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addTense()">${t('settings_tenses_add')}</button>
+    </div>
+    <div style="margin-bottom:20px">
       <h3 style="font-size:1rem;margin-bottom:4px">📚 ${t('settings_vg_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_vg_desc')}</p>
       <div id="vgContainer"></div>
@@ -528,6 +556,7 @@ window.openLangConfig = function (isoCode) {
   );
 
   renderDeclensionRows();
+  renderTenseRows();
   renderVerbGroupRows();
   renderLabelRows();
 
@@ -755,6 +784,8 @@ window.openLangConfig = function (isoCode) {
   let colorIdx = 0;
   window.addDeclension = () => { declensions.push({ nativeName: '', targetName: '' }); renderDeclensionRows(); };
   window.removeDeclension = (i) => { declensions.splice(i, 1); renderDeclensionRows(); };
+  window.addTense = () => { tenses.push({ nativeName: '', targetName: '' }); renderTenseRows(); };
+  window.removeTense = (i) => { tenses.splice(i, 1); renderTenseRows(); };
   window.addVerbGroup = () => { verbGroups.push({ name: '' }); renderVerbGroupRows(); };
   window.removeVerbGroup = (i) => { verbGroups.splice(i, 1); renderVerbGroupRows(); };
   window.addLabelCfg = () => {
@@ -771,6 +802,9 @@ window.openLangConfig = function (isoCode) {
     if (declensions.some(d => !d.nativeName.trim())) {
       errEl.textContent = t('settings_decl_err_empty'); errEl.classList.remove('hidden'); return;
     }
+    if (tenses.some(t => !t.nativeName.trim() || !t.targetName.trim())) {
+      errEl.textContent = t('settings_tenses_err_empty'); errEl.classList.remove('hidden'); return;
+    }
     if (verbGroups.some(g => !g.name.trim())) {
       errEl.textContent = t('settings_vg_err_empty'); errEl.classList.remove('hidden'); return;
     }
@@ -778,7 +812,7 @@ window.openLangConfig = function (isoCode) {
       errEl.textContent = t('labels_add_ph'); errEl.classList.remove('hidden'); return;
     }
     try {
-      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow, ttsCache: ttsCacheEnabled });
+      await api('PUT', '/api/languages/' + encodeURIComponent(code), { declensions, tenses, verbGroups, labels, ttsSpeedNormal, ttsSpeedSlow, ttsCache: ttsCacheEnabled });
       await loadConfig();
 
       // Purge ONLY the speed bucket(s) that actually changed, leave the other intact.

@@ -19,6 +19,7 @@ function renderAdd(el) {
   const langData = currentLangData();
   const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
   const declensions = (langData && langData.declensions) ? langData.declensions : [];
+  const tenses = (langData && langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
   const verbGroups = (langData && langData.verbGroups) ? langData.verbGroups : [];
 
   const vgOptions = verbGroups.length
@@ -58,21 +59,25 @@ function renderAdd(el) {
             <input type="text" id="wInfinitive" placeholder="${t('add_infinitive_ph')}" autocomplete="off">
           </div>
           ${vgOptions}
-          <details style="margin-bottom:16px">
-            <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-              ${t('add_conjugation')} <span class="optional">${t('vocab_optional')}</span>
-            </summary>
-            <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
-              <span style="font-weight:600">${t('add_conj_pronoun')}</span>
-              <span>${t('add_conj_form')}</span>
-              <span>${t('add_conj_translation_ph')}</span>
-            </div>
-            <div class="conjugation-grid" id="conjGrid"></div>
-            <div class="field-group" style="margin-top:8px">
-              <label style="font-size:.88rem">${t('add_verb_conjugation_translation')} <span class="optional">${t('common_optional')}</span></label>
-              <input type="text" id="wConjTranslation" autocomplete="off" placeholder="${t('add_verb_conjugation_translation_ph')}">
-            </div>
-          </details>
+          <div id="tenseConjSections">
+            ${tenses.map((tense, ti) => `
+            <details style="margin-bottom:12px" class="tense-conj-detail">
+              <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:6px">
+                ${esc(tense.targetName || tense.nativeName)} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">/ ${esc(tense.nativeName)}</span> <span class="optional">${t('vocab_optional')}</span>
+              </summary>
+              <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
+                <span style="font-weight:600">${t('add_conj_pronoun')}</span>
+                <span>${t('add_conj_form')}</span>
+                <span>${t('add_conj_translation_ph')}</span>
+              </div>
+              <div class="conjugation-grid" id="conjGrid_${ti}"></div>
+            </details>
+            `).join('')}
+          </div>
+          <div class="field-group" style="margin-top:8px">
+            <label style="font-size:.88rem">${t('add_verb_conjugation_translation')} <span class="optional">${t('common_optional')}</span></label>
+            <input type="text" id="wConjTranslation" autocomplete="off" placeholder="${t('add_verb_conjugation_translation_ph')}">
+          </div>
         </div>
 
         <div class="field-group">
@@ -152,20 +157,22 @@ function renderAdd(el) {
     return [...chips.querySelectorAll('.label-pick-btn.active')].map(b => b.dataset.lid).filter(Boolean);
   };
 
-  // Build conjugation grid
-  const conjGrid = document.getElementById('conjGrid');
-  if (conjGrid) {
-    pronouns.forEach((p, i) => {
-      conjGrid.innerHTML += `
-        <div class="conj-item field-group">
-          <label style="font-size:.82rem;font-weight:600">${p}</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="conj_${i}" autocomplete="off" placeholder="…" style="flex:1">
-            <input type="text" id="conjtr_${i}" autocomplete="off" placeholder="${t('add_conj_translation_ph')}" style="flex:1;font-size:.85rem;color:var(--text-muted)">
-          </div>
-        </div>`;
-    });
-  }
+  // Build conjugation grids per tense
+  tenses.forEach((tense, ti) => {
+    const conjGrid = document.getElementById(`conjGrid_${ti}`);
+    if (conjGrid) {
+      pronouns.forEach((p, pi) => {
+        conjGrid.innerHTML += `
+          <div class="conj-item field-group">
+            <label style="font-size:.82rem;font-weight:600">${esc(p)}</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="conj_${ti}_${pi}" autocomplete="off" placeholder="…" style="flex:1">
+              <input type="text" id="conjtr_${ti}_${pi}" autocomplete="off" placeholder="${t('add_conj_translation_ph')}" style="flex:1;font-size:.85rem;color:var(--text-muted)">
+            </div>
+          </div>`;
+      });
+    }
+  });
 
   // Build declensions grid
   const declGrid = document.getElementById('declGrid');
@@ -229,13 +236,18 @@ window.submitWord = async function () {
   if (type === 'verb') {
     body.infinitive = document.getElementById('wInfinitive')?.value.trim() || '';
     body.verbGroup = document.getElementById('wVerbGroup')?.value || '';
-    const conj = {};
     const langData = currentLangData();
+    const tenses = (langData && langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
     const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
-    pronouns.forEach((p, i) => {
-      const form = document.getElementById(`conj_${i}`)?.value.trim();
-      const tr = document.getElementById(`conjtr_${i}`)?.value.trim();
-      if (form || tr) conj[p] = { form: form || '', translation: tr || '' };
+    const conj = {};
+    tenses.forEach((tense, ti) => {
+      const tenseConj = {};
+      pronouns.forEach((p, pi) => {
+        const form = document.getElementById(`conj_${ti}_${pi}`)?.value.trim();
+        const tr = document.getElementById(`conjtr_${ti}_${pi}`)?.value.trim();
+        if (form || tr) tenseConj[p] = { form: form || '', translation: tr || '' };
+      });
+      if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
     });
     body.conjugation = conj;
     body.verbConjugationTranslation = document.getElementById('wConjTranslation')?.value.trim() || '';
@@ -264,7 +276,7 @@ window.submitWord = async function () {
     ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
-    document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => el.value = '');
+    document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => { if (el) el.value = ''; });
     document.querySelectorAll('[id^="decl_"]').forEach(el => el.value = '');
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';

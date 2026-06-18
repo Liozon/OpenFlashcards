@@ -205,8 +205,26 @@
     const display = (question.article ? question.article + ' ' : '') +
       (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
-    // Conjugation quiz (30%)
-    const conjWithTrans = Object.entries(question.conjugation || {})
+    // Flatten conjugation: support both tense-keyed and flat formats
+    function _flatConj(conj) {
+      if (!conj) return {};
+      const vals = Object.values(conj);
+      if (vals.length && vals.some(v => v && typeof v === 'object' && !v.hasOwnProperty('form'))) {
+        const tenseKeys = Object.keys(conj);
+        const validTenses = tenseKeys.filter(k => {
+          const tense = conj[k];
+          return tense && typeof tense === 'object' && Object.values(tense).some(e => _normConj(e).form);
+        });
+        if (validTenses.length) {
+          const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
+          return conj[pick];
+        }
+        return {};
+      }
+      return conj;
+    }
+    const flatConj = _flatConj(question.conjugation || {});
+    const conjWithTrans = Object.entries(flatConj)
       .map(([pr, e]) => [pr, _normConj(e)])
       .filter(([, e]) => e.form && e.translation);
     let promptText, answerText, quizPronoun = null;

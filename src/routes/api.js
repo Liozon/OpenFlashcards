@@ -85,12 +85,19 @@ router.post('/languages', (req, res) => {
     const users = getUsers();
     const userRecord = users[userId(req)];
     const defaultCache = userRecord ? (userRecord.ttsCacheDefault === true) : false;
-    cfg.targetLangs.push({ isoCode, name, flag: flag || '🌐', nativeName: nativeName || name, ttsCache: defaultCache });
+    cfg.targetLangs.push({ isoCode, name, flag: flag || '🌐', nativeName: nativeName || name, tenses: [{ nativeName: 'Present', targetName: 'Present' }], ttsCache: defaultCache });
   }
   if (!cfg.currentLang) cfg.currentLang = isoCode;
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true });
 });
+
+// GET /api/tenses  – helper: resolve tenses for a language (ensure default Present)
+function getTensesForLang(lang) {
+  if (lang.tenses && lang.tenses.length) return lang.tenses;
+  // Return a default Present tense when none configured
+  return [{ nativeName: 'Present', targetName: 'Present' }];
+}
 
 // DELETE /api/languages/:code
 router.delete('/languages/:code', (req, res) => {
@@ -110,6 +117,8 @@ router.put('/languages/:code', (req, res) => {
 
   // declensions: array of { id, nativeName, targetName }
   if (req.body.declensions !== undefined) lang.declensions = req.body.declensions;
+  // tenses: array of { nativeName, targetName }
+  if (req.body.tenses !== undefined) lang.tenses = req.body.tenses;
   // verbGroups: array of { id, name }
   if (req.body.verbGroups !== undefined) lang.verbGroups = req.body.verbGroups;
   if (req.body.labels !== undefined) lang.labels = req.body.labels;
@@ -700,8 +709,31 @@ router.get('/quiz', (req, res) => {
   let promptText, answerText;
   let quizPronoun = null;  // set if quizzing on a specific conjugated form
 
+  // Normalize conjugation: support both flat (old) and tense-keyed (new) formats
+  function flattenConjugation(conj) {
+    if (!conj) return {};
+    // Check if this is tense-keyed (any value is an object with pronoun keys)
+    const values = Object.values(conj);
+    if (values.length && values.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'))) {
+      // Tense-keyed: pick a random tense that has entries
+      const tenseKeys = Object.keys(conj);
+      const validTenses = tenseKeys.filter(k => {
+        const tense = conj[k];
+        return tense && typeof tense === 'object' && Object.values(tense).some(e => normConj(e).form);
+      });
+      if (validTenses.length) {
+        const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
+        return conj[pick];
+      }
+      return {};
+    }
+    // Flat format
+    return conj;
+  }
+
+  const flatConj = flattenConjugation(question.conjugation || {});
   const conjEntries = question.type === 'verb'
-    ? Object.entries(question.conjugation || {}).filter(([, e]) => normConj(e).form)
+    ? Object.entries(flatConj).filter(([, e]) => normConj(e).form)
     : [];
 
   // 30% chance to quiz on a conjugated form (when verb has conjugations AND translations)
