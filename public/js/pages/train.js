@@ -81,6 +81,29 @@ function renderTrain(el) {
   loadQuestion();
 }
 
+function _textColorForBg(hex) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#1a1a1a' : '#ffffff';
+}
+
+function _refreshLabelStyles() {
+  document.querySelectorAll('#labelFilters .type-btn[data-color]').forEach(btn => {
+    const color = btn.dataset.color;
+    if (btn.classList.contains('active')) {
+      btn.style.background = color;
+      btn.style.color = _textColorForBg(color);
+      btn.style.borderColor = color;
+    } else {
+      btn.style.background = color + '20';
+      btn.style.color = color;
+      btn.style.borderColor = color;
+    }
+  });
+}
+
 async function _populateLabelFilters(lang) {
   let labels = [];
   try { labels = await api('GET', '/api/labels?lang=' + encodeURIComponent(lang)); } catch { }
@@ -98,8 +121,9 @@ async function _populateLabelFilters(lang) {
     const btn = document.createElement('button');
     btn.className = 'type-btn';
     btn.dataset.labelId = lb.id;
-    btn.style.borderColor = lb.color;
-    btn.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + esc(lb.color) + ';margin-right:5px"></span>' + esc(lb.name);
+    btn.dataset.color = lb.color;
+    btn.style.cssText = `background:${lb.color}20;border-color:${lb.color};color:${lb.color}`;
+    btn.textContent = lb.name;
     btn.addEventListener('click', () => toggleLabelFilter(lb.id, btn));
     row.appendChild(btn);
   });
@@ -138,6 +162,7 @@ window.toggleLabelFilter = function (labelId, btn) {
       document.querySelector('#labelFilters .type-btn[data-label-id=""]').classList.add('active');
     }
   }
+  _refreshLabelStyles();
   loadQuestion();
 };
 

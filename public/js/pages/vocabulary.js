@@ -111,6 +111,14 @@ async function renderVocabulary(el, params) {
   }
 }
 
+function textColorForBg(hex) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#1a1a1a' : '#ffffff';
+}
+
 function renderLabelFilterRow() {
   const lang = currentLang();
   const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
@@ -123,14 +131,36 @@ function renderLabelFilterRow() {
     `<span style="font-size:.78rem;color:var(--text-faint)">${t('labels_filter')}:</span>` +
     `<button class="label-chip active" data-lid="" style="background:var(--surface-2)">${t('vocab_all')}</button>` +
     labels.map(lb =>
-      `<button class="label-chip" data-lid="${esc(lb.id)}" style="background:${esc(lb.color)}20;border-color:${esc(lb.color)};color:${esc(lb.color)}">${esc(lb.name)}</button>`
+      `<button class="label-chip" data-lid="${esc(lb.id)}" data-color="${esc(lb.color)}" style="background:${esc(lb.color)}20;border-color:${esc(lb.color)};color:${esc(lb.color)}">${esc(lb.name)}</button>`
     ).join('');
 
   row.querySelectorAll('.label-chip').forEach(btn => {
     btn.addEventListener('click', () => {
-      row.querySelectorAll('.label-chip').forEach(b => b.classList.remove('active'));
+      row.querySelectorAll('.label-chip').forEach(b => {
+        b.classList.remove('active');
+        const color = b.dataset.color;
+        if (color) {
+          b.style.background = color + '20';
+          b.style.color = color;
+          b.style.borderColor = color;
+        } else {
+          b.style.background = 'var(--surface-2)';
+          b.style.color = '';
+          b.style.borderColor = '';
+        }
+      });
       btn.classList.add('active');
-      _vocabLabel = btn.dataset.lid;
+      const color = btn.dataset.color;
+      if (color) {
+        btn.style.background = color;
+        btn.style.color = textColorForBg(color);
+        btn.style.borderColor = color;
+      } else {
+        btn.style.background = 'var(--surface-2)';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+      _vocabLabel = btn.dataset.lid || '';
       renderVocabGrid();
     });
   });
@@ -344,10 +374,10 @@ function buildLabelPicker(selectedIds, containerId) {
       ${allLabels.map(lb => {
     const active = selectedIds.includes(lb.id);
     return `<button type="button" class="label-pick-btn ${active ? 'active' : ''}"
-          data-lid="${esc(lb.id)}"
+          data-lid="${esc(lb.id)}" data-color="${esc(lb.color)}"
           style="padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;
-            background:${active ? esc(lb.color) + '33' : 'transparent'};
-            border:1.5px solid ${esc(lb.color)};color:${esc(lb.color)};transition:.15s"
+            background:${active ? esc(lb.color) : 'transparent'};
+            border:1.5px solid ${esc(lb.color)};color:${active ? textColorForBg(lb.color) : esc(lb.color)};transition:.15s"
           onclick="toggleLabelPick(this,'${containerId}-chips')">${esc(lb.name)}</button>`;
   }).join('')}
       <button type="button" class="btn btn-sm btn-secondary"
@@ -359,11 +389,13 @@ function buildLabelPicker(selectedIds, containerId) {
 
 window.toggleLabelPick = function (btn, chipsId) {
   btn.classList.toggle('active');
-  const lb_color = btn.style.color;
+  const origColor = btn.dataset.color;
   if (btn.classList.contains('active')) {
-    btn.style.background = lb_color + '33';
+    btn.style.background = origColor;
+    btn.style.color = textColorForBg(origColor);
   } else {
     btn.style.background = 'transparent';
+    btn.style.color = origColor;
   }
 };
 
@@ -415,7 +447,8 @@ window.confirmCreateLabelInline = async function (chipsId, lang) {
     btn.type = 'button';
     btn.className = 'label-pick-btn active';
     btn.dataset.lid = result.label.id;
-    btn.style.cssText = `padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:${color}33;border:1.5px solid ${color};color:${color};transition:.15s`;
+    btn.dataset.color = color;
+    btn.style.cssText = `padding:3px 10px;border-radius:12px;font-size:.78rem;cursor:pointer;background:${color};border:1.5px solid ${color};color:${textColorForBg(color)};transition:.15s`;
     btn.textContent = name;
     btn.onclick = function () { window.toggleLabelPick(this, chipsId); };
     chips.insertBefore(btn, wrapper);
