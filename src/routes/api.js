@@ -549,7 +549,6 @@ router.post('/words', (req, res) => {
   };
   if (type === 'noun') word.article = article ? article.trim() : '';
   if (type === 'verb') {
-    word.infinitive = infinitive ? infinitive.trim() : '';
     word.conjugation = conjugation || {};
     if (verbGroup !== undefined) word.verbGroup = verbGroup;
   }

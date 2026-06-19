@@ -49,15 +49,23 @@ function renderAdd(el) {
       </div>
 
       <div class="card">
-        <div id="nounExtras" class="field-group">
+        <div class="field-group">
+          <label><span id="wTypeLabel">${t('add_word_label')}</span> <strong>${langData ? (langData.flag || '') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
+          <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
+          <small style="color:var(--text-faint);font-size:.8rem">${t('add_nominative_hint')}</small>
+        </div>
+
+        <div class="field-group">
+          <label>${t('add_translation')} <span class="required">*</span></label>
+          <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
+        </div>
+
+        <div id="nounExtras" class="field-group hidden">
           <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wArticle" placeholder="${t('add_article_ph')}" autocomplete="off">
         </div>
+
         <div id="verbExtras" class="hidden">
-          <div class="field-group">
-            <label>${t('add_infinitive')} <span class="optional">${t('vocab_optional')}</span></label>
-            <input type="text" id="wInfinitive" placeholder="${t('add_infinitive_ph')}" autocomplete="off">
-          </div>
           ${vgOptions}
           <div id="tenseConjSections">
             ${tenses.map((tense, ti) => `
@@ -74,16 +82,6 @@ function renderAdd(el) {
             </details>
             `).join('')}
           </div>
-          <div class="field-group" style="margin-top:8px">
-            <label style="font-size:.88rem">${t('add_verb_conjugation_translation')} <span class="optional">${t('common_optional')}</span></label>
-            <input type="text" id="wConjTranslation" autocomplete="off" placeholder="${t('add_verb_conjugation_translation_ph')}">
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label>${t('add_word_label')} <strong>${langData ? (langData.flag || '') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
-          <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
-          <small style="color:var(--text-faint);font-size:.8rem">${t('add_nominative_hint')}</small>
         </div>
 
         ${declensions.length ? `
@@ -94,10 +92,6 @@ function renderAdd(el) {
           <div id="declGrid"></div>
         </details>` : ''}
 
-        <div class="field-group">
-          <label>${t('add_translation')} <span class="required">*</span></label>
-          <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
-        </div>
         <div class="field-group">
           <label>${t('add_definition')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wDefinition" autocomplete="off" placeholder="${t('add_definition_ph')}">
@@ -187,7 +181,7 @@ function renderAdd(el) {
   }
 
 
-  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
+    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
   });
@@ -207,6 +201,8 @@ window.selectWordType = function (type, btn) {
   document.getElementById('verbExtras').classList.toggle('hidden', type !== 'verb');
   const declSect = document.getElementById('declensionsSection');
   if (declSect) declSect.style.display = type === 'verb' ? 'none' : '';
+  const labelSpan = document.getElementById('wTypeLabel');
+  if (labelSpan) labelSpan.textContent = type === 'verb' ? (t('add_infinitive_label') || 'Infinitive in') : (t('add_word_label') || 'Word in');
 };
 
 window.switchAddTab = function (tab, btn) {
@@ -234,7 +230,6 @@ window.submitWord = async function () {
   const body = { lang, type, literal, translation, definition };
   if (type === 'noun') body.article = document.getElementById('wArticle')?.value.trim() || '';
   if (type === 'verb') {
-    body.infinitive = document.getElementById('wInfinitive')?.value.trim() || '';
     body.verbGroup = document.getElementById('wVerbGroup')?.value || '';
     const langData = currentLangData();
     const tenses = (langData && langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
@@ -250,7 +245,6 @@ window.submitWord = async function () {
       if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
     });
     body.conjugation = conj;
-    body.verbConjugationTranslation = document.getElementById('wConjTranslation')?.value.trim() || '';
   }
 
   const langData = currentLangData();
@@ -273,7 +267,7 @@ window.submitWord = async function () {
     okEl.textContent = `✓ ${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
 
-    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle', 'wInfinitive'].forEach(id => {
+  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => { if (el) el.value = ''; });
