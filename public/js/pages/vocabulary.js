@@ -557,14 +557,15 @@ window.editWord = function (id, lang) {
 
   const labelPickerHtml = buildLabelPicker(w.labels || [], 'meLabelPicker');
 
+  const literalFieldValue = isVerb ? (w.infinitive || w.literal) : w.literal;
   openModal(t('vocab_edit_word'), `
     ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(w.article || '')}"></div>` : ''}
-    ${isVerb ? `<div class="field-group"><label>${t('vocab_infinitive')}</label><input id="meInfinitive" value="${esc(w.infinitive || '')}"></div>` : ''}
+    <div class="field-group"><label>${isVerb ? t('add_infinitive_label') || 'Infinitive in' : t('add_word_label') || 'Word in'} <strong style="font-weight:600">${langDataBase.flag ? langDataBase.flag + ' ' : ''}${langDataBase.name || lang}</strong> <span class="required">*</span></label><input id="meLiteral" value="${esc(literalFieldValue)}"></div>
+    ${isVerb && w.infinitive && w.infinitive !== w.literal ? `<div class="field-group" style="opacity:.7"><label style="font-size:.82rem">${t('vocab_word')} (conjugated) <span style="font-weight:400;font-size:.78rem;color:var(--text-faint)">(kept for reference)</span></label><input id="meAltForm" value="${esc(w.literal)}" style="font-size:.85rem"></div>` : ''}
+    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
     ${vgHtml}
-    <div class="field-group"><label>${t('vocab_word')} (Nominative) <span class="required">*</span></label><input id="meLiteral" value="${esc(w.literal)}"></div>
     ${conjHtml}
     ${declHtml}
-    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
     <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`,
@@ -583,23 +584,21 @@ window.saveWordEdit = async function (id, lang) {
     return;
   }
 
+  const w = _vocabWords.find(x => x.id === id);
   const body = {
     literal: newLiteral,
     translation: document.getElementById('meTranslation').value.trim(),
     definition: document.getElementById('meDefinition')?.value?.trim() || '',
     labels: getSelectedLabels('meLabelPicker-chips')
   };
+  // Keep old infinitive in sync when re-saving an existing verb that had it
+  if (w && w.type === 'verb' && w.infinitive) body.infinitive = newLiteral;
   const artEl = document.getElementById('meArticle');
-  const infEl = document.getElementById('meInfinitive');
   const vgEl = document.getElementById('meVerbGroup');
-  const conjTrEl = document.getElementById('meConjTranslation');
   if (artEl) body.article = artEl.value.trim();
-  if (infEl) body.infinitive = infEl.value.trim();
   if (vgEl) body.verbGroup = vgEl.value;
-  if (conjTrEl) body.verbConjugationTranslation = conjTrEl.value.trim();
 
   // Collect conjugation edits (tense-keyed format)
-  const w = _vocabWords.find(x => x.id === id);
   if (w && w.type === 'verb') {
     const langDataSaveBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
     const langPronounsSave = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataSaveBase.isoCode]) || langDataSaveBase.pronouns || [];
