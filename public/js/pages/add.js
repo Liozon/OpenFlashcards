@@ -49,7 +49,7 @@ function renderAdd(el) {
       </div>
 
       <div class="card">
-        <div id="nounExtras" class="field-group hidden">
+        <div id="nounExtras" class="field-group">
           <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
           <input type="text" id="wArticle" placeholder="${t('add_article_ph')}" autocomplete="off">
         </div>
