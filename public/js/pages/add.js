@@ -49,6 +49,11 @@ function renderAdd(el) {
       </div>
 
       <div class="card">
+        <div id="nounExtras" class="field-group hidden">
+          <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
+          <input type="text" id="wArticle" placeholder="${t('add_article_ph')}" autocomplete="off">
+        </div>
+
         <div class="field-group">
           <label><span id="wTypeLabel">${t('add_word_label')}</span> <strong>${langData ? (langData.flag || '') + ' ' + langData.name : lang}</strong> <span class="required">*</span></label>
           <input type="text" id="wLiteral" autocomplete="off" placeholder="${t('add_word_ph')}">
@@ -58,11 +63,6 @@ function renderAdd(el) {
         <div class="field-group">
           <label>${t('add_translation')} <span class="required">*</span></label>
           <input type="text" id="wTranslation" autocomplete="off" placeholder="${t('add_translation_ph')}">
-        </div>
-
-        <div id="nounExtras" class="field-group hidden">
-          <label>${t('add_article')} <span class="optional">${t('vocab_optional')}</span></label>
-          <input type="text" id="wArticle" placeholder="${t('add_article_ph')}" autocomplete="off">
         </div>
 
         <div id="verbExtras" class="hidden">
