@@ -559,13 +559,13 @@ window.editWord = function (id, lang) {
 
   const literalFieldValue = isVerb ? (w.infinitive || w.literal) : w.literal;
   openModal(t('vocab_edit_word'), `
-    ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(w.article || '')}"></div>` : ''}
-    ${vgHtml}
     <div class="field-group"><label>${isVerb ? t('add_infinitive_label') || 'Infinitive in' : t('add_word_label') || 'Word in'} <strong style="font-weight:600">${langDataBase.flag ? langDataBase.flag + ' ' : ''}${langDataBase.name || lang}</strong> <span class="required">*</span></label><input id="meLiteral" value="${esc(literalFieldValue)}"></div>
     ${isVerb && w.infinitive && w.infinitive !== w.literal ? `<div class="field-group" style="opacity:.7"><label style="font-size:.82rem">${t('vocab_word')} (conjugated) <span style="font-weight:400;font-size:.78rem;color:var(--text-faint)">(kept for reference)</span></label><input id="meAltForm" value="${esc(w.literal)}" style="font-size:.85rem"></div>` : ''}
+    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
+    ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(w.article || '')}"></div>` : ''}
+    ${vgHtml}
     ${conjHtml}
     ${declHtml}
-    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
     <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`,
