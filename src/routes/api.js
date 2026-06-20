@@ -933,6 +933,116 @@ function shuffle(arr) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DUPLICATES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/duplicates  – find duplicate words/phrases within a language
+//   Body: { lang }
+//   Returns: { words: [[...], ...], phrases: [[...], ...] }
+//     Each inner array is a group of 2+ items sharing the same literal/text.
+router.post('/duplicates', (req, res) => {
+  const { lang } = req.body;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+
+  const words = getWords(userId(req), lang);
+  const phrases = getPhrases(userId(req), lang);
+
+  function groupByKey(items, keyFn) {
+    const map = {};
+    items.forEach(item => {
+      const key = keyFn(item).toLowerCase().trim();
+      if (!key) return;
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    });
+    return Object.values(map).filter(g => g.length >= 2);
+  }
+
+  const dupWords = groupByKey(words, w => w.literal || '');
+  const dupPhrases = groupByKey(phrases, p => p.text || p.literal || '');
+
+  res.json({ words: dupWords, phrases: dupPhrases });
+});
+
+// POST /api/duplicates/merge  – merge a group of duplicates, keep one
+//   Body: { lang, keepId, deleteIds, kind, fieldMap?, labels? }
+//     kind: 'word' or 'phrase'
+//     keepId: the ID to preserve (base item)
+//     deleteIds: array of IDs to delete (may include keepId)
+//     fieldMap (optional): { "fieldName": "sourceItemId", ... }
+//       Copies the specified field from the source item onto the keep item.
+//       Supported fields: type, literal, translation, definition, article,
+//       infinitive, conjugation, declensions, verbGroup, helpNote, text, progress
+//     labels (optional): explicit array of label IDs to set on the kept item.
+//   When fieldMap is provided it replaces the legacy merge logic entirely.
+//   Legacy (no fieldMap): merges labels (union) and max progress.
+router.post('/duplicates/merge', (req, res) => {
+  const { lang, keepId, deleteIds, kind, fieldMap, labels } = req.body;
+  if (!lang || !keepId || !Array.isArray(deleteIds) || !kind) {
+    return res.status(400).json({ error: 'lang, keepId, deleteIds[], and kind required' });
+  }
+  if (kind !== 'word' && kind !== 'phrase') {
+    return res.status(400).json({ error: 'kind must be "word" or "phrase"' });
+  }
+
+  const uid = userId(req);
+  const items = kind === 'word' ? getWords(uid, lang) : getPhrases(uid, lang);
+  const saveFn = kind === 'word' ? saveWords : savePhrases;
+
+  const keepItem = items.find(i => i.id === keepId);
+  if (!keepItem) return res.status(404).json({ error: 'Item to keep not found' });
+
+  const idsToDelete = deleteIds.filter(id => id !== keepId);
+
+  // Per-field merge: copy each field from the chosen source item
+  if (fieldMap && typeof fieldMap === 'object') {
+    const copyableFields = [
+      'type', 'literal', 'translation', 'definition', 'article',
+      'infinitive', 'conjugation', 'declensions', 'verbGroup',
+      'verbConjugationTranslation', 'helpNote', 'text', 'progress', 'maxProgress'
+    ];
+    for (const [field, sourceId] of Object.entries(fieldMap)) {
+      if (!copyableFields.includes(field)) continue;
+      const sourceItem = items.find(i => i.id === sourceId);
+      if (!sourceItem || sourceItem[field] === undefined) continue;
+      if (typeof sourceItem[field] === 'object' && sourceItem[field] !== null) {
+        keepItem[field] = JSON.parse(JSON.stringify(sourceItem[field]));
+      } else {
+        keepItem[field] = sourceItem[field];
+      }
+    }
+  } else {
+    // Legacy merge: union labels + max progress + fill missing definition
+    const allLabels = new Set(keepItem.labels || []);
+    idsToDelete.forEach(id => {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      (item.labels || []).forEach(lid => allLabels.add(lid));
+      if ((item.progress || 0) > (keepItem.progress || 0)) keepItem.progress = item.progress;
+      if (!keepItem.definition && item.definition) keepItem.definition = item.definition;
+      if (kind === 'phrase' && !keepItem.helpNote && item.helpNote) keepItem.helpNote = item.helpNote;
+    });
+    keepItem.labels = [...allLabels];
+  }
+
+  // If explicit labels array is provided, use it (overrides any label merge above)
+  if (Array.isArray(labels)) {
+    keepItem.labels = labels;
+  }
+
+  keepItem.updatedAt = new Date().toISOString();
+
+  const updatedItems = items.filter(i => !idsToDelete.includes(i.id));
+  saveFn(uid, lang, updatedItems);
+
+  idsToDelete.forEach(id => {
+    try { deleteItemAllSpeeds(uid, lang, id); } catch {}
+  });
+
+  res.json({ ok: true, item: keepItem, deleted: idsToDelete.length });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // LABELS
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1622,3 +1622,18 @@ img {
   animation: offlineBannerFadeOut 0.4s ease forwards;
   overflow: hidden;
 }
+
+/* ── Duplicate comparison grid ─────────────────────────────── */
+.dup-grid {
+  display: grid;
+  grid-template-columns: auto repeat(var(--dup-cols, 2), minmax(100px, 1fr));
+  gap: 6px 10px;
+  font-size: .8rem;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .dup-grid {
+    grid-template-columns: minmax(min-content, 90px) repeat(var(--dup-cols, 2), minmax(100px, 1fr));
+  }
+}
