@@ -276,7 +276,7 @@ window.submitWord = async function () {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
-    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
+    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = b.dataset.color; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
@@ -310,7 +310,7 @@ window.submitPhrase = async function () {
     document.getElementById('pTranslation').value = '';
     document.getElementById('pNote').value = '';
     document.getElementById('pText').focus();
-    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
+    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = b.dataset.color; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
