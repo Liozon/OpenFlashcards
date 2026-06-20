@@ -178,9 +178,12 @@ function renderVocabGrid() {
   let items = [];
   if (showWords) {
     items = items.concat(_vocabWords.filter(w => {
+      if (_vocabFilter === 'phrase' && w.type !== 'phrase') return false;
+      if (_vocabFilter && _vocabFilter !== 'phrase' && w.type === 'phrase') return false;
       const matchType = !_vocabFilter || w.type === _vocabFilter;
+      const searchText = (w.literal || w.text || '').toLowerCase();
       const matchSearch = !_vocabSearch ||
-        w.literal.toLowerCase().includes(_vocabSearch) ||
+        searchText.includes(_vocabSearch) ||
         w.translation.toLowerCase().includes(_vocabSearch) ||
         (w.definition || '').toLowerCase().includes(_vocabSearch);
       const matchLabel = !_vocabLabel || (w.labels || []).includes(_vocabLabel);
@@ -191,11 +194,16 @@ function renderVocabGrid() {
   }
   if (showPhrases) {
     items = items.concat(_vocabPhrases.filter(p => {
+      const itemType = p.type || 'phrase';
+      if (_vocabFilter === 'phrase' && itemType !== 'phrase') return false;
+      if (_vocabFilter && _vocabFilter !== 'phrase' && itemType !== _vocabFilter) return false;
+      const searchText = (p.text || p.literal || '').toLowerCase();
       const matchSearch = !_vocabSearch ||
-        p.text.toLowerCase().includes(_vocabSearch) ||
-        p.translation.toLowerCase().includes(_vocabSearch);
+        searchText.includes(_vocabSearch) ||
+        p.translation.toLowerCase().includes(_vocabSearch) ||
+        (p.definition || '').toLowerCase().includes(_vocabSearch);
       const matchLabel = !_vocabLabel || (p.labels || []).includes(_vocabLabel);
-      const pMax = p.maxProgress || phraseMaxProgressClient(p.text);
+      const pMax = p.maxProgress || phraseMaxProgressClient(p.text || p.literal || '');
       const matchMastered = !_vocabMastered || (p.progress || 0) >= pMax;
       return matchSearch && matchLabel && matchMastered;
     }).map(p => ({ ...p, _kind: 'phrase' })));
@@ -236,7 +244,8 @@ function renderVocabGrid() {
   // Build DOM directly to keep TTS buttons alive
   grid.innerHTML = '';
   items.forEach(item => {
-    const cardEl = item._kind === 'word' ? buildWordCard(item) : buildPhraseCard(item);
+    const isPhraseCard = item.type === 'phrase' || (!item.type && item._kind === 'phrase');
+    const cardEl = isPhraseCard ? buildPhraseCard(item) : buildWordCard(item);
     grid.appendChild(cardEl);
   });
 }
@@ -248,15 +257,22 @@ function getLabels() {
 }
 
 function buildWordCard(w) {
-  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}`, other: `🧩 ${t('vocab_other')}` };
+  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}`, other: `🧩 ${t('vocab_other')}`, phrase: `💬 ${t('vocab_phrase')}` };
+  const isPhrase = w.type === 'phrase';
   const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
-  const display = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
+  const display = isPhrase
+    ? (w.text || w.literal || '')
+    : (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const progress = w.progress || 0;
-  const maxProg = w.maxProgress || wordMaxProgressClient(w.literal, w.infinitive);
+  const maxProg = isPhrase
+    ? (w.maxProgress || phraseMaxProgressClient(w.text || w.literal || ''))
+    : (w.maxProgress || wordMaxProgressClient(w.literal, w.infinitive));
   const mastered = progress >= maxProg;
   const diffPct = Math.round((progress / maxProg) * 100);
   const allLabels = getLabels();
   const wordLabelIds = w.labels || [];
+  const editFn = isPhrase ? 'editPhrase' : 'editWord';
+  const deleteFn = isPhrase ? 'deletePhrase' : 'deleteWord';
 
   const div = document.createElement('div');
   div.className = 'word-card';
@@ -277,13 +293,13 @@ function buildWordCard(w) {
   div.innerHTML =
     '<div class="word-card-header">' +
     '<div>' +
-    '<span class="badge badge-' + w.type + '">' + (labels[w.type] || w.type) + '</span>' +
+    '<span class="badge badge-' + (isPhrase ? 'phrase' : w.type) + '">' + (labels[w.type] || w.type) + '</span>' +
 
     '</div>' +
     '<div class="word-actions">' +
     '<span id="tts-' + w.id + '"></span>' +
-    '<button class="btn btn-sm btn-secondary" onclick="editWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
-    '<button class="btn btn-sm btn-danger"    onclick="deleteWord(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="' + editFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
+    '<button class="btn btn-sm btn-danger"    onclick="' + deleteFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
     '<div class="word-literal">' + esc(display) + '</div>' +
@@ -294,8 +310,8 @@ function buildWordCard(w) {
       : '<div class="progress-bar-wrap" title="' + progress + ' / ' + maxProg + '">' +
       '<div class="progress-bar-fill" style="width:' + diffPct + '%"></div>' +
       '</div>') +
-    (w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
-    (w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + Object.keys(w.declensions).length + ' case(s)</div>' : '') +
+    (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
+    (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + Object.keys(w.declensions).length + ' case(s)</div>' : '') +
     labelHtml;
 
   // TTS button via DOM to avoid HTML injection issues
@@ -329,6 +345,8 @@ function buildPhraseCard(p) {
     '</div>'
     : '';
 
+  const displayText = p.text || p.literal || '';
+
   div.innerHTML =
     '<div class="word-card-header">' +
     '<span class="badge badge-phrase">💬 ' + t('vocab_phrase') + '</span>' +
@@ -338,12 +356,12 @@ function buildPhraseCard(p) {
     '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
-    '<div class="word-literal" style="font-size:1rem">' + esc(p.text) + '</div>' +
+    '<div class="word-literal" style="font-size:1rem">' + esc(displayText) + '</div>' +
     '<div class="word-trans">' + esc(p.translation) + '</div>' +
     (p.helpNote ? '<div class="word-def">' + esc(p.helpNote) + '</div>' : '') +
     ((() => {
       const pProg = p.progress || 0;
-      const pMax = p.maxProgress || phraseMaxProgressClient(p.text);
+      const pMax = p.maxProgress || phraseMaxProgressClient(displayText);
       const pMast = pProg >= pMax;
       const pPct = Math.round((pProg / pMax) * 100);
       return pMast
@@ -356,8 +374,8 @@ function buildPhraseCard(p) {
 
   const ttsSlot = div.querySelector('#ptts-' + p.id);
   if (ttsSlot) {
-    const normalBtn = TTS.button(p.text, p.langCode, null, p.id);
-    const slowBtn = TTS.buttonSlow(p.text, p.langCode, null, p.id);
+    const normalBtn = TTS.button(displayText, p.langCode, null, p.id);
+    const slowBtn = TTS.buttonSlow(displayText, p.langCode, null, p.id);
     ttsSlot.replaceWith(normalBtn);
     normalBtn.insertAdjacentElement('afterend', slowBtn);
   }
@@ -467,23 +485,25 @@ function getSelectedLabels(chipsId) {
 }
 
 // ── Edit word ──────────────────────────────────────────────────────────────────
-window.editWord = function (id, lang) {
-  const w = _vocabWords.find(x => x.id === id);
-  if (!w) return;
-  const isVerb = w.type === 'verb';
-  const isNoun = w.type === 'noun';
+// State for temporary field preservation when changing word type during editing
+let _editWordState = null;
+let _editWordLangData = null;
+let _editWordLangDataBase = null;
 
-  const langDataBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
-  const langPronouns = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataBase.isoCode]) || langDataBase.pronouns || [];
-  const langData = langPronouns.length ? { ...langDataBase, pronouns: langPronouns } : langDataBase;
+function _buildEditWordFields(state) {
+  const isVerb = state.type === 'verb';
+  const isNoun = state.type === 'noun';
+  const isPhrase = state.type === 'phrase';
+  const lang = state.lang;
+  const langData = _editWordLangData || {};
+  const langDataBase = _editWordLangDataBase || {};
   const declensions = langData.declensions || [];
   const tenses = (langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
   const verbGroups = langData.verbGroups || [];
-  const existingDecl = w.declensions || {};
-  const existingConj = w.conjugation || {};
-  const nativeLang = App.config.nativeLang || 'en';
+  const existingDecl = state.declensions || {};
+  const existingConj = state.conjugation || {};
+  const configPronouns = langData.pronouns || [];
 
-  // Detect if conjugation is old flat format or new tense-keyed format
   function isTenseKeyedConj(conj) {
     const keys = Object.keys(conj || {});
     if (!keys.length) return false;
@@ -499,20 +519,16 @@ window.editWord = function (id, lang) {
         <label>${t('add_verb_group')} <span class="optional">(optional)</span></label>
         <select id="meVerbGroup" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
           <option value="">— —</option>
-          ${verbGroups.map(g => `<option value="${esc(g.name)}" ${(w.verbGroup || '') === (g.name) ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}
+          ${verbGroups.map(g => `<option value="${esc(g.name)}" ${(state.verbGroup || '') === (g.name) ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}
         </select>
       </div>` : '';
 
-  // Conjugation section for verbs — tense-keyed grids
-  const configPronouns = langData.pronouns || [];
   const conjHtml = isVerb
     ? tenses.map((tense, ti) => {
-      // Get conjugation data for this tense (new format uses String(ti), old format shown as Present)
       let tenseConjData;
       if (conjIsTenseKeyed) {
         tenseConjData = existingConj[String(ti)] || {};
       } else if (ti === 0) {
-        // Old flat format: show all under first tense
         tenseConjData = existingConj;
       } else {
         tenseConjData = {};
@@ -543,7 +559,6 @@ window.editWord = function (id, lang) {
     }).join('')
     : '';
 
-  // Declensions only for non-verbs
   const declHtml = !isVerb && declensions.length
     ? `<details style="margin-bottom:14px">
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
@@ -556,20 +571,149 @@ window.editWord = function (id, lang) {
           </div>`).join('')}
       </details>` : '';
 
-  const labelPickerHtml = buildLabelPicker(w.labels || [], 'meLabelPicker');
+  const labelPickerHtml = buildLabelPicker(state.labels || [], 'meLabelPicker');
+  const literalFieldValue = isVerb ? (state.infinitive || state.literal) : state.literal;
 
-  const literalFieldValue = isVerb ? (w.infinitive || w.literal) : w.literal;
-  openModal(t('vocab_edit_word'), `
-    ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(w.article || '')}"></div>` : ''}
+  if (isPhrase) {
+    return `
+    <div class="field-group"><label>${t('vocab_phrase_target') || 'Phrase (target language)'} <span class="required">*</span></label>
+      <textarea id="meLiteral">${esc(state.literal || state.text || '')}</textarea></div>
+    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(state.translation)}"></div>
+    <div class="field-group"><label>${t('vocab_note') || 'Note'} <span class="optional">(optional)</span></label>
+      <input id="mePNote" value="${esc(state.helpNote || state.definition || '')}"></div>
+    ${labelPickerHtml}
+    <div id="meErr" class="alert alert-danger hidden"></div>`;
+  }
+
+  return `
+    ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(state.article || '')}"></div>` : ''}
     <div class="field-group"><label>${isVerb ? t('add_infinitive_label') || 'Infinitive in' : t('add_word_label') || 'Word in'} <strong style="font-weight:600">${langDataBase.flag ? langDataBase.flag + ' ' : ''}${langDataBase.name || lang}</strong> <span class="required">*</span></label><input id="meLiteral" value="${esc(literalFieldValue)}"></div>
-    ${isVerb && w.infinitive && w.infinitive !== w.literal ? `<div class="field-group" style="opacity:.7"><label style="font-size:.82rem">${t('vocab_word')} (conjugated) <span style="font-weight:400;font-size:.78rem;color:var(--text-faint)">(kept for reference)</span></label><input id="meAltForm" value="${esc(w.literal)}" style="font-size:.85rem"></div>` : ''}
-    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(w.translation)}"></div>
+    ${isVerb && state.infinitive && state.infinitive !== state.literal ? `<div class="field-group" style="opacity:.7"><label style="font-size:.82rem">${t('vocab_word')} (conjugated) <span style="font-weight:400;font-size:.78rem;color:var(--text-faint)">(kept for reference)</span></label><input id="meAltForm" value="${esc(state.literal)}" style="font-size:.85rem"></div>` : ''}
+    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(state.translation)}"></div>
     ${vgHtml}
     ${conjHtml}
     ${declHtml}
-    <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(w.definition || '')}"></div>
+    <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(state.definition || '')}"></div>
     ${labelPickerHtml}
-    <div id="meErr" class="alert alert-danger hidden"></div>`,
+    <div id="meErr" class="alert alert-danger hidden"></div>`;
+}
+
+window.onEditWordTypeChange = function () {
+  const state = _editWordState;
+  if (!state) return;
+  const newType = document.getElementById('meType').value;
+
+  state.literal = document.getElementById('meLiteral')?.value?.trim() || state.literal;
+  state.translation = document.getElementById('meTranslation')?.value?.trim() || state.translation;
+
+  // Save note/definition — merged single field across types
+  if (state.type === 'phrase') {
+    const noteEl = document.getElementById('mePNote');
+    if (noteEl) state.helpNote = noteEl.value.trim();
+    state.definition = state.helpNote;
+  } else {
+    const defEl = document.getElementById('meDefinition');
+    if (defEl) state.definition = defEl.value.trim();
+    state.helpNote = state.definition;
+  }
+
+  const artEl = document.getElementById('meArticle');
+  if (artEl) state.article = artEl.value.trim();
+
+  const vgEl = document.getElementById('meVerbGroup');
+  if (vgEl) state.verbGroup = vgEl.value;
+
+  if (state.type === 'verb') {
+    const langData = _editWordLangData || {};
+    const tenses = (langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
+    const conj = {};
+    const configPronouns = langData.pronouns || [];
+    tenses.forEach((tense, ti) => {
+      const tenseConj = {};
+      const existingConj = state.conjugation || {};
+      const existingKeys = Object.keys(existingConj);
+      const conjIsTenseKeyed = existingKeys.some(k => {
+        const v = existingConj[k];
+        return v && typeof v === 'object' && !v.hasOwnProperty('form');
+      });
+      const existingTenseData = conjIsTenseKeyed ? (existingConj[String(ti)] || {}) : (ti === 0 ? existingConj : {});
+      const pronounsForTense = Object.keys(existingTenseData).length ? Object.keys(existingTenseData) : configPronouns;
+      pronounsForTense.forEach(p => {
+        const formEl = document.getElementById('meConj_' + ti + '_' + p);
+        const trEl = document.getElementById('meCT_' + ti + '_' + p);
+        const form = formEl ? formEl.value.trim() : '';
+        const tr = trEl ? trEl.value.trim() : '';
+        if (form || tr) tenseConj[p] = { form, translation: tr };
+      });
+      if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
+    });
+    state.conjugation = conj;
+  }
+
+  if (state.type !== 'verb' && state.type !== 'phrase') {
+    const langData = _editWordLangData || {};
+    const declensions = langData.declensions || [];
+    const declObj = {};
+    declensions.forEach((d, i) => {
+      const val = document.getElementById(`meDecl_${i}`)?.value?.trim();
+      if (val) declObj[i] = { nativeName: d.nativeName, targetName: d.targetName, value: val };
+    });
+    state.declensions = declObj;
+  }
+
+  const labelsEl = document.getElementById('meLabelPicker-chips');
+  if (labelsEl) state.labels = getSelectedLabels('meLabelPicker-chips');
+
+  state.type = newType;
+
+  // When switching to phrase, use literal as text
+  if (newType === 'phrase' && !state.text) {
+    state.text = state.literal;
+  }
+
+  document.getElementById('meTypeFields').innerHTML = _buildEditWordFields(state);
+};
+
+window.editWord = function (id, lang) {
+  const w = _vocabWords.find(x => x.id === id);
+  if (!w) return;
+
+  const langDataBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const langPronouns = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataBase.isoCode]) || langDataBase.pronouns || [];
+  const langData = langPronouns.length ? { ...langDataBase, pronouns: langPronouns } : langDataBase;
+
+  _editWordLangData = langData;
+  _editWordLangDataBase = langDataBase;
+  _editWordState = {
+    id: w.id,
+    type: w.type,
+    literal: w.literal,
+    translation: w.translation,
+    definition: w.definition || '',
+    article: w.article || '',
+    verbGroup: w.verbGroup || '',
+    conjugation: JSON.parse(JSON.stringify(w.conjugation || {})),
+    declensions: JSON.parse(JSON.stringify(w.declensions || {})),
+    infinitive: w.infinitive || '',
+    labels: [...(w.labels || [])],
+    lang: lang
+  };
+
+  openModal(t('vocab_edit_word'), `
+    <div class="field-group">
+      <label>${t('add_type') || 'Type'} <span class="required">*</span></label>
+      <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+        <option value="noun" ${w.type === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
+        <option value="verb" ${w.type === 'verb' ? 'selected' : ''}>⚡ ${t('vocab_verb')}</option>
+        <option value="adjective" ${w.type === 'adjective' ? 'selected' : ''}>🎨 ${t('vocab_adjective')}</option>
+        <option value="adverb" ${w.type === 'adverb' ? 'selected' : ''}>💨 ${t('vocab_adverb')}</option>
+        <option value="other" ${w.type === 'other' ? 'selected' : ''}>🧩 ${t('vocab_other')}</option>
+        <option value="phrase" ${w.type === 'phrase' ? 'selected' : ''}>💬 ${t('vocab_phrase')}</option>
+      </select>
+    </div>
+    <div id="meTypeFields">
+      ${_buildEditWordFields(_editWordState)}
+    </div>`,
     `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetWordProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="saveWordEdit('${id}','${lang}')">${t('vocab_save')}</button>`
@@ -577,6 +721,51 @@ window.editWord = function (id, lang) {
 };
 
 window.saveWordEdit = async function (id, lang) {
+  const selectedType = document.getElementById('meType').value;
+
+  if (selectedType === 'phrase') {
+    const textEl = document.getElementById('meLiteral');
+    const newText = textEl ? textEl.value.trim() : '';
+    if (!newText) {
+      document.getElementById('meErr').textContent = t('add_err_phrase');
+      document.getElementById('meErr').classList.remove('hidden');
+      return;
+    }
+    const helpNoteValue = document.getElementById('mePNote')?.value?.trim() || '';
+    const body = {
+      type: 'phrase',
+      text: newText,
+      translation: document.getElementById('meTranslation').value.trim(),
+      helpNote: helpNoteValue,
+      definition: helpNoteValue,
+      labels: getSelectedLabels('meLabelPicker-chips')
+    };
+    if (!body.translation) {
+      document.getElementById('meErr').textContent = t('add_err_phrase');
+      document.getElementById('meErr').classList.remove('hidden');
+      return;
+    }
+    try {
+      await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
+      if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
+      if (window.Offline) {
+        const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+        const speedNormal = (langData.ttsSpeedNormal ?? 1.0).toFixed(2);
+        const speedSlow = (langData.ttsSpeedSlow ?? 0.24).toFixed(2);
+        await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedNormal * 100), id);
+        await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
+      }
+      closeModal();
+      toast(`✓ ${t('vocab_updated')}`);
+      const idx = _vocabWords.findIndex(x => x.id === id);
+      if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
+    } catch (e) {
+      document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+      document.getElementById('meErr').classList.remove('hidden');
+    }
+    return;
+  }
+
   const literalEl = document.getElementById('meLiteral');
   const newLiteral = literalEl ? literalEl.value.trim() : null;
   if (!newLiteral) {
@@ -585,22 +774,28 @@ window.saveWordEdit = async function (id, lang) {
     return;
   }
 
-  const w = _vocabWords.find(x => x.id === id);
   const body = {
+    type: selectedType,
     literal: newLiteral,
     translation: document.getElementById('meTranslation').value.trim(),
     definition: document.getElementById('meDefinition')?.value?.trim() || '',
     labels: getSelectedLabels('meLabelPicker-chips')
   };
-  // Keep old infinitive in sync when re-saving an existing verb that had it
-  if (w && w.type === 'verb' && w.infinitive) body.infinitive = newLiteral;
-  const artEl = document.getElementById('meArticle');
-  const vgEl = document.getElementById('meVerbGroup');
-  if (artEl) body.article = artEl.value.trim();
-  if (vgEl) body.verbGroup = vgEl.value;
+
+  if (selectedType === 'verb') {
+    body.infinitive = newLiteral;
+    const artEl = document.getElementById('meArticle');
+    if (artEl) body.article = artEl.value.trim();
+    const vgEl = document.getElementById('meVerbGroup');
+    if (vgEl) body.verbGroup = vgEl.value;
+  }
+  if (selectedType === 'noun') {
+    const artEl = document.getElementById('meArticle');
+    if (artEl) body.article = artEl.value.trim();
+  }
 
   // Collect conjugation edits (tense-keyed format)
-  if (w && w.type === 'verb') {
+  if (selectedType === 'verb') {
     const langDataSaveBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
     const langPronounsSave = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataSaveBase.isoCode]) || langDataSaveBase.pronouns || [];
     const langDataSave = langPronounsSave.length ? { ...langDataSaveBase, pronouns: langPronounsSave } : langDataSaveBase;
@@ -609,29 +804,27 @@ window.saveWordEdit = async function (id, lang) {
     const conj = {};
     tenses.forEach((tense, ti) => {
       const tenseConj = {};
-      // Detect pronouns from existing fields or use configured pronouns
-      const existingKeys = Object.keys(w.conjugation || {});
-      const existingTenseData = existingKeys.some(k => {
-        const v = w.conjugation[k];
-        return v && typeof v === 'object' && !v.hasOwnProperty('form');
-      }) ? (w.conjugation[String(ti)] || {}) : (ti === 0 ? w.conjugation : {});
-      const pronounsForTense = Object.keys(existingTenseData).length ? Object.keys(existingTenseData) : configPronouns;
+      const pronounsForTense = configPronouns;
       pronounsForTense.forEach(p => {
         const formEl = document.getElementById('meConj_' + ti + '_' + p);
         const trEl = document.getElementById('meCT_' + ti + '_' + p);
-        const form = formEl ? formEl.value.trim() : (normConj(existingTenseData[p] || {}).form || '');
-        const tr = trEl ? trEl.value.trim() : (normConj(existingTenseData[p] || {}).translation || '');
+        const form = formEl ? formEl.value.trim() : '';
+        const tr = trEl ? trEl.value.trim() : '';
         if (form || tr) tenseConj[p] = { form, translation: tr };
       });
       if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
     });
     body.conjugation = conj;
+  } else {
+    body.conjugation = {};
+    body.verbGroup = '';
+    body.infinitive = '';
   }
 
   // Collect declensions
   const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
   const declensions = langData.declensions || [];
-  if (declensions.length && w && w.type !== 'verb') {
+  if (declensions.length && selectedType !== 'verb') {
     const declObj = {};
     declensions.forEach((d, i) => {
       const val = document.getElementById(`meDecl_${i}`)?.value?.trim();
@@ -647,7 +840,6 @@ window.saveWordEdit = async function (id, lang) {
   }
   try {
     await api('PUT', `/api/words/${id}?lang=${encodeURIComponent(lang)}`, body);
-    // Invalidate offline TTS cache for this word (IDB + SW Cache Storage)
     if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
     if (window.Offline) {
       const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
@@ -699,16 +891,47 @@ window.deleteWord = async function (id, lang) {
 window.editPhrase = function (id, lang) {
   const p = _vocabPhrases.find(x => x.id === id);
   if (!p) return;
-  const labelPickerHtml = buildLabelPicker(p.labels || [], 'mePLabelPicker');
+
+  const pType = p.type || 'phrase';
+
+  const langDataBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const langPronouns = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataBase.isoCode]) || langDataBase.pronouns || [];
+  const langData = langPronouns.length ? { ...langDataBase, pronouns: langPronouns } : langDataBase;
+
+  _editWordLangData = langData;
+  _editWordLangDataBase = langDataBase;
+  _editWordState = {
+    id: p.id,
+    type: pType,
+    literal: p.text,
+    text: p.text,
+    translation: p.translation,
+    definition: p.definition || '',
+    helpNote: p.helpNote || '',
+    article: p.article || '',
+    verbGroup: p.verbGroup || '',
+    conjugation: JSON.parse(JSON.stringify(p.conjugation || {})),
+    declensions: JSON.parse(JSON.stringify(p.declensions || {})),
+    infinitive: p.infinitive || '',
+    labels: [...(p.labels || [])],
+    lang: lang
+  };
+
   openModal(t('vocab_edit_phrase'), `
-    <div class="field-group"><label>${t('vocab_phrase_target')} <span class="required">*</span></label>
-      <textarea id="mePText">${esc(p.text)}</textarea></div>
-    <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label>
-      <input id="mePTrans" value="${esc(p.translation)}"></div>
-    <div class="field-group"><label>${t('vocab_note')} <span class="optional">(optional)</span></label>
-      <input id="mePNote" value="${esc(p.helpNote || '')}"></div>
-    ${labelPickerHtml}
-    <div id="mePErr" class="alert alert-danger hidden"></div>`,
+    <div class="field-group">
+      <label>${t('add_type') || 'Type'} <span class="required">*</span></label>
+      <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
+        <option value="phrase" ${pType === 'phrase' ? 'selected' : ''}>💬 ${t('vocab_phrase')}</option>
+        <option value="noun" ${pType === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
+        <option value="verb" ${pType === 'verb' ? 'selected' : ''}>⚡ ${t('vocab_verb')}</option>
+        <option value="adjective" ${pType === 'adjective' ? 'selected' : ''}>🎨 ${t('vocab_adjective')}</option>
+        <option value="adverb" ${pType === 'adverb' ? 'selected' : ''}>💨 ${t('vocab_adverb')}</option>
+        <option value="other" ${pType === 'other' ? 'selected' : ''}>🧩 ${t('vocab_other')}</option>
+      </select>
+    </div>
+    <div id="meTypeFields">
+      ${_buildEditWordFields(_editWordState)}
+    </div>`,
     `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetPhraseProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="savePhraseEdit('${id}','${lang}')">${t('vocab_save')}</button>`
@@ -716,20 +939,120 @@ window.editPhrase = function (id, lang) {
 };
 
 window.savePhraseEdit = async function (id, lang) {
+  const selectedType = document.getElementById('meType').value;
+
+  if (selectedType === 'phrase') {
+    const textEl = document.getElementById('meLiteral');
+    const newText = textEl ? textEl.value.trim() : '';
+    if (!newText) {
+      document.getElementById('meErr').textContent = t('add_err_phrase');
+      document.getElementById('meErr').classList.remove('hidden');
+      return;
+    }
+    const helpNoteValue = document.getElementById('mePNote')?.value?.trim() || '';
+    const body = {
+      type: 'phrase',
+      text: newText,
+      translation: document.getElementById('meTranslation').value.trim(),
+      helpNote: helpNoteValue,
+      definition: helpNoteValue,
+      labels: getSelectedLabels('meLabelPicker-chips')
+    };
+    if (!body.translation) {
+      document.getElementById('meErr').textContent = t('add_err_phrase');
+      document.getElementById('meErr').classList.remove('hidden');
+      return;
+    }
+    try {
+      await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
+      if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
+      if (window.Offline) {
+        const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+        const speedNormal = (langData.ttsSpeedNormal ?? 1.0).toFixed(2);
+        const speedSlow = (langData.ttsSpeedSlow ?? 0.24).toFixed(2);
+        await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedNormal * 100), id);
+        await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
+      }
+      closeModal();
+      toast(`✓ ${t('vocab_phrase_updated')}`);
+      const idx = _vocabPhrases.findIndex(p => p.id === id);
+      if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
+    } catch (e) {
+      document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+      document.getElementById('meErr').classList.remove('hidden');
+    }
+    return;
+  }
+
+  const literalEl = document.getElementById('meLiteral');
+  const newLiteral = literalEl ? literalEl.value.trim() : '';
+  if (!newLiteral) {
+    document.getElementById('meErr').textContent = t('add_err_word');
+    document.getElementById('meErr').classList.remove('hidden');
+    return;
+  }
+
   const body = {
-    text: document.getElementById('mePText').value.trim(),
-    translation: document.getElementById('mePTrans').value.trim(),
-    helpNote: document.getElementById('mePNote').value.trim(),
-    labels: getSelectedLabels('mePLabelPicker-chips')
+    type: selectedType,
+    literal: newLiteral,
+    text: newLiteral,
+    translation: document.getElementById('meTranslation').value.trim(),
+    definition: document.getElementById('meDefinition')?.value?.trim() || '',
+    labels: getSelectedLabels('meLabelPicker-chips')
   };
-  if (!body.text || !body.translation) {
-    document.getElementById('mePErr').textContent = t('add_err_phrase');
-    document.getElementById('mePErr').classList.remove('hidden');
+
+  if (selectedType === 'verb') {
+    body.infinitive = newLiteral;
+    const artEl = document.getElementById('meArticle');
+    if (artEl) body.article = artEl.value.trim();
+    const vgEl = document.getElementById('meVerbGroup');
+    if (vgEl) body.verbGroup = vgEl.value;
+  }
+  if (selectedType === 'noun') {
+    const artEl = document.getElementById('meArticle');
+    if (artEl) body.article = artEl.value.trim();
+  }
+
+  if (selectedType === 'verb') {
+    const langDataSaveBase = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+    const langPronounsSave = (window.LANG_PRONOUNS && window.LANG_PRONOUNS[langDataSaveBase.isoCode]) || langDataSaveBase.pronouns || [];
+    const langDataSave = langPronounsSave.length ? { ...langDataSaveBase, pronouns: langPronounsSave } : langDataSaveBase;
+    const tenses = (langDataSave.tenses && langDataSave.tenses.length) ? langDataSave.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
+    const configPronouns = langDataSave.pronouns || [];
+    const conj = {};
+    tenses.forEach((tense, ti) => {
+      const tenseConj = {};
+      const pronounsForTense = configPronouns;
+      pronounsForTense.forEach(p => {
+        const formEl = document.getElementById('meConj_' + ti + '_' + p);
+        const trEl = document.getElementById('meCT_' + ti + '_' + p);
+        const form = formEl ? formEl.value.trim() : '';
+        const tr = trEl ? trEl.value.trim() : '';
+        if (form || tr) tenseConj[p] = { form, translation: tr };
+      });
+      if (Object.keys(tenseConj).length) conj[String(ti)] = tenseConj;
+    });
+    body.conjugation = conj;
+  }
+
+  const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
+  const declensions = langData.declensions || [];
+  if (declensions.length && selectedType !== 'verb') {
+    const declObj = {};
+    declensions.forEach((d, i) => {
+      const val = document.getElementById(`meDecl_${i}`)?.value?.trim();
+      if (val) declObj[i] = { nativeName: d.nativeName, targetName: d.targetName, value: val };
+    });
+    body.declensions = declObj;
+  }
+
+  if (!body.translation) {
+    document.getElementById('meErr').textContent = t('add_err_word');
+    document.getElementById('meErr').classList.remove('hidden');
     return;
   }
   try {
     await api('PUT', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`, body);
-    // Invalidate offline TTS cache for this phrase (IDB + SW Cache Storage)
     if (window.OfflineDB) await OfflineDB.deleteTTS(lang, id);
     if (window.Offline) {
       const langData = (App.config.targetLangs || []).find(l => l.isoCode === lang) || {};
@@ -743,8 +1066,8 @@ window.savePhraseEdit = async function (id, lang) {
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
-    document.getElementById('mePErr').textContent = e.error || 'Failed to save.';
-    document.getElementById('mePErr').classList.remove('hidden');
+    document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+    document.getElementById('meErr').classList.remove('hidden');
   }
 };
 
