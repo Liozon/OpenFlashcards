@@ -9,6 +9,10 @@ window.TTS = {
   _getSpeed: function (langCode, mode) {
     const langs = (window.App && App.config && App.config.targetLangs) || [];
     const cfg = langs.find(l => l.isoCode === langCode);
+    // Native/UI language always plays at 100% speed
+    const nativeLang = (window.App && App.config && App.config.nativeLang) || 'en';
+    const uiLang = (window.App && App.config && App.config.uiLang) || '';
+    if ((langCode === nativeLang || langCode === uiLang) && mode === 'normal') return 1.0;
     if (mode === 'slow') return (cfg && cfg.ttsSpeedSlow != null) ? cfg.ttsSpeedSlow : 0.24;
     return (cfg && cfg.ttsSpeedNormal != null) ? cfg.ttsSpeedNormal : 1.0;
   },

@@ -663,6 +663,12 @@
           await this.syncTTSFiles(lang, signal,
             p => onProgress && onProgress({ phase: 'tts_dl', lang, ...p }));
         }
+        // Sync native language TTS (for flashcards displaying both sides)
+        const nativeLang = (window.App && window.App.config && window.App.config.nativeLang);
+        if (nativeLang && !langs.includes(nativeLang) && !signal.aborted) {
+          await this.syncTTSFiles(nativeLang, signal,
+            p => onProgress && onProgress({ phase: 'tts_dl', lang: nativeLang, ...p }));
+        }
         // Save current session into localStorage so offline refresh works
         if (window.App && window.App.user && window.App.config) {
           OfflineSession.save(window.App.user, window.App.config);

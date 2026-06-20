@@ -23,16 +23,38 @@ let _writingLetterBank = [];
 let _writingEasyMode = false;
 let _writingSegments = [];
 
+// ── Auto-flashcard mode state ─────────────────────────────────
+let _trainAutoContent = 'words';     // 'words' | 'phrases' | 'everything'
+let _trainAutoTime = 5;              // seconds per side
+let _trainAutoTtsDelay = 0;          // seconds before auto TTS (0 = off)
+let _trainAutoSideFirst = 'random';  // 'random' | 'native' | 'target'
+let _trainAutoTimer = null;
+let _trainAutoState = 'front';       // 'front' | 'back'
+let _trainAutoCard = null;
+let _trainAutoTimeRemaining = 0;
+let _trainAutoPaused = false;
+let _trainAutoStarted = false;
+let _trainAutoTtsPlayed = false;
+
+function _flagForLang(code) {
+  if (!code) return '🌐';
+  const entry = (window.WORLD_LANGUAGES || []).find(l => l.code === code);
+  return entry && entry.flag ? entry.flag : '🌐';
+}
+
 // ── Render page ───────────────────────────────────────────────────────────────
 function renderTrain(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
+  stopAutoTimer();
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
   _trainTypes = []; _trainLabels = []; _trainMode = 'word'; _trainDirection = 'random';
 
   const ld = currentLangData();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
+  const nativeFlag = _flagForLang(nativeLang);
+  const targetFlag = ld && ld.flag ? ld.flag : '🎯';
   const targetName = ld ? (ld.flag || '') + ' ' + ld.name : lang.toUpperCase();
 
   el.innerHTML =
@@ -49,6 +71,7 @@ function renderTrain(el) {
     '<div class="filter-row">' +
     '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
     '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
@@ -64,8 +87,8 @@ function renderTrain(el) {
 
     '<div class="filter-row" id="dirFilters">' +
     '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
-    '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">🌐→' + targetName + '</button>' +
-    '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetName + '→🌐</button>' +
+    '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
+    '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="labelFilters"></div>' +
@@ -74,6 +97,26 @@ function renderTrain(el) {
     '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
     '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
     '</div>' +
+
+    '<div class="filter-row" id="autoContentFilters" style="display:none">' +
+    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
+    '</div>' +
+
+    '<div class="filter-row" id="autoDirFilters" style="display:none">' +
+    '<button class="type-btn active" data-auto-side="random" onclick="setAutoSideFirst(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
+    '<button class="type-btn"        data-auto-side="native" onclick="setAutoSideFirst(\'native\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
+    '<button class="type-btn"        data-auto-side="target" onclick="setAutoSideFirst(\'target\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
+    '</div>' +
+
+    '<div class="filter-row" id="autoTimeRow" style="display:none">' +
+    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">⏱ ' + t('train_auto_speed') + ': <span id="autoTimeValue">' + _trainAutoTime + '</span>s' +
+    '<input type="range" min="2" max="15" value="' + _trainAutoTime + '" step="1" oninput="setAutoTime(this.value)" style="width:160px"></label>' +
+    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">🔊 ' + t('train_auto_tts_delay') + ': <span id="autoTtsDelayValue">' + _trainAutoTtsDelay + '</span>s' +
+    '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
+    '</div>' +
+
     '</div>' +
 
     '<div id="quizArea"></div>';
@@ -132,18 +175,33 @@ async function _populateLabelFilters(lang) {
 
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
+  stopAutoTimer();
   _trainMode = mode;
-  document.querySelectorAll('#modeWord,#modePhrase,#modeWriting,#modeMixed').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#modeWord,#modePhrase,#modeAuto,#modeWriting,#modeMixed').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const isWord = mode === 'word';
   const isPhrase = mode === 'phrase';
   const isWriting = mode === 'writing';
   const isMixed = mode === 'mixed';
+  const isAuto = mode === 'flashcards';
   document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
   document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
   document.getElementById('writingDiffFilters').style.display = (isWriting || isPhrase || isMixed) ? '' : 'none';
+  document.getElementById('autoContentFilters').style.display = isAuto ? '' : 'none';
+  document.getElementById('autoDirFilters').style.display = isAuto ? '' : 'none';
+  document.getElementById('autoTimeRow').style.display = isAuto ? '' : 'none';
   const lf = document.getElementById('labelFilters');
-  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed) ? '' : 'none';
+  if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed || isAuto) ? '' : 'none';
+  if (isAuto) {
+    _trainAutoStarted = false;
+    _loadFlashcardSettings();
+    document.getElementById('typeFilters').style.display = (_trainAutoContent !== 'phrases') ? '' : 'none';
+    document.getElementById('autoTimeValue').textContent = _trainAutoTime;
+    document.getElementById('autoTtsDelayValue').textContent = _trainAutoTtsDelay;
+    const autoRanges = document.querySelectorAll('#autoTimeRow input[type=range]');
+    if (autoRanges[0]) autoRanges[0].value = _trainAutoTime;
+    if (autoRanges[1]) autoRanges[1].value = _trainAutoTtsDelay;
+  }
   loadQuestion();
 };
 
@@ -200,10 +258,77 @@ window.setWritingDifficulty = function (easy, btn) {
   loadQuestion();
 };
 
+// ── Auto-mode controls ──────────────────────────────────────────
+window.setAutoContent = function (content, btn) {
+  _trainAutoContent = content;
+  document.querySelectorAll('#autoContentFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('typeFilters').style.display = (content !== 'phrases') ? '' : 'none';
+  stopAutoTimer();
+  loadQuestion();
+};
+
+window.setAutoSideFirst = function (side, btn) {
+  _trainAutoSideFirst = side;
+  document.querySelectorAll('#autoDirFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  stopAutoTimer();
+  loadQuestion();
+};
+
+window.setAutoTime = function (seconds) {
+  _trainAutoTime = parseInt(seconds, 10);
+  document.getElementById('autoTimeValue').textContent = seconds;
+  _saveFlashcardSettings();
+  if (_trainMode === 'flashcards' && _trainAutoCard) {
+    _trainAutoTimeRemaining = _trainAutoTime;
+    _trainAutoState = 'front';
+    stopAutoTimer();
+    renderAutoCard(_trainAutoCard);
+  }
+};
+
+window.setAutoTtsDelay = function (seconds) {
+  _trainAutoTtsDelay = parseInt(seconds, 10);
+  document.getElementById('autoTtsDelayValue').textContent = seconds;
+  _trainAutoTtsPlayed = false;
+  _saveFlashcardSettings();
+};
+
+async function _saveFlashcardSettings() {
+  const lang = currentLang();
+  if (!lang) return;
+  try {
+    const result = await api('PUT', '/api/languages/' + encodeURIComponent(lang), {
+      flashcardsSpeed: _trainAutoTime,
+      flashcardsTtsDelay: _trainAutoTtsDelay
+    });
+    const ld = currentLangData();
+    if (ld && result && result.lang) {
+      ld.flashcardsSpeed = result.lang.flashcardsSpeed;
+      ld.flashcardsTtsDelay = result.lang.flashcardsTtsDelay;
+    }
+  } catch (e) {
+    // Silently fail — settings are non-critical
+  }
+}
+
+function _loadFlashcardSettings() {
+  const ld = currentLangData();
+  if (ld) {
+    _trainAutoTime = ld.flashcardsSpeed != null ? ld.flashcardsSpeed : 5;
+    _trainAutoTtsDelay = ld.flashcardsTtsDelay != null ? ld.flashcardsTtsDelay : 0;
+  } else {
+    _trainAutoTime = 5;
+    _trainAutoTtsDelay = 0;
+  }
+}
+
 async function loadQuestion() {
   if (_trainMode === 'phrase') return await loadPhraseQuestion();
   if (_trainMode === 'writing') return await loadWritingQuestion();
   if (_trainMode === 'mixed') return await loadMixedQuestion();
+  if (_trainMode === 'flashcards') return await loadAutoQuestion();
   return await loadWordQuestion();
 }
 
@@ -880,6 +1005,239 @@ function getWritingDistractorLetters(lang, neededLetters) {
     result.push(candidates[Math.floor(Math.random() * candidates.length)]);
   }
   return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO FLASHCARDS MODE
+// ─────────────────────────────────────────────────────────────────────────────
+
+function stopAutoTimer() {
+  if (_trainAutoTimer) {
+    clearInterval(_trainAutoTimer);
+    _trainAutoTimer = null;
+  }
+}
+
+function startAutoTimer() {
+  stopAutoTimer();
+  _trainAutoTimer = setInterval(() => {
+    if (_trainAutoPaused) return;
+    _trainAutoTimeRemaining = Math.max(0, _trainAutoTimeRemaining - 0.05);
+    updateAutoProgress();
+
+    // Auto-play TTS after configured delay
+    if (_trainAutoTtsDelay > 0 && !_trainAutoTtsPlayed) {
+      const elapsed = _trainAutoTime - _trainAutoTimeRemaining;
+      if (elapsed >= _trainAutoTtsDelay) {
+        const card = document.getElementById('autoCard');
+        if (card) {
+          const word = _trainAutoState === 'front' ? card.dataset.frontWord : card.dataset.backWord;
+          const langCode = _trainAutoState === 'front' ? card.dataset.frontLang : card.dataset.backLang;
+          TTS.speak(word, langCode, card.dataset.id);
+        }
+        _trainAutoTtsPlayed = true;
+      }
+    }
+
+    if (_trainAutoTimeRemaining <= 0) {
+      if (_trainAutoState === 'front') {
+        flipAutoCard();
+      } else {
+        loadAutoQuestion();
+      }
+    }
+  }, 50);
+}
+
+function updateAutoProgress() {
+  const bar = document.getElementById('autoProgressBar');
+  const label = document.getElementById('autoTimeLabel');
+  if (!bar || !label) return;
+  const pct = (_trainAutoTimeRemaining / _trainAutoTime) * 100;
+  bar.style.width = Math.max(0, pct) + '%';
+  label.textContent = Math.ceil(_trainAutoTimeRemaining) + 's';
+}
+
+function flipAutoCard() {
+  const inner = document.getElementById('autoFlipInner');
+  if (!inner) return;
+  _trainAutoState = 'back';
+  _trainAutoTimeRemaining = Math.max(2, Math.round(_trainAutoTime * 0.6));
+  _trainAutoTtsPlayed = false;
+  inner.classList.add('flipped');
+
+  if (!_trainAutoPaused) {
+    startAutoTimer();
+  }
+}
+
+window.manualFlipAuto = function () {
+  if (_trainAutoState === 'front') {
+    flipAutoCard();
+  }
+};
+
+window.toggleAutoPause = function () {
+  _trainAutoPaused = !_trainAutoPaused;
+  const btn = document.getElementById('autoPauseBtn');
+  if (!btn) return;
+  if (_trainAutoPaused) {
+    stopAutoTimer();
+    btn.textContent = '▶ ' + t('train_auto_resume');
+    btn.className = 'btn btn-primary';
+  } else {
+    _trainAutoStarted = true;
+    startAutoTimer();
+    btn.textContent = '⏸ ' + t('train_auto_pause');
+    btn.className = 'btn btn-secondary';
+  }
+};
+
+async function loadAutoQuestion() {
+  const lang = currentLang();
+  const area = document.getElementById('quizArea');
+  area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
+
+  _trainAutoCard = null;
+  _trainAutoState = 'front';
+  _trainAutoTtsPlayed = false;
+  stopAutoTimer();
+
+  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+
+  try {
+    let card;
+    const pickPhrase = _trainAutoContent === 'phrases' ||
+      (_trainAutoContent === 'everything' && Math.random() < 0.5);
+
+    if (pickPhrase) {
+      card = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam);
+      card._type = 'phrase';
+    } else {
+      card = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=random' + typesParam + labelsParam);
+      card._type = 'word';
+    }
+    _trainAutoCard = card;
+    renderAutoCard(card);
+  } catch (e) {
+    area.innerHTML =
+      '<div class="quiz-card" style="text-align:center">' +
+      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
+      '</div>';
+  }
+}
+
+function renderAutoCard(card) {
+  const area = document.getElementById('quizArea');
+  const lang = currentLang();
+  const nativeLang = (App.config && App.config.nativeLang) || 'en';
+
+  const targetFlag = (currentLangData() && currentLangData().flag) || _flagForLang(lang);
+  const nativeFlag = _flagForLang(nativeLang);
+
+  let nativeWord, targetWord, id, typeLabel;
+  if (card._type === 'phrase') {
+    nativeWord = card.translation;
+    targetWord = card.text;
+    id = card.id;
+    typeLabel = '💬 ' + t('train_phrases');
+  } else {
+    nativeWord = card.showNative ? card.promptText : card.answerText;
+    targetWord = card.showNative ? card.answerText : card.promptText;
+    id = card.id;
+    const iconLabel = {
+      noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩'
+    };
+    typeLabel = (iconLabel[card.type] || '📝') + ' ' + (card.type || t('train_words'));
+  }
+
+  let frontWord, backWord, frontLang, backLang;
+  if (_trainAutoSideFirst === 'random') {
+    const showNativeFirst = Math.random() < 0.5;
+    frontWord = showNativeFirst ? nativeWord : targetWord;
+    backWord = showNativeFirst ? targetWord : nativeWord;
+    frontLang = showNativeFirst ? nativeLang : lang;
+    backLang = showNativeFirst ? lang : nativeLang;
+  } else if (_trainAutoSideFirst === 'native') {
+    frontWord = nativeWord;
+    backWord = targetWord;
+    frontLang = nativeLang;
+    backLang = lang;
+  } else {
+    frontWord = targetWord;
+    backWord = nativeWord;
+    frontLang = lang;
+    backLang = nativeLang;
+  }
+
+  _trainAutoState = 'front';
+  _trainAutoTimeRemaining = _trainAutoTime;
+  _trainAutoTtsPlayed = false;
+  _trainAutoPaused = !_trainAutoStarted;
+
+  stopAutoTimer();
+
+  const frontFlag = frontLang === nativeLang ? nativeFlag : targetFlag;
+  const backFlag = backLang === nativeLang ? nativeFlag : targetFlag;
+
+  area.innerHTML =
+    '<div class="auto-card" id="autoCard" data-front-word="' + esc(frontWord) + '" data-front-lang="' + esc(frontLang) + '" ' +
+    'data-back-word="' + esc(backWord) + '" data-back-lang="' + esc(backLang) + '" data-id="' + esc(id) + '">' +
+
+    '<div class="auto-card-header">' +
+    '<span class="badge badge-' + (card._type === 'phrase' ? 'phrase' : (card.type || 'word')) + '">' + typeLabel + '</span>' +
+    '<span style="font-size:.8rem;color:var(--text-faint)">' + frontFlag + ' → ' + backFlag + '</span>' +
+    '</div>' +
+
+    '<div class="auto-flip-container">' +
+    '<div class="auto-flip-inner" id="autoFlipInner">' +
+
+    '<div class="auto-flip-face auto-flip-front">' +
+    '<div class="auto-word-display">' + esc(frontWord) + '</div>' +
+    '<div class="auto-tts-row" id="autoTtsFront"></div>' +
+    '</div>' +
+
+    '<div class="auto-flip-face auto-flip-back">' +
+    '<div class="auto-word-display">' + esc(backWord) + '</div>' +
+    '<div class="auto-tts-row" id="autoTtsBack"></div>' +
+    '</div>' +
+
+    '</div>' +
+    '</div>' +
+
+    '<div class="auto-progress-container">' +
+    '<div class="auto-progress-bar" id="autoProgressBar"></div>' +
+    '</div>' +
+    '<div class="auto-time-label" id="autoTimeLabel">' + _trainAutoTime + 's</div>' +
+
+    '<div class="auto-controls">' +
+    '<button class="btn ' + (_trainAutoPaused ? 'btn-primary' : 'btn-secondary') + '" id="autoPauseBtn" onclick="toggleAutoPause()">' + (_trainAutoPaused ? '▶ ' + t('train_auto_resume') : '⏸ ' + t('train_auto_pause')) + '</button>' +
+    '<button class="btn btn-secondary" id="autoFlipBtn" onclick="manualFlipAuto()">🔄 ' + t('train_auto_flip') + '</button>' +
+    '<button class="btn btn-secondary" id="autoNextBtn" onclick="loadAutoQuestion()">→ ' + t('train_next') + '</button>' +
+    '</div>' +
+    '</div>';
+
+  if (!_trainAutoPaused) startAutoTimer();
+
+  const frontTts = document.getElementById('autoTtsFront');
+  frontTts.appendChild(TTS.button(frontWord, frontLang, null, id));
+  if (frontLang !== nativeLang) frontTts.appendChild(TTS.buttonSlow(frontWord, frontLang, null, id));
+
+  const backTts = document.getElementById('autoTtsBack');
+  backTts.appendChild(TTS.button(backWord, backLang, null, id));
+  if (backLang !== nativeLang) backTts.appendChild(TTS.buttonSlow(backWord, backLang, null, id));
+
+  // Pre-fetch TTS audio for both sides so the server generates it in advance
+  const prefetchTTS = (text, lang) => {
+    if (!text || !lang) return;
+    fetch(TTS._url(text, lang, 'normal', id)).catch(() => {});
+    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => {});
+  };
+  prefetchTTS(frontWord, frontLang);
+  prefetchTTS(backWord, backLang);
 }
 
 window.toggleTrainSettings = function () {

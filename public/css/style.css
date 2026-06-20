@@ -1001,6 +1001,125 @@ img {
   gap: 10px;
 }
 
+/* ── AUTO FLASHCARDS MODE ─────────────────────────────────────── */
+.auto-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--border);
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.auto-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── 3D Flip animation ─────────────────────────── */
+.auto-flip-container {
+  perspective: 1000px;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.auto-flip-inner {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  transition: transform 0.5s ease;
+  transform-style: preserve-3d;
+}
+
+.auto-flip-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.auto-flip-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 140px;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.auto-flip-back {
+  transform: rotateY(180deg);
+}
+
+.auto-flip-face .auto-word-display {
+  font-size: 2.4rem;
+  font-weight: 900;
+  margin: 12px 0 8px;
+  color: var(--text);
+  min-height: 3.2rem;
+  word-break: break-word;
+}
+
+.auto-flip-back .auto-word-display {
+  color: var(--primary);
+}
+
+.auto-flip-face .auto-tts-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  min-height: 32px;
+  margin-bottom: 4px;
+}
+
+/* ── Progress & controls ────────────────────────── */
+.auto-progress-container {
+  width: 100%;
+  max-width: 400px;
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+}
+
+.auto-progress-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width .1s linear;
+  width: 100%;
+}
+
+.auto-time-label {
+  font-size: .85rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.auto-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* ── ADD FORM ───────────────────────────────────────────────── */
 .add-tabs {
   display: flex;
