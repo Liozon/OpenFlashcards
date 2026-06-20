@@ -50,7 +50,7 @@ const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices, wordDisplay
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 const uid = () => req => req.user.id;
-const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other'];
+const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other', 'phrase'];
 
 function userId(req) { return req.user.id; }
 
@@ -570,9 +570,30 @@ router.put('/words/:id', (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
 
   const w = words[idx];
-  ['translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup', 'literal', 'labels', 'verbConjugationTranslation', 'progress', 'maxProgress'].forEach(k => {
+  ['type', 'translation', 'definition', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup', 'literal', 'labels', 'verbConjugationTranslation', 'progress', 'maxProgress', 'text', 'helpNote'].forEach(k => {
     if (req.body[k] !== undefined) w[k] = req.body[k];
   });
+
+  // If type changed, clean up fields that don't belong to the new type
+  if (req.body.type !== undefined) {
+    if (!TYPES.includes(req.body.type))
+      return res.status(400).json({ error: `type must be one of: ${TYPES.join(', ')}` });
+    if (req.body.type !== 'noun') w.article = '';
+    if (req.body.type !== 'verb') {
+      w.conjugation = {};
+      w.verbGroup = '';
+      w.infinitive = '';
+    }
+    if (req.body.type === 'verb') w.declensions = {};
+    if (req.body.type === 'phrase') {
+      w.conjugation = {};
+      w.verbGroup = '';
+      w.infinitive = '';
+      w.declensions = {};
+      w.article = '';
+    }
+  }
+
   w.updatedAt = new Date().toISOString();
   saveWords(userId(req), lang, words);
 
@@ -616,13 +637,16 @@ router.get('/phrases/random', (req, res) => {
 
 // POST /api/phrases
 router.post('/phrases', (req, res) => {
-  const { lang, text, translation, helpNote, labels } = req.body;
+  const { lang, text, translation, helpNote, labels, type } = req.body;
   if (!lang || !text || !translation)
     return res.status(400).json({ error: 'lang, text, translation required.' });
+  if (type !== undefined && !TYPES.includes(type))
+    return res.status(400).json({ error: `type must be one of: ${TYPES.join(', ')}` });
 
   const phrases = getPhrases(userId(req), lang);
   const phrase = {
     id: randomUUID(),
+    type: type || 'phrase',
     langCode: lang,
     text: text.trim(),
     translation: translation.trim(),
@@ -645,9 +669,22 @@ router.put('/phrases/:id', (req, res) => {
   const idx = phrases.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
 
-  ['text', 'translation', 'helpNote', 'labels', 'progress', 'maxProgress'].forEach(k => {
+  ['type', 'text', 'translation', 'helpNote', 'labels', 'progress', 'maxProgress', 'article', 'literal', 'definition', 'infinitive', 'conjugation', 'declensions', 'verbGroup'].forEach(k => {
     if (req.body[k] !== undefined) phrases[idx][k] = req.body[k];
   });
+
+  if (req.body.type !== undefined) {
+    if (!TYPES.includes(req.body.type))
+      return res.status(400).json({ error: `type must be one of: ${TYPES.join(', ')}` });
+    if (req.body.type !== 'noun') phrases[idx].article = '';
+    if (req.body.type !== 'verb') {
+      phrases[idx].conjugation = {};
+      phrases[idx].verbGroup = '';
+      phrases[idx].infinitive = '';
+    }
+    if (req.body.type === 'verb') phrases[idx].declensions = {};
+  }
+
   phrases[idx].updatedAt = new Date().toISOString();
   savePhrases(userId(req), lang, phrases);
 
