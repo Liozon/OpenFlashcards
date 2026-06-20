@@ -933,6 +933,150 @@ function shuffle(arr) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DUPLICATES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/duplicates  – find duplicate words/phrases within a language
+//   Body: { lang }
+//   Returns: { words: [[...], ...], phrases: [[...], ...], cross: [[...], ...] }
+//     Each inner array is a group of 2+ items sharing the same literal/text.
+//     `words` = word-only groups, `phrases` = phrase-only groups,
+//     `cross` = groups mixing words AND phrases with the same text.
+router.post('/duplicates', (req, res) => {
+  const { lang } = req.body;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+
+  const words = getWords(userId(req), lang);
+  const phrases = getPhrases(userId(req), lang);
+
+  function groupByKey(items, keyFn) {
+    const map = {};
+    items.forEach(item => {
+      const key = keyFn(item).toLowerCase().trim();
+      if (!key) return;
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    });
+    return Object.values(map).filter(g => g.length >= 2);
+  }
+
+  const dupWords = groupByKey(words, w => w.literal || '');
+  const dupPhrases = groupByKey(phrases, p => p.text || p.literal || '');
+
+  // Cross-type duplicates: a word.literal matches a phrase.text
+  const wordMap = {};
+  words.forEach(w => {
+    const key = (w.literal || '').toLowerCase().trim();
+    if (!key) return;
+    if (!wordMap[key]) wordMap[key] = [];
+    wordMap[key].push(w);
+  });
+  const phraseMap = {};
+  phrases.forEach(p => {
+    const key = (p.text || p.literal || '').toLowerCase().trim();
+    if (!key) return;
+    if (!phraseMap[key]) phraseMap[key] = [];
+    phraseMap[key].push(p);
+  });
+
+  const crossDups = [];
+  for (const key of Object.keys(wordMap)) {
+    if (phraseMap[key]) {
+      crossDups.push([...wordMap[key], ...phraseMap[key]]);
+    }
+  }
+
+  res.json({ words: dupWords, phrases: dupPhrases, cross: crossDups });
+});
+
+// POST /api/duplicates/merge  – merge a group of duplicates, keep one
+//   Body: { lang, keepId, deleteIds, kind?, fieldMap?, labels? }
+//     kind (optional): 'word', 'phrase', or 'cross' — used for legacy merge hints
+//     keepId: the ID to preserve (base item)
+//     deleteIds: array of IDs to delete (may include keepId)
+//     fieldMap (optional): { "fieldName": "sourceItemId", ... }
+//       Copies the specified field from the source item onto the keep item.
+//       Supported fields: type, literal, translation, definition, article,
+//       infinitive, conjugation, declensions, verbGroup, verbConjugationTranslation,
+//       helpNote, text, progress, maxProgress
+//     labels (optional): explicit array of label IDs to set on the kept item.
+//   When fieldMap is provided it replaces the legacy merge logic entirely.
+//   Legacy (no fieldMap): merges labels (union) and max progress.
+//   The endpoint searches both words and phrases stores, so cross-type merges work.
+router.post('/duplicates/merge', (req, res) => {
+  const { lang, keepId, deleteIds, fieldMap, labels } = req.body;
+  if (!lang || !keepId || !Array.isArray(deleteIds)) {
+    return res.status(400).json({ error: 'lang, keepId, deleteIds[] required' });
+  }
+
+  const uid = userId(req);
+  const words = getWords(uid, lang);
+  const phrases = getPhrases(uid, lang);
+
+  // Find keep item in either store
+  let keepItem = words.find(i => i.id === keepId) || phrases.find(i => i.id === keepId);
+  if (!keepItem) return res.status(404).json({ error: 'Item to keep not found' });
+  const kind = req.body.kind || (words.find(i => i.id === keepId) ? 'word' : 'phrase');
+
+  const idsToDelete = deleteIds.filter(id => id !== keepId);
+
+  // Look up an item by ID in either store
+  function findItem(id) {
+    return words.find(i => i.id === id) || phrases.find(i => i.id === id);
+  }
+
+  // Per-field merge: copy each field from the chosen source item
+  if (fieldMap && typeof fieldMap === 'object') {
+    const copyableFields = [
+      'type', 'literal', 'translation', 'definition', 'article',
+      'infinitive', 'conjugation', 'declensions', 'verbGroup',
+      'verbConjugationTranslation', 'helpNote', 'text', 'progress', 'maxProgress'
+    ];
+    for (const [field, sourceId] of Object.entries(fieldMap)) {
+      if (!copyableFields.includes(field)) continue;
+      const sourceItem = findItem(sourceId);
+      if (!sourceItem || sourceItem[field] === undefined) continue;
+      if (typeof sourceItem[field] === 'object' && sourceItem[field] !== null) {
+        keepItem[field] = JSON.parse(JSON.stringify(sourceItem[field]));
+      } else {
+        keepItem[field] = sourceItem[field];
+      }
+    }
+  } else {
+    // Legacy merge: union labels + max progress + fill missing definition
+    const allLabels = new Set(keepItem.labels || []);
+    idsToDelete.forEach(id => {
+      const item = findItem(id);
+      if (!item) return;
+      (item.labels || []).forEach(lid => allLabels.add(lid));
+      if ((item.progress || 0) > (keepItem.progress || 0)) keepItem.progress = item.progress;
+      if (!keepItem.definition && item.definition) keepItem.definition = item.definition;
+      if (!keepItem.helpNote && item.helpNote) keepItem.helpNote = item.helpNote;
+    });
+    keepItem.labels = [...allLabels];
+  }
+
+  // If explicit labels array is provided, use it (overrides any label merge above)
+  if (Array.isArray(labels)) {
+    keepItem.labels = labels;
+  }
+
+  keepItem.updatedAt = new Date().toISOString();
+
+  // Remove deleted items from both stores
+  const updatedWords = words.filter(i => !idsToDelete.includes(i.id));
+  const updatedPhrases = phrases.filter(i => !idsToDelete.includes(i.id));
+  saveWords(uid, lang, updatedWords);
+  savePhrases(uid, lang, updatedPhrases);
+
+  idsToDelete.forEach(id => {
+    try { deleteItemAllSpeeds(uid, lang, id); } catch {}
+  });
+
+  res.json({ ok: true, item: keepItem, deleted: idsToDelete.length });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // LABELS
 // ─────────────────────────────────────────────────────────────────────────────
 

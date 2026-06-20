@@ -271,7 +271,8 @@ window.addEventListener('hashchange', function () {
 function getPageFromHash() {
   const hash = window.location.hash;
   if (hash && hash.startsWith('#/')) {
-    const page = hash.slice(2).split('?')[0];
+    const path = hash.slice(2).split('?')[0];
+    const page = path.split('/')[0];
     if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin'].includes(page)) {
       return page;
     }

@@ -42,6 +42,12 @@ let _vocabSearch = '';
 let _vocabLabel = '';   // filter by label id
 let _vocabMastered = false; // filter only mastered items
 
+// ── Duplicates mode ──────────────────────────────────────────────────────────
+let _vocabDupMode = false;
+let _vocabDupGroups = null; // { words: [[...], ...], phrases: [[...], ...] }
+let _vocabDupFieldSel = {}; // { groupKey: { fieldName: sourceItemId } }
+let _vocabDupLabelSel = {}; // { groupKey: [labelId, ...] }
+
 async function renderVocabulary(el, params) {
   params = params || {};
   const lang = currentLang();
@@ -65,7 +71,14 @@ async function renderVocabulary(el, params) {
         <button class="type-btn ${initFilter === 'phrase' ? 'active' : ''}" data-type="phrase">💬 ${t('vocab_phrases')}</button>
         <button class="type-btn ${initMastered ? 'active' : ''}" data-type="mastered">✅ ${t('vocab_mastered') || 'Maîtrisés'}</button>
       </div>
+      <button class="btn btn-sm btn-secondary" id="dupFindBtn" style="margin-top:6px;font-size:.82rem" onclick="findDuplicates()">🔍 ${t('vocab_find_duplicates')}</button>
       <div id="labelFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center"></div>
+      <div id="dupToolbar" class="hidden" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--surface-2);border-radius:12px">
+        <span id="dupCount" style="font-size:.85rem;font-weight:600;color:var(--text-muted)"></span>
+        <span style="font-size:.75rem;color:var(--text-faint)">${t('vocab_dup_select_hint')}</span>
+        <button class="btn btn-sm btn-primary" onclick="mergeDuplicates()" id="dupMergeBtn">🔗 ${t('vocab_dup_merge')}</button>
+        <button class="btn btn-sm btn-secondary" onclick="exitDuplicateMode()">✕ ${t('vocab_dup_exit')}</button>
+      </div>
     </div>
     <div id="vocabGrid" class="word-grid"></div>
     <div id="vocabEmpty" class="hidden" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
@@ -1099,6 +1112,409 @@ window.deletePhrase = async function (id, lang) {
     renderVocabGrid();
     toast(`🗑️ ${t('vocab_deleted')}`);
   } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
+};
+
+// ── Duplicates mode ──────────────────────────────────────────────────────────
+
+window.findDuplicates = async function () {
+  const lang = currentLang();
+  if (!lang) return;
+  try {
+    const result = await api('POST', '/api/duplicates', { lang });
+    const allGroups = (result.words || []).concat(result.phrases || []).concat(result.cross || []);
+    if (!allGroups.length) {
+      toast('🎉 ' + t('vocab_dup_none'), 'success');
+      return;
+    }
+    _vocabDupGroups = result;
+    _vocabDupFieldSel = {};
+    _vocabDupLabelSel = {};
+    _vocabDupMode = true;
+
+    // Default: pick first item's values for all fields, union all labels
+    const allGroupList = [];
+    (result.words || []).forEach(g => allGroupList.push({ items: g }));
+    (result.phrases || []).forEach(g => allGroupList.push({ items: g }));
+    (result.cross || []).forEach(g => allGroupList.push({ items: g }));
+
+    allGroupList.forEach((group, gi) => {
+      const key = 'g' + gi;
+      const fields = group.items[0];
+      _vocabDupFieldSel[key] = {};
+      // List of copyable fields (excluding labels, handled separately)
+      const selFields = ['type', 'literal', 'translation', 'definition', 'helpNote', 'article', 'infinitive', 'conjugation', 'declensions', 'verbGroup'];
+      selFields.forEach(f => {
+        _vocabDupFieldSel[key][f] = group.items[0].id;
+      });
+      // Default labels: union of all labels from all items
+      const allLids = new Set();
+      group.items.forEach(item => (item.labels || []).forEach(lid => allLids.add(lid)));
+      _vocabDupLabelSel[key] = [...allLids];
+    });
+
+    // Show duplicate toolbar, hide normal controls
+    document.getElementById('dupFindBtn').classList.add('hidden');
+    document.querySelectorAll('#vocabFilter .type-btn').forEach(b => b.classList.add('hidden'));
+    document.getElementById('vocabSearch').classList.add('hidden');
+    document.getElementById('labelFilterRow').classList.add('hidden');
+    const tb = document.getElementById('dupToolbar');
+    tb.classList.remove('hidden');
+    const groupCount = allGroupList.length;
+    const itemCount = allGroupList.reduce((s, g) => s + g.items.length, 0);
+    document.getElementById('dupCount').textContent = t('vocab_dup_groups').replace('{n}', groupCount) + ' · ' + itemCount + ' ' + t('vocab_dup_items');
+
+    renderDuplicates();
+
+    history.pushState({ page: 'vocabulary' }, '', '#/vocabulary/duplicates');
+  } catch (e) {
+    toast(e.error || t('common_error'), 'danger');
+  }
+};
+
+function renderDuplicates() {
+  const grid = document.getElementById('vocabGrid');
+  const empty = document.getElementById('vocabEmpty');
+  if (!grid) return;
+  grid.classList.remove('hidden');
+  empty.classList.add('hidden');
+  grid.innerHTML = '';
+
+  const allGroups = [];
+  if (_vocabDupGroups) {
+    (_vocabDupGroups.words || []).forEach(g => allGroups.push({ items: g, kind: 'word' }));
+    (_vocabDupGroups.phrases || []).forEach(g => allGroups.push({ items: g, kind: 'phrase' }));
+    (_vocabDupGroups.cross || []).forEach(g => allGroups.push({ items: g, kind: 'cross' }));
+  }
+  if (!allGroups.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)"><p style="font-size:2rem">🎉</p><p>' + t('vocab_dup_none') + '</p></div>';
+    return;
+  }
+  allGroups.forEach((group, gi) => {
+    const key = 'g' + gi;
+    const groupEl = buildDuplicateGroup(group.items, group.kind, key);
+    grid.appendChild(groupEl);
+  });
+}
+
+function dupVal(item, field) {
+  if (field === 'literal') return item.literal || item.text || '';
+  if (field === 'definition') return item.definition || item.helpNote || '';
+  if (field === 'helpNote') return item.helpNote || item.definition || '';
+  return item[field] !== undefined ? item[field] : '';
+}
+
+function dupDisplayVal(item, field) {
+  if (field === 'conjugation') {
+    const c = item.conjugation || {};
+    const keys = Object.keys(c);
+    if (!keys.length) return '\u2014';
+    const count = keys.reduce((s, tk) => s + Object.keys(c[tk] || {}).length, 0);
+    return count + ' ' + t('vocab_dup_forms');
+  }
+  if (field === 'declensions') {
+    const d = item.declensions || {};
+    const keys = Object.keys(d);
+    return keys.length ? keys.length + ' ' + t('vocab_dup_cases') : '\u2014';
+  }
+  const v = dupVal(item, field);
+  if (v === undefined || v === null || v === '') return '\u2014';
+  if (typeof v === 'object') return JSON.stringify(v).substring(0, 30) + '\u2026';
+  return String(v);
+}
+
+function dupFieldLabel(field) {
+  const labels = {
+    type: t('add_type') || 'Type',
+    literal: t('vocab_word') || 'Word',
+    translation: t('vocab_translation'),
+    definition: t('vocab_definition') || 'Definition',
+    helpNote: t('vocab_note') || 'Note',
+    article: t('vocab_article') || 'Article',
+    infinitive: t('add_infinitive_label') || 'Infinitive',
+    conjugation: t('add_conjugation') || 'Conjugation',
+    declensions: t('add_declensions') || 'Declensions',
+    verbGroup: t('add_verb_group') || 'Verb group'
+  };
+  return labels[field] || field;
+}
+
+function buildDuplicateGroup(items, kind, groupKey) {
+  const container = document.createElement('div');
+  container.className = 'dup-group';
+  container.style.cssText = 'margin-bottom:20px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface-1)';
+
+  const firstItem = items[0];
+  const dupText = firstItem.literal || firstItem.text || '';
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:.95rem;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+  header.innerHTML = '<span>🔁</span><span>' + esc(dupText) + '</span><span style="font-size:.78rem;color:var(--text-faint);font-weight:400">(' + items.length + ' ' + t('vocab_dup_items') + ')</span>';
+  container.appendChild(header);
+
+  const fields = ['type', 'literal', 'translation', 'definition', 'article', 'conjugation', 'declensions', 'verbGroup'];
+
+  // Helper: check if a field has a meaningful value across items
+  function hasContent(items, field) {
+    return items.some(item => {
+      if (field === 'definition') return !!(item.definition || item.helpNote);
+      if (field === 'article') return !!item.article;
+      if (field === 'conjugation') return item.conjugation && Object.keys(item.conjugation).length > 0;
+      if (field === 'declensions') return item.declensions && Object.keys(item.declensions).length > 0;
+      if (field === 'verbGroup') return !!item.verbGroup;
+      return true; // type, literal, translation always present
+    });
+  }
+
+  const isPhraseOnly = items.every(i => i.type === 'phrase' || kind === 'phrase');
+
+  // Only show fields that have content in at least one item
+  const visibleFields = fields.filter(f => {
+    if (f === 'conjugation' && !items.some(i => i.type === 'verb')) return false;
+    if (f === 'declensions' && !items.some(i => i.type !== 'verb' && i.type !== 'phrase' && i.declensions && Object.keys(i.declensions).length)) return false;
+    if (f === 'verbGroup' && !items.some(i => i.type === 'verb' && i.verbGroup)) return false;
+    return hasContent(items, f);
+  });
+
+  const gridWrap = document.createElement('div');
+  gridWrap.style.cssText = 'overflow-x:auto;margin-top:8px';
+  const gridEl = document.createElement('div');
+  gridEl.className = 'dup-grid';
+  gridEl.style.cssText = '--dup-cols:' + items.length;
+
+  // Build header row
+  const fieldHeader = document.createElement('div');
+  fieldHeader.style.cssText = 'font-weight:600;color:var(--text-muted);padding:4px 6px;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px';
+  fieldHeader.textContent = t('vocab_dup_field') || 'Field';
+  gridEl.appendChild(fieldHeader);
+
+  items.forEach((item, ci) => {
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-weight:600;font-size:.75rem;text-align:center;padding:4px 6px;border-radius:6px 6px 0 0';
+    const typeIcon = { noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩', phrase: '💬' }[item.type] || '📝';
+    hdr.innerHTML = typeIcon + ' <span style="color:var(--text-muted)">#' + (ci + 1) + '</span>';
+    gridEl.appendChild(hdr);
+  });
+
+  // Rows for each visible field
+  visibleFields.forEach(field => {
+    const label = document.createElement('div');
+    label.style.cssText = 'padding:6px;font-weight:600;color:var(--text-muted);font-size:.78rem;display:flex;align-items:center;border-top:1px solid var(--border)';
+    label.textContent = dupFieldLabel(field);
+    gridEl.appendChild(label);
+
+    items.forEach(item => {
+      if (field === 'definition' && isPhraseOnly) {
+        // Show helpNote as definition for phrase items
+        const val = item.helpNote || item.definition || '';
+        const cell = buildFieldRadioCell(item, field, val, items, groupKey);
+        gridEl.appendChild(cell);
+        return;
+      }
+      const val = dupDisplayVal(item, field);
+      const cell = buildFieldRadioCell(item, field, val, items, groupKey);
+      gridEl.appendChild(cell);
+    });
+  });
+
+  // Labels row (special: uses checkboxes instead of radio buttons)
+  const allLabels = getLabels();
+  const allGroupLabelIds = new Set();
+  items.forEach(item => (item.labels || []).forEach(lid => allGroupLabelIds.add(lid)));
+  const groupLabels = [...allGroupLabelIds].map(lid => allLabels.find(l => l.id === lid)).filter(Boolean);
+
+  if (groupLabels.length) {
+    const labelRowLabel = document.createElement('div');
+    labelRowLabel.style.cssText = 'padding:6px;font-weight:600;color:var(--text-muted);font-size:.78rem;display:flex;align-items:center;border-top:1px solid var(--border)';
+    labelRowLabel.textContent = t('labels_assign') || 'Labels';
+    gridEl.appendChild(labelRowLabel);
+
+    // Span all item columns with a label picker
+    const labelCell = document.createElement('div');
+    labelCell.style.cssText = 'grid-column:2/-1;padding:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center';
+    const selectedLids = _vocabDupLabelSel[groupKey] || [];
+    groupLabels.forEach(lb => {
+      const isChecked = selectedLids.includes(lb.id);
+      const chip = document.createElement('span');
+      chip.style.cssText = 'font-size:.72rem;padding:2px 9px;border-radius:10px;cursor:pointer;user-select:none;transition:.12s;border:1.5px solid ' + esc(lb.color) + ';background:' + (isChecked ? esc(lb.color) : esc(lb.color) + '20') + ';color:' + (isChecked ? textColorForBg(lb.color) : esc(lb.color));
+      chip.textContent = lb.name;
+      chip.dataset.lid = lb.id;
+      chip.dataset.gk = groupKey;
+      chip.onclick = function () {
+        const gk = this.dataset.gk;
+        const lid = this.dataset.lid;
+        if (!_vocabDupLabelSel[gk]) _vocabDupLabelSel[gk] = [];
+        const idx = _vocabDupLabelSel[gk].indexOf(lid);
+        if (idx === -1) {
+          _vocabDupLabelSel[gk].push(lid);
+          this.style.background = esc(lb.color);
+          this.style.color = textColorForBg(lb.color);
+        } else {
+          _vocabDupLabelSel[gk].splice(idx, 1);
+          this.style.background = esc(lb.color) + '20';
+          this.style.color = esc(lb.color);
+        }
+      };
+      labelCell.appendChild(chip);
+    });
+    gridEl.appendChild(labelCell);
+  }
+
+  gridWrap.appendChild(gridEl);
+  container.appendChild(gridWrap);
+
+  // Per-group merge button
+  const mergeBtn = document.createElement('button');
+  mergeBtn.className = 'btn btn-sm btn-primary';
+  mergeBtn.style.cssText = 'margin-top:12px';
+  mergeBtn.innerHTML = '🔗 ' + t('vocab_dup_merge_group');
+  mergeBtn.onclick = function () { mergeGroup(groupKey, items, kind); };
+  container.appendChild(mergeBtn);
+
+  return container;
+}
+
+function buildFieldRadioCell(item, field, displayVal, allItems, groupKey) {
+  const cell = document.createElement('div');
+  const isSelected = _vocabDupFieldSel[groupKey] && _vocabDupFieldSel[groupKey][field] === item.id;
+  cell.style.cssText = 'padding:6px 8px;border-radius:6px;border:1.5px solid ' + (isSelected ? 'var(--primary)' : 'transparent') + ';background:' + (isSelected ? 'var(--primary)10' : 'transparent') + ';cursor:pointer;transition:.1s;display:flex;align-items:center;gap:6px';
+
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = 'dup_' + groupKey + '_' + field;
+  radio.checked = isSelected;
+  radio.style.cssText = 'width:14px;height:14px;cursor:pointer;accent-color:var(--primary);flex-shrink:0';
+  radio.dataset.field = field;
+  radio.dataset.id = item.id;
+  radio.dataset.gk = groupKey;
+  radio.onchange = function () {
+    if (!this.checked) return;
+    const gk = this.dataset.gk;
+    const fld = this.dataset.field;
+    const id = this.dataset.id;
+    if (!_vocabDupFieldSel[gk]) _vocabDupFieldSel[gk] = {};
+    _vocabDupFieldSel[gk][fld] = id;
+    renderDuplicates();
+  };
+  cell.appendChild(radio);
+
+  const textSpan = document.createElement('span');
+  textSpan.style.cssText = 'font-size:.78rem;word-break:break-word;color:' + (displayVal === '\u2014' ? 'var(--text-faint)' : 'var(--text)');
+  textSpan.textContent = displayVal;
+  cell.appendChild(textSpan);
+
+  // Click on cell = click radio
+  cell.onclick = function (e) {
+    if (e.target === radio) return;
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change'));
+  };
+
+  return cell;
+}
+
+window.mergeGroup = async function (groupKey, items, kind) {
+  const lang = currentLang();
+  if (!lang) return;
+
+  const fieldMap = _vocabDupFieldSel[groupKey] || {};
+  const labels = _vocabDupLabelSel[groupKey] || [];
+  const deleteIds = items.map(i => i.id);
+
+  // Determine keepId: the item most frequently selected across fields
+  const freq = {};
+  items.forEach(i => freq[i.id] = 0);
+  Object.values(fieldMap).forEach(id => { if (freq[id] !== undefined) freq[id]++; });
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  const keepId = sorted[0][0];
+
+  if (!confirm(t('vocab_dup_confirm_merge').replace('{n}', deleteIds.length - 1))) return;
+
+  try {
+    const result = await api('POST', '/api/duplicates/merge', {
+      lang,
+      keepId,
+      deleteIds,
+      kind,
+      fieldMap,
+      labels
+    });
+    toast('🔗 ' + t('vocab_dup_merged').replace('{n}', result.deleted), 'success');
+    await refreshDataAndExitDup();
+  } catch (e) {
+    toast(e.error || t('common_error'), 'danger');
+  }
+};
+
+window.mergeDuplicates = async function () {
+  const lang = currentLang();
+  if (!lang) return;
+
+  const allGroups = [];
+  if (_vocabDupGroups) {
+    (_vocabDupGroups.words || []).forEach(g => allGroups.push({ items: g, kind: 'word' }));
+    (_vocabDupGroups.phrases || []).forEach(g => allGroups.push({ items: g, kind: 'phrase' }));
+    (_vocabDupGroups.cross || []).forEach(g => allGroups.push({ items: g, kind: 'cross' }));
+  }
+
+  let totalDeleted = 0;
+  for (let gi = 0; gi < allGroups.length; gi++) {
+    const group = allGroups[gi];
+    const gk = 'g' + gi;
+    const fieldMap = _vocabDupFieldSel[gk] || {};
+    const labels = _vocabDupLabelSel[gk] || [];
+    const deleteIds = group.items.map(i => i.id);
+    const freq = {};
+    group.items.forEach(i => freq[i.id] = 0);
+    Object.values(fieldMap).forEach(id => { if (freq[id] !== undefined) freq[id]++; });
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    const keepId = sorted[0][0];
+    const deleteCount = deleteIds.length - 1;
+    if (!deleteCount) continue;
+
+    try {
+      const result = await api('POST', '/api/duplicates/merge', {
+        lang, keepId, deleteIds, kind: group.kind, fieldMap, labels
+      });
+      totalDeleted += result.deleted;
+    } catch (e) {
+      toast(e.error || t('common_error'), 'danger');
+    }
+  }
+
+  if (totalDeleted) {
+    toast('🔗 ' + t('vocab_dup_merged').replace('{n}', totalDeleted), 'success');
+    await refreshDataAndExitDup();
+  } else {
+    toast(t('vocab_dup_nothing_selected'), 'warning');
+  }
+};
+
+async function refreshDataAndExitDup() {
+  const lang = currentLang();
+  try {
+    [_vocabWords, _vocabPhrases] = await Promise.all([
+      api('GET', '/api/words?lang=' + encodeURIComponent(lang)),
+      api('GET', '/api/phrases?lang=' + encodeURIComponent(lang))
+    ]);
+  } catch {}
+  exitDuplicateMode();
+}
+
+window.exitDuplicateMode = function () {
+  _vocabDupMode = false;
+  _vocabDupGroups = null;
+  _vocabDupFieldSel = {};
+  _vocabDupLabelSel = {};
+
+  document.getElementById('dupFindBtn').classList.remove('hidden');
+  document.querySelectorAll('#vocabFilter .type-btn').forEach(b => b.classList.remove('hidden'));
+  document.getElementById('vocabSearch').classList.remove('hidden');
+  document.getElementById('labelFilterRow').classList.remove('hidden');
+  document.getElementById('dupToolbar').classList.add('hidden');
+
+  renderVocabGrid();
+  if (window.location.hash === '#/vocabulary/duplicates') {
+    history.replaceState({ page: 'vocabulary' }, '', '#/vocabulary');
+  }
 };
 
 function esc(s) {
