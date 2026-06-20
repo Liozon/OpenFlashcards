@@ -413,6 +413,11 @@ img {
   color: #5b21b6;
 }
 
+.badge-other {
+  background: #f0f0f0;
+  color: #555555;
+}
+
 [data-theme="dark"] .badge-noun {
   background: #1e3a5f;
   color: #93c5fd;
@@ -436,6 +441,11 @@ img {
 [data-theme="dark"] .badge-phrase {
   background: #2e1065;
   color: #c4b5fd;
+}
+
+[data-theme="dark"] .badge-other {
+  background: #333333;
+  color: #aaaaaa;
 }
 
 /* ── HOME / STATS ───────────────────────────────────────────── */

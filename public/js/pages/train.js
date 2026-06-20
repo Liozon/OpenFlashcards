@@ -59,6 +59,7 @@ function renderTrain(el) {
     '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ', '') + '</button>' +
     '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ', '') + '</button>' +
     '<button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter(\'adverb\',this)">💨 ' + t('add_type_adv').replace('💨 ', '') + '</button>' +
+    '<button class="type-btn" data-type="other"    onclick="toggleTypeFilter(\'other\',this)">🧩 ' + t('add_type_other').replace('🔀 ', '') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="dirFilters">' +
@@ -247,7 +248,8 @@ function renderWordQuiz(q) {
     noun: { key: 'vocab_noun', icon: '📦' },
     verb: { key: 'vocab_verb', icon: '⚡' },
     adjective: { key: 'vocab_adjective', icon: '🎨' },
-    adverb: { key: 'vocab_adverb', icon: '💨' }
+    adverb: { key: 'vocab_adverb', icon: '💨' },
+    other: { key: 'vocab_other', icon: '🧩' }
   };
   const typeLabels = Object.fromEntries(
     Object.entries(iconLabel).map(([type, { key, icon }]) => [
@@ -667,7 +669,8 @@ function renderWritingQuiz(q) {
     noun: { key: 'vocab_noun', icon: '📦' },
     verb: { key: 'vocab_verb', icon: '⚡' },
     adjective: { key: 'vocab_adjective', icon: '🎨' },
-    adverb: { key: 'vocab_adverb', icon: '💨' }
+    adverb: { key: 'vocab_adverb', icon: '💨' },
+    other: { key: 'vocab_other', icon: '🧩' }
   };
   const typeLabels = Object.fromEntries(
     Object.entries(iconLabel).map(([type, { key, icon }]) => [

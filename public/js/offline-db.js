@@ -189,7 +189,7 @@
   }
 
   function _buildQuizWord(words, lang, direction, types, labels) {
-    const TYPES = ['noun', 'verb', 'adjective', 'adverb'];
+    const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other'];
     let pool = words.filter(w => (types && types.length ? types.includes(w.type) : TYPES.includes(w.type)));
     if (labels && labels.length) pool = pool.filter(w => labels.some(lid => (w.labels || []).includes(lid)));
     if (pool.length < 2) return null;
@@ -301,7 +301,7 @@
       const words = langData.words || [];
       const phrases = langData.phrases || [];
       const byType = {};
-      ['noun', 'verb', 'adjective', 'adverb'].forEach(tp => { byType[tp] = words.filter(w => w.type === tp).length; });
+      ['noun', 'verb', 'adjective', 'adverb', 'other'].forEach(tp => { byType[tp] = words.filter(w => w.type === tp).length; });
       return {
         totalWords: words.length, totalPhrases: phrases.length, byType,
         mastered: words.filter(w => (w.progress || 0) >= _wordMax(w)).length,

@@ -46,6 +46,7 @@ function renderAdd(el) {
         <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">⚡ ${t('add_type_verb')}</button>
         <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">🎨 ${t('add_type_adj')}</button>
         <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">💨 ${t('add_type_adv')}</button>
+        <button class="type-btn"        data-type="other"     onclick="selectWordType('other',this)">🧩 ${t('add_type_other')}</button>
       </div>
 
       <div class="card">
@@ -181,7 +182,7 @@ function renderAdd(el) {
   }
 
 
-    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
+  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
   });
@@ -267,7 +268,7 @@ window.submitWord = async function () {
     okEl.textContent = `✓ ${t('add_ok_word')} "${literal}"`;
     okEl.classList.remove('hidden');
 
-  ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
+    ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     document.querySelectorAll('[id^="conj_"],[id^="conjtr_"]').forEach(el => { if (el) el.value = ''; });
@@ -275,7 +276,7 @@ window.submitWord = async function () {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
-    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
+    document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = b.dataset.color; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');
@@ -309,7 +310,7 @@ window.submitPhrase = async function () {
     document.getElementById('pTranslation').value = '';
     document.getElementById('pNote').value = '';
     document.getElementById('pText').focus();
-    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; });
+    document.querySelectorAll('#phraseLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = b.dataset.color; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
     errEl.textContent = e.error || t('common_error'); errEl.classList.remove('hidden');

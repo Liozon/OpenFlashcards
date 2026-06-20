@@ -50,7 +50,7 @@ const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices, wordDisplay
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 const uid = () => req => req.user.id;
-const TYPES = ['noun', 'verb', 'adjective', 'adverb'];
+const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other'];
 
 function userId(req) { return req.user.id; }
 
