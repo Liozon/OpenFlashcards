@@ -1121,7 +1121,7 @@ window.findDuplicates = async function () {
   if (!lang) return;
   try {
     const result = await api('POST', '/api/duplicates', { lang });
-    const allGroups = (result.words || []).concat(result.phrases || []);
+    const allGroups = (result.words || []).concat(result.phrases || []).concat(result.cross || []);
     if (!allGroups.length) {
       toast('🎉 ' + t('vocab_dup_none'), 'success');
       return;
@@ -1135,6 +1135,7 @@ window.findDuplicates = async function () {
     const allGroupList = [];
     (result.words || []).forEach(g => allGroupList.push({ items: g }));
     (result.phrases || []).forEach(g => allGroupList.push({ items: g }));
+    (result.cross || []).forEach(g => allGroupList.push({ items: g }));
 
     allGroupList.forEach((group, gi) => {
       const key = 'g' + gi;
@@ -1182,6 +1183,7 @@ function renderDuplicates() {
   if (_vocabDupGroups) {
     (_vocabDupGroups.words || []).forEach(g => allGroups.push({ items: g, kind: 'word' }));
     (_vocabDupGroups.phrases || []).forEach(g => allGroups.push({ items: g, kind: 'phrase' }));
+    (_vocabDupGroups.cross || []).forEach(g => allGroups.push({ items: g, kind: 'cross' }));
   }
   if (!allGroups.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)"><p style="font-size:2rem">🎉</p><p>' + t('vocab_dup_none') + '</p></div>';
@@ -1450,6 +1452,7 @@ window.mergeDuplicates = async function () {
   if (_vocabDupGroups) {
     (_vocabDupGroups.words || []).forEach(g => allGroups.push({ items: g, kind: 'word' }));
     (_vocabDupGroups.phrases || []).forEach(g => allGroups.push({ items: g, kind: 'phrase' }));
+    (_vocabDupGroups.cross || []).forEach(g => allGroups.push({ items: g, kind: 'cross' }));
   }
 
   let totalDeleted = 0;
