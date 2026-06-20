@@ -1163,6 +1163,8 @@ window.findDuplicates = async function () {
     document.getElementById('dupCount').textContent = t('vocab_dup_groups').replace('{n}', groupCount) + ' · ' + itemCount + ' ' + t('vocab_dup_items');
 
     renderDuplicates();
+
+    history.pushState({ page: 'vocabulary' }, '', '#/vocabulary/duplicates');
   } catch (e) {
     toast(e.error || t('common_error'), 'danger');
   }
@@ -1507,6 +1509,9 @@ window.exitDuplicateMode = function () {
   document.getElementById('dupToolbar').classList.add('hidden');
 
   renderVocabGrid();
+  if (window.location.hash === '#/vocabulary/duplicates') {
+    history.replaceState({ page: 'vocabulary' }, '', '#/vocabulary');
+  }
 };
 
 function esc(s) {
