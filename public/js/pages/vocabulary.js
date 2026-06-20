@@ -61,6 +61,7 @@ async function renderVocabulary(el, params) {
         <button class="type-btn ${initFilter === 'verb' ? 'active' : ''}" data-type="verb">⚡ ${t('vocab_verbs')}</button>
         <button class="type-btn ${initFilter === 'adjective' ? 'active' : ''}" data-type="adjective">🎨 ${t('vocab_adj')}</button>
         <button class="type-btn ${initFilter === 'adverb' ? 'active' : ''}" data-type="adverb">💨 ${t('vocab_adv')}</button>
+        <button class="type-btn ${initFilter === 'other' ? 'active' : ''}" data-type="other">🧩 ${t('vocab_other')}</button>
         <button class="type-btn ${initFilter === 'phrase' ? 'active' : ''}" data-type="phrase">💬 ${t('vocab_phrases')}</button>
         <button class="type-btn ${initMastered ? 'active' : ''}" data-type="mastered">✅ ${t('vocab_mastered') || 'Maîtrisés'}</button>
       </div>
@@ -247,7 +248,7 @@ function getLabels() {
 }
 
 function buildWordCard(w) {
-  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}` };
+  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}`, other: `🧩 ${t('vocab_other')}` };
   const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
   const display = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
   const progress = w.progress || 0;
@@ -506,20 +507,20 @@ window.editWord = function (id, lang) {
   const configPronouns = langData.pronouns || [];
   const conjHtml = isVerb
     ? tenses.map((tense, ti) => {
-        // Get conjugation data for this tense (new format uses String(ti), old format shown as Present)
-        let tenseConjData;
-        if (conjIsTenseKeyed) {
-          tenseConjData = existingConj[String(ti)] || {};
-        } else if (ti === 0) {
-          // Old flat format: show all under first tense
-          tenseConjData = existingConj;
-        } else {
-          tenseConjData = {};
-        }
-        const tenseKeys = Object.keys(tenseConjData);
-        const pronounsForTense = tenseKeys.length ? tenseKeys : configPronouns;
-        if (!pronounsForTense.length) return '';
-        return `<details style="margin-bottom:14px">
+      // Get conjugation data for this tense (new format uses String(ti), old format shown as Present)
+      let tenseConjData;
+      if (conjIsTenseKeyed) {
+        tenseConjData = existingConj[String(ti)] || {};
+      } else if (ti === 0) {
+        // Old flat format: show all under first tense
+        tenseConjData = existingConj;
+      } else {
+        tenseConjData = {};
+      }
+      const tenseKeys = Object.keys(tenseConjData);
+      const pronounsForTense = tenseKeys.length ? tenseKeys : configPronouns;
+      if (!pronounsForTense.length) return '';
+      return `<details style="margin-bottom:14px">
           <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:6px">
             ${esc(tense.targetName || tense.nativeName)} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">/ ${esc(tense.nativeName)}</span> <span style="font-size:.8rem;font-weight:400">(optional)</span>
           </summary>
@@ -539,7 +540,7 @@ window.editWord = function (id, lang) {
             </div>`;
       }).join('')}
         </details>`;
-      }).join('')
+    }).join('')
     : '';
 
   // Declensions only for non-verbs
