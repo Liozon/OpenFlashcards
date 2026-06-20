@@ -1216,11 +1216,12 @@ function dupDisplayVal(item, field) {
     const keys = Object.keys(d);
     return keys.length ? keys.length + ' ' + t('vocab_dup_cases') : '\u2014';
   }
-  const v = dupVal(item, field);
   if (field === 'type') {
     const typeKeys = { noun: 'vocab_noun', verb: 'vocab_verb', adjective: 'vocab_adjective', adverb: 'vocab_adverb', other: 'vocab_other', phrase: 'vocab_phrase' };
-    return t(typeKeys[v] || v) || String(v);
+    const tVal = item.type || 'phrase';
+    return t(typeKeys[tVal] || tVal);
   }
+  const v = dupVal(item, field);
   if (v === undefined || v === null || v === '') return '\u2014';
   if (typeof v === 'object') return JSON.stringify(v).substring(0, 30) + '\u2026';
   return String(v);
@@ -1293,9 +1294,10 @@ function buildDuplicateGroup(items, kind, groupKey) {
   items.forEach((item, ci) => {
     const hdr = document.createElement('div');
     hdr.style.cssText = 'font-weight:600;font-size:.75rem;text-align:center;padding:4px 6px;border-radius:6px 6px 0 0';
+    const tType = item.type || 'phrase';
     const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb'), other: t('vocab_other'), phrase: t('vocab_phrase') };
-    const typeIcon = { noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩', phrase: '💬' }[item.type] || '📝';
-    hdr.innerHTML = typeIcon + ' ' + (typeLabels[item.type] || item.type) + ' <span style="color:var(--text-muted)">#' + (ci + 1) + '</span>';
+    const typeIcon = { noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩', phrase: '💬' }[tType] || '📝';
+    hdr.innerHTML = typeIcon + ' ' + (typeLabels[tType] || tType) + ' <span style="color:var(--text-muted)">#' + (ci + 1) + '</span>';
     gridEl.appendChild(hdr);
   });
 
