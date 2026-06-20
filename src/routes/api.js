@@ -127,6 +127,9 @@ router.put('/languages/:code', (req, res) => {
   if (req.body.ttsSpeedSlow !== undefined) lang.ttsSpeedSlow = req.body.ttsSpeedSlow;
   // TTS cache toggle
   if (req.body.ttsCache !== undefined) lang.ttsCache = req.body.ttsCache === true;
+  // Flashcards mode settings
+  if (req.body.flashcardsSpeed !== undefined) lang.flashcardsSpeed = req.body.flashcardsSpeed;
+  if (req.body.flashcardsTtsDelay !== undefined) lang.flashcardsTtsDelay = req.body.flashcardsTtsDelay;
 
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, lang });
@@ -357,7 +360,10 @@ router.get('/tts', async (req, res) => {
   const cfg2 = getUserConfig(uid);
   const langData = (cfg2.targetLangs || []).find(l => l.isoCode === lang);
   const langCacheEnabled = langData ? (langData.ttsCache !== false) : true;
-  const bypassCache = nocache === '1' || !langCacheEnabled;
+  // Also cache when the request is for the user's native/UI language and at least one target language has caching enabled
+  const isNativeLang = (cfg2.nativeLang || 'en') === lang || (cfg2.uiLang || '') === lang;
+  const anyTargetCacheEnabled = isNativeLang && (cfg2.targetLangs || []).some(l => l.ttsCache !== false);
+  const bypassCache = nocache === '1' || (!langCacheEnabled && !anyTargetCacheEnabled);
   if (!bypassCache) {
     const cached = getCached(uid, lang, numSpeed, itemId);
     if (cached) {
@@ -413,7 +419,23 @@ router.delete('/tts/cache', (req, res) => {
     const s = parseFloat(speed);
     if (!isNaN(s)) numSpeed = Math.max(0.1, Math.min(3.0, s));
   }
-  const count = purgeCache(userId(req), lang, numSpeed);
+  const uid = userId(req);
+  let count = purgeCache(uid, lang, numSpeed);
+
+  // Also purge translation files in the native language directory
+  if (numSpeed === null) {
+    const cfg = getUserConfig(uid);
+    const nativeLang = (cfg && cfg.nativeLang) || 'en';
+    if (nativeLang !== lang) {
+      try {
+        const words = getWords(uid, lang);
+        for (const w of words) count += deleteItemAllSpeeds(uid, nativeLang, w.id + '_trans');
+        const phrases = getPhrases(uid, lang);
+        for (const p of phrases) count += deleteItemAllSpeeds(uid, nativeLang, p.id + '_trans');
+      } catch {}
+    }
+  }
+
   res.json({ ok: true, deleted: count });
 });
 
@@ -456,28 +478,52 @@ router.post('/tts/generate', async (req, res) => {
     const words = getWords(uid, lang);
     const phrases = getPhrases(uid, lang);
 
+    // Get native language for translation TTS
+    const cfg = getUserConfig(uid);
+    const nativeLang = (cfg && cfg.nativeLang) || 'en';
+
     // Build task list
     const tasks = [];
     for (const w of words) {
       const display = wordDisplay(w);
       tasks.push({
-        text: display, id: w.id, mode: 'normal', speed: numNormal,
+        text: display, id: w.id, lang,
+        mode: 'normal', speed: numNormal,
         prevSpeed: normalChanged ? prevNorm : null
       });
       tasks.push({
-        text: display, id: w.id, mode: 'slow', speed: numSlow,
+        text: display, id: w.id, lang,
+        mode: 'slow', speed: numSlow,
         prevSpeed: slowChanged ? prevSlow : null
       });
+      // Also generate TTS for the native language translation at 100% speed only
+      if (w.translation && nativeLang !== lang) {
+        tasks.push({
+          text: w.translation, id: w.id + '_trans', lang: nativeLang,
+          mode: 'normal', speed: 1.0,
+          prevSpeed: null
+        });
+      }
     }
     for (const p of phrases) {
       tasks.push({
-        text: p.text, id: p.id, mode: 'normal', speed: numNormal,
+        text: p.text, id: p.id, lang,
+        mode: 'normal', speed: numNormal,
         prevSpeed: normalChanged ? prevNorm : null
       });
       tasks.push({
-        text: p.text, id: p.id, mode: 'slow', speed: numSlow,
+        text: p.text, id: p.id, lang,
+        mode: 'slow', speed: numSlow,
         prevSpeed: slowChanged ? prevSlow : null
       });
+      // Also generate TTS for the native language translation at 100% speed only
+      if (p.translation && nativeLang !== lang) {
+        tasks.push({
+          text: p.translation, id: p.id + '_trans', lang: nativeLang,
+          mode: 'normal', speed: 1.0,
+          prevSpeed: null
+        });
+      }
     }
 
     const total = tasks.length;
@@ -485,10 +531,11 @@ router.post('/tts/generate', async (req, res) => {
 
     // Generate one item: skip if already cached, otherwise call shared bufferTTS
     async function generateOne(task) {
-      if (!task.prevSpeed && getCached(uid, lang, task.speed, task.id)) return;
-      const buf = await bufferTTS(task.text, lang, task.speed);
-      saveCachedBuffer(uid, lang, task.speed, task.id, buf);
-      if (task.prevSpeed !== null) deleteItem(uid, lang, task.prevSpeed, task.id);
+      const taskLang = task.lang || lang;
+      if (!task.prevSpeed && getCached(uid, taskLang, task.speed, task.id)) return;
+      const buf = await bufferTTS(task.text, taskLang, task.speed);
+      saveCachedBuffer(uid, taskLang, task.speed, task.id, buf);
+      if (task.prevSpeed !== null) deleteItem(uid, taskLang, task.prevSpeed, task.id);
     }
 
     for (const task of tasks) {
