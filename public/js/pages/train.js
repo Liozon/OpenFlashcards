@@ -50,7 +50,7 @@ function renderTrain(el) {
 
   stopAutoTimer();
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
-  _trainTypes = []; _trainLabels = []; _trainMode = 'word'; _trainDirection = 'random';
+  _trainTypes = []; _trainLabels = []; _trainMode = 'flashcards'; _trainDirection = 'random';
 
   const ld = currentLangData();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
@@ -61,10 +61,12 @@ function renderTrain(el) {
   el.innerHTML =
     '<div class="page-title">🎯 ' + t('train_title') + '</div>' +
 
-    '<div class="score-bar">' +
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
+    '<div class="score-bar" id="scoreBar" style="flex:1;display:flex;gap:16px;justify-content:center;margin-bottom:0">' +
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
+    '</div>' +
     '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="true" aria-controls="trainSettingsPanel">⚙️</button>' +
     '</div>' +
 
@@ -72,9 +74,9 @@ function renderTrain(el) {
 
     // ── 1. Mode ──
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn active"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
+    '<button class="type-btn" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
     '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
@@ -124,6 +126,7 @@ function renderTrain(el) {
     '</div>' +
 
     // ── 5. UX toggles ──
+    '<div id="trainUxToggles">' +
     '<div class="train-toggle-row">' +
     '<label>' + t('train_green_border') + '</label>' +
     '<label class="toggle-switch">' +
@@ -137,6 +140,7 @@ function renderTrain(el) {
     '<input type="checkbox" id="trainConfettiToggle" ' + ((App.config && App.config.showConfetti !== false) ? 'checked' : '') + ' onchange="toggleConfetti(this.checked)">' +
     '<span class="toggle-slider"></span>' +
     '</label>' +
+    '</div>' +
     '</div>' +
 
     // ── 6. Start button ──
@@ -166,6 +170,10 @@ function renderTrain(el) {
   });
 
   _populateLabelFilters(lang);
+
+  // Apply initial flashcard mode visibility
+  const autoBtn = document.getElementById('modeAuto');
+  if (autoBtn) setTrainMode('flashcards', autoBtn);
 }
 
 function _textColorForBg(hex) {
@@ -248,6 +256,8 @@ window.setTrainMode = function (mode, btn) {
   document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
   document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
   document.getElementById('writingDiffFilters').style.display = (isWriting || isPhrase || isMixed) ? '' : 'none';
+  document.getElementById('scoreBar').style.display = isAuto ? 'none' : '';
+  document.getElementById('trainUxToggles').style.display = isAuto ? 'none' : '';
   document.getElementById('autoContentFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoDirFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoTimeRow').style.display = isAuto ? '' : 'none';
@@ -1301,8 +1311,8 @@ function renderAutoCard(card) {
   // Pre-fetch TTS audio for both sides so the server generates it in advance
   const prefetchTTS = (text, lang) => {
     if (!text || !lang) return;
-    fetch(TTS._url(text, lang, 'normal', id)).catch(() => {});
-    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => {});
+    fetch(TTS._url(text, lang, 'normal', id)).catch(() => { });
+    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => { });
   };
   prefetchTTS(frontWord, frontLang);
   prefetchTTS(backWord, backLang);
