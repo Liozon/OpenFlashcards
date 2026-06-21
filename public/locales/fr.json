@@ -328,8 +328,8 @@
   "vocab_dup_forms": "formes",
   "vocab_dup_cases": "cas",
   "vocab_dup_merge_group": "Fusionner ce groupe",
-  "train_green_border": "Bordure verte si correct",
-  "train_confetti": "Confettis sur combo (10 série)",
+  "train_green_border": "Animations",
+  "train_confetti": "Combofettis",
   "train_start": "Démarrer",
   "train_configure_prompt": "Configurez votre session ci-dessus et cliquez sur Démarrer"
 }

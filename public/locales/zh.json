@@ -328,6 +328,8 @@
   "vocab_dup_forms": "个形式",
   "vocab_dup_cases": "个格",
   "vocab_dup_merge_group": "合并此组",
+  "train_green_border": "动画",
+  "train_confetti": "连击彩花",
   "train_start": "Start",
   "train_configure_prompt": "Configure your session above and click Start"
 }
