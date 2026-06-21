@@ -2,6 +2,7 @@
 'use strict';
 
 function renderAdd(el) {
+  window._addWordType = 'noun';
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
