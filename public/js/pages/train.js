@@ -518,6 +518,7 @@ async function handleWordAnswer(btn, answer, q) {
     }
 
     conjBox.innerHTML = conjHtml;
+    conjBox.className = 'conj-box';
     card.appendChild(conjBox);
   }
 
@@ -543,10 +544,12 @@ async function handleWordAnswer(btn, answer, q) {
       '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
       '</div>' +
       declRows;
+    declBox.className = 'decl-box';
     card.appendChild(declBox);
   }
 
   const nextRow = document.createElement('div');
+  nextRow.className = 'next-row';
   nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
   nextRow.innerHTML =
     '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +

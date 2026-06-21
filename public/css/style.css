@@ -1582,6 +1582,12 @@ img {
     padding: 24px 18px;
   }
 
+  .quiz-card > .next-row {
+    order: -1;
+    margin-top: 0 !important;
+    margin-bottom: 20px;
+  }
+
   .page-content {
     padding: 20px 14px 50px;
   }
