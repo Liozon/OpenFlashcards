@@ -699,6 +699,11 @@ img {
   font-weight: 900;
   margin: 12px 0;
   color: var(--text);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  width: 100%;
+  min-width: 0;
+  hyphens: auto;
 }
 
 .question-hint {
@@ -941,6 +946,7 @@ img {
 /* one group of letter-slots per word segment */
 .writing-segment {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -1075,7 +1081,11 @@ img {
   margin: 12px 0 8px;
   color: var(--text);
   min-height: 3.2rem;
-  word-break: break-word;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  width: 100%;
+  min-width: 0;
+  hyphens: auto;
 }
 
 .auto-flip-back .auto-word-display {
@@ -1653,6 +1663,21 @@ img {
     margin-bottom: 20px;
   }
 
+  .letter-slot {
+    min-width: 28px;
+    height: 34px;
+    font-size: .9rem;
+  }
+
+  .writing-segment {
+    gap: 3px;
+  }
+
+  .writing-answer-zone {
+    padding: 8px 12px;
+    gap: 3px;
+  }
+
   .page-content {
     padding: 20px 14px 50px;
   }
@@ -1683,6 +1708,29 @@ img {
   .add-tab {
     padding: 8px 10px;
     font-size: .82rem;
+  }
+
+  .question-word {
+    font-size: 1.3rem;
+  }
+
+  .auto-flip-face .auto-word-display {
+    font-size: 1.6rem;
+  }
+
+  .letter-slot {
+    min-width: 24px;
+    height: 32px;
+    font-size: .85rem;
+  }
+
+  .writing-segment {
+    gap: 3px;
+  }
+
+  .writing-answer-zone {
+    padding: 8px 10px;
+    gap: 3px;
   }
 }
 
