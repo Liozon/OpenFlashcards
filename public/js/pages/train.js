@@ -121,6 +121,24 @@ function renderTrain(el) {
 
     '<div id="quizArea"></div>';
 
+  // Default: open on desktop, collapsed on mobile
+  if (window.innerWidth > 640) {
+    document.getElementById('trainSettingsPanel').classList.add('open');
+    document.getElementById('trainSettingsToggle').setAttribute('aria-expanded', 'true');
+    document.getElementById('trainSettingsToggle').classList.add('active');
+  }
+
+  // Auto-collapse settings when user interacts with quiz area
+  document.getElementById('quizArea').addEventListener('click', function collapseOnQuizClick() {
+    const panel = document.getElementById('trainSettingsPanel');
+    const btn = document.getElementById('trainSettingsToggle');
+    if (panel && btn && panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('active');
+    }
+  });
+
   _populateLabelFilters(lang);
   loadQuestion();
 }
