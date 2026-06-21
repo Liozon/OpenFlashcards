@@ -230,6 +230,7 @@ window.startTraining = function () {
       btn.classList.remove('active');
     }
   }
+  if (_trainMode === 'flashcards') _trainAutoStarted = true;
   loadQuestion();
 };
 
