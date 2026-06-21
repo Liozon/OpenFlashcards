@@ -327,5 +327,7 @@
   "vocab_dup_field": "Feld",
   "vocab_dup_forms": "Formen",
   "vocab_dup_cases": "Fälle",
-  "vocab_dup_merge_group": "Diese Gruppe zusammenführen"
+  "vocab_dup_merge_group": "Diese Gruppe zusammenführen",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }

@@ -329,5 +329,7 @@
   "vocab_dup_cases": "cases",
   "vocab_dup_merge_group": "Merge this group",
   "train_green_border": "Green border on correct",
-  "train_confetti": "Confetti on combo (10 streak)"
+  "train_confetti": "Confetti on combo (10 streak)",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }

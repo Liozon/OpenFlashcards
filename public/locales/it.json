@@ -327,5 +327,7 @@
   "vocab_dup_field": "Campo",
   "vocab_dup_forms": "forme",
   "vocab_dup_cases": "casi",
-  "vocab_dup_merge_group": "Unisci questo gruppo"
+  "vocab_dup_merge_group": "Unisci questo gruppo",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }

@@ -22,6 +22,7 @@ let _curWritingWord = null;
 let _writingLetterBank = [];
 let _writingEasyMode = false;
 let _writingSegments = [];
+let _trainSessionStarted = false;
 
 // ── Auto-flashcard mode state ─────────────────────────────────
 let _trainAutoContent = 'words';     // 'words' | 'phrases' | 'everything'
@@ -64,10 +65,12 @@ function renderTrain(el) {
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
-    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="false" aria-controls="trainSettingsPanel">⚙️</button>' +
+    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="true" aria-controls="trainSettingsPanel">⚙️</button>' +
     '</div>' +
 
-    '<div id="trainSettingsPanel" class="train-settings-panel">' +
+    '<div id="trainSettingsPanel" class="train-settings-panel open">' +
+
+    // ── 1. Mode ──
     '<div class="filter-row">' +
     '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
@@ -76,6 +79,7 @@ function renderTrain(el) {
     '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
+    // ── 2. Scope ──
     '<div class="filter-row" id="typeFilters">' +
     '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">🌍 ' + t('train_all') + '</button>' +
     '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
@@ -85,23 +89,25 @@ function renderTrain(el) {
     '<button class="type-btn" data-type="other"    onclick="toggleTypeFilter(\'other\',this)">🧩 ' + t('add_type_other').replace('🔀 ', '') + '</button>' +
     '</div>' +
 
+    '<div class="filter-row" id="autoContentFilters" style="display:none">' +
+    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
+    '</div>' +
+
+    // ── 3. Labels ──
+    '<div class="filter-row" id="labelFilters"></div>' +
+
+    // ── 4. Mode-specific settings ──
     '<div class="filter-row" id="dirFilters">' +
     '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
     '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
     '</div>' +
 
-    '<div class="filter-row" id="labelFilters"></div>' +
-
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
     '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
     '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
-    '</div>' +
-
-    '<div class="filter-row" id="autoContentFilters" style="display:none">' +
-    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
-    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="autoDirFilters" style="display:none">' +
@@ -117,7 +123,7 @@ function renderTrain(el) {
     '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
     '</div>' +
 
-    // ── UX toggles ──
+    // ── 5. UX toggles ──
     '<div class="train-toggle-row">' +
     '<label>' + t('train_green_border') + '</label>' +
     '<label class="toggle-switch">' +
@@ -133,19 +139,23 @@ function renderTrain(el) {
     '</label>' +
     '</div>' +
 
+    // ── 6. Start button ──
+    '<div class="filter-row" id="startTrainingRow">' +
+    '<button class="btn btn-primary" style="font-size:1.1rem;padding:14px 48px" onclick="startTraining()">▶ ' + t('train_start') + '</button>' +
     '</div>' +
 
-    '<div id="quizArea"></div>';
+    '</div>' +
 
-  // Default: open on desktop, collapsed on mobile
-  if (window.innerWidth > 640) {
-    document.getElementById('trainSettingsPanel').classList.add('open');
-    document.getElementById('trainSettingsToggle').setAttribute('aria-expanded', 'true');
-    document.getElementById('trainSettingsToggle').classList.add('active');
-  }
+    '<div id="quizArea">' +
+    '<div class="quiz-card" style="text-align:center">' +
+    '<p style="font-size:3rem;margin-bottom:16px">🎯</p>' +
+    '<p style="color:var(--text-muted);font-size:1.1rem">' + t('train_configure_prompt') + '</p>' +
+    '</div>' +
+    '</div>';
 
-  // Auto-collapse settings when user interacts with quiz area
+  // Auto-collapse settings when user interacts with quiz area (only during active session)
   document.getElementById('quizArea').addEventListener('click', function collapseOnQuizClick() {
+    if (!_trainSessionStarted) return;
     const panel = document.getElementById('trainSettingsPanel');
     const btn = document.getElementById('trainSettingsToggle');
     if (panel && btn && panel.classList.contains('open')) {
@@ -156,7 +166,6 @@ function renderTrain(el) {
   });
 
   _populateLabelFilters(lang);
-  loadQuestion();
 }
 
 function _textColorForBg(hex) {
@@ -207,6 +216,23 @@ async function _populateLabelFilters(lang) {
   });
 }
 
+// ── Start training ─────────────────────────────────────────────────────────────
+window.startTraining = function () {
+  _trainSessionStarted = true;
+  const startRow = document.getElementById('startTrainingRow');
+  if (startRow) startRow.style.display = 'none';
+  const panel = document.getElementById('trainSettingsPanel');
+  const btn = document.getElementById('trainSettingsToggle');
+  if (panel && panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('active');
+    }
+  }
+  loadQuestion();
+};
+
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
   stopAutoTimer();
@@ -236,7 +262,7 @@ window.setTrainMode = function (mode, btn) {
     if (autoRanges[0]) autoRanges[0].value = _trainAutoTime;
     if (autoRanges[1]) autoRanges[1].value = _trainAutoTtsDelay;
   }
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.toggleLabelFilter = function (labelId, btn) {
@@ -256,7 +282,7 @@ window.toggleLabelFilter = function (labelId, btn) {
     }
   }
   _refreshLabelStyles();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.toggleTypeFilter = function (type, btn) {
@@ -275,21 +301,21 @@ window.toggleTypeFilter = function (type, btn) {
       document.querySelector('#typeFilters .type-btn[data-type=""]').classList.add('active');
     }
   }
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setTrainDir = function (dir, btn) {
   _trainDirection = dir;
   document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setWritingDifficulty = function (easy, btn) {
   _writingEasyMode = easy;
   document.querySelectorAll('#writingDiffFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 // ── Auto-mode controls ──────────────────────────────────────────
@@ -299,7 +325,7 @@ window.setAutoContent = function (content, btn) {
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = (content !== 'phrases') ? '' : 'none';
   stopAutoTimer();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setAutoSideFirst = function (side, btn) {
@@ -307,7 +333,7 @@ window.setAutoSideFirst = function (side, btn) {
   document.querySelectorAll('#autoDirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   stopAutoTimer();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setAutoTime = function (seconds) {

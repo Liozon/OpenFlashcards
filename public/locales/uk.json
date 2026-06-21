@@ -327,5 +327,7 @@
   "vocab_dup_field": "Поле",
   "vocab_dup_forms": "форми",
   "vocab_dup_cases": "відмінки",
-  "vocab_dup_merge_group": "Об'єднати цю групу"
+  "vocab_dup_merge_group": "Об'єднати цю групу",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }
