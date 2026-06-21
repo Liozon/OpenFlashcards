@@ -1447,6 +1447,39 @@ img {
   background: var(--primary-bg);
 }
 
+.lang-result-item.highlighted {
+  background: var(--surface-2);
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ── COMBOBOX WRAPPER ───────────────────────────────────────── */
+.combobox-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.combobox-wrap input {
+  flex: 1;
+  padding-right: 32px !important;
+}
+
+.combobox-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: .7rem;
+  color: var(--text-muted);
+  transition: transform .2s;
+}
+
+.combobox-arrow.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
 /* ── ONBOARDING ─────────────────────────────────────────────── */
 .onboarding-screen {
   min-height: 100vh;

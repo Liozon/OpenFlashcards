@@ -21,7 +21,10 @@ async function renderSettings(el) {
     <div class="card settings-section">
       <h2>🌐 ${t('settings_ui_lang')}</h2>
       <div class="field-group">
-        <input type="text" id="uiLangSearch" placeholder="${t('settings_ui_lang_ph')}" autocomplete="off" value="${getUiLangName()}">
+        <div class="combobox-wrap">
+          <input type="text" id="uiLangSearch" placeholder="${t('settings_ui_lang_ph')}" autocomplete="off" value="${getUiLangName()}">
+          <span class="combobox-arrow" id="uiLangArrow">▼</span>
+        </div>
         <div id="uiLangResults" class="lang-results" style="display:none"></div>
       </div>
     </div>
@@ -254,36 +257,98 @@ async function renderSettings(el) {
     }
   };
 
-  // UI language picker
+  // UI language picker (combobox)
   const uiSearchEl = document.getElementById('uiLangSearch');
   const uiResultsEl = document.getElementById('uiLangResults');
+  const uiArrow = document.getElementById('uiLangArrow');
+  let uiHighlightIdx = -1;
 
-  uiSearchEl.addEventListener('input', () => {
-    const q = uiSearchEl.value.trim().toLowerCase();
-    if (!q) { uiResultsEl.style.display = 'none'; return; }
-    const list = (window.WORLD_LANGUAGES || []).filter(l =>
-      l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
-    ).slice(0, 20);
-    uiResultsEl.style.display = list.length ? '' : 'none';
-    uiResultsEl.innerHTML = list.map(l =>
-      `<div class="lang-result-item" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}">
+  function uiRenderResults(list) {
+    uiResultsEl.innerHTML = list.map((l, i) =>
+      `<div class="lang-result-item ${i === uiHighlightIdx ? 'highlighted' : ''}" data-index="${i}" data-code="${l.code}" data-name="${l.name}" data-flag="${l.flag || '🌐'}">
         <span>${l.flag || '🌐'}</span><span>${l.name}</span><small style="color:var(--text-faint)">${l.code}</small>
       </div>`
     ).join('');
-    uiResultsEl.querySelectorAll('.lang-result-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        uiResultsEl.style.display = 'none';
-        uiSearchEl.value = item.dataset.flag + ' ' + item.dataset.name;
-        const code = item.dataset.code;
-        await window.setUiLang(code);
-        await saveConfig({ uiLang: code });
-        App.config.uiLang = code;
-        toast(`✓ ${t('settings_ui_lang_saved')}`);
-        // Re-render navbar and settings page in new language
-        applyNavLabels();
-        navigate('settings');
-      });
-    });
+    uiResultsEl.style.display = list.length ? '' : 'none';
+  }
+
+  function uiGetFiltered(q) {
+    if (!q) return (window.WORLD_LANGUAGES || []).slice(0, 40);
+    return (window.WORLD_LANGUAGES || []).filter(l =>
+      l.name.toLowerCase().includes(q) || (l.native || '').toLowerCase().includes(q) || l.code.includes(q)
+    ).slice(0, 40);
+  }
+
+  function uiOpen() {
+    const list = uiGetFiltered(uiSearchEl.value.trim().toLowerCase());
+    uiHighlightIdx = -1;
+    uiRenderResults(list);
+    if (uiArrow) uiArrow.classList.add('open');
+  }
+
+  function uiClose() {
+    uiResultsEl.style.display = 'none';
+    uiHighlightIdx = -1;
+    if (uiArrow) uiArrow.classList.remove('open');
+  }
+
+  function uiSelectItem(item) {
+    uiClose();
+    uiSearchEl.value = item.dataset.flag + ' ' + item.dataset.name;
+    const code = item.dataset.code;
+    selectUiLang(code);
+  }
+
+  async function selectUiLang(code) {
+    await window.setUiLang(code);
+    await saveConfig({ uiLang: code });
+    App.config.uiLang = code;
+    toast(`✓ ${t('settings_ui_lang_saved')}`);
+    applyNavLabels();
+    navigate('settings');
+  }
+
+  uiSearchEl.addEventListener('focus', () => {
+    uiSearchEl.select();
+    uiHighlightIdx = -1;
+    uiRenderResults((window.WORLD_LANGUAGES || []).slice(0, 40));
+    if (uiArrow) uiArrow.classList.add('open');
+  });
+
+  uiSearchEl.addEventListener('blur', () => {
+    setTimeout(uiClose, 180);
+  });
+
+  uiSearchEl.addEventListener('input', () => {
+    uiOpen();
+  });
+
+  uiSearchEl.addEventListener('keydown', (e) => {
+    const items = uiResultsEl.querySelectorAll('.lang-result-item');
+    if (!items.length && e.key !== 'Escape') return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      uiHighlightIdx = Math.min(uiHighlightIdx + 1, items.length - 1);
+      uiRenderResults(uiGetFiltered(uiSearchEl.value.trim().toLowerCase()));
+      items[uiHighlightIdx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      uiHighlightIdx = Math.max(uiHighlightIdx - 1, 0);
+      uiRenderResults(uiGetFiltered(uiSearchEl.value.trim().toLowerCase()));
+      items[uiHighlightIdx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && uiHighlightIdx >= 0 && items[uiHighlightIdx]) {
+      e.preventDefault();
+      uiSelectItem(items[uiHighlightIdx]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      uiClose();
+    }
+  });
+
+  uiResultsEl.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.lang-result-item');
+    if (item) uiSelectItem(item);
   });
 }
 
