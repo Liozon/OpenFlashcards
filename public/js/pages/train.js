@@ -434,7 +434,7 @@ function renderWordQuiz(q) {
     verbGroupBadge +
     dirLabel +
     '</div>' +
-    '<div class="question-word" id="qWord">' + esc(q.promptText) + '</div>' +
+    '<div class="question-word" id="qWord">' + esc(capitalizeFirst(q.promptText)) + '</div>' +
     (q.definition ? '<div class="question-def">' + esc(q.definition) + '</div>' : '') +
     '<p class="question-instr">' + t('train_question') + '</p>' +
     '<div class="choices-grid" id="choicesGrid"></div>' +
@@ -450,7 +450,7 @@ function renderWordQuiz(q) {
   q.choices.forEach(choice => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.textContent = choice;
+    btn.textContent = capitalizeFirst(choice);
     btn.addEventListener('click', () => handleWordAnswer(btn, choice, q));
     grid.appendChild(btn);
   });
@@ -1424,6 +1424,11 @@ function _fireConfetti() {
     }
   }
   animate();
+}
+
+function capitalizeFirst(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function esc(s) {
