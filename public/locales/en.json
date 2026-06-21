@@ -327,5 +327,7 @@
   "vocab_dup_field": "Field",
   "vocab_dup_forms": "forms",
   "vocab_dup_cases": "cases",
-  "vocab_dup_merge_group": "Merge this group"
+  "vocab_dup_merge_group": "Merge this group",
+  "train_green_border": "Green border on correct",
+  "train_confetti": "Confetti on combo (10 streak)"
 }

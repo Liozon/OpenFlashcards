@@ -117,6 +117,22 @@ function renderTrain(el) {
     '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
     '</div>' +
 
+    // ── UX toggles ──
+    '<div class="train-toggle-row">' +
+    '<label>' + t('train_green_border') + '</label>' +
+    '<label class="toggle-switch">' +
+    '<input type="checkbox" id="trainGreenBorderToggle" ' + ((App.config && App.config.showGreenBorder !== false) ? 'checked' : '') + ' onchange="toggleGreenBorder(this.checked)">' +
+    '<span class="toggle-slider"></span>' +
+    '</label>' +
+    '</div>' +
+    '<div class="train-toggle-row">' +
+    '<label>' + t('train_confetti') + '</label>' +
+    '<label class="toggle-switch">' +
+    '<input type="checkbox" id="trainConfettiToggle" ' + ((App.config && App.config.showConfetti !== false) ? 'checked' : '') + ' onchange="toggleConfetti(this.checked)">' +
+    '<span class="toggle-slider"></span>' +
+    '</label>' +
+    '</div>' +
+
     '</div>' +
 
     '<div id="quizArea"></div>';
@@ -456,6 +472,8 @@ async function handleWordAnswer(btn, answer, q) {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  if (correct) _triggerGreenBorder('wordQuizCard');
+  _checkComboConfetti();
 
   TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
 
@@ -752,6 +770,7 @@ window.checkPhraseAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  _checkComboConfetti();
 
   // Speak the whole sentence
   TTS.speak(expected, _curPhrase.langCode);
@@ -990,6 +1009,7 @@ window.checkWritingAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  _checkComboConfetti();
 
   TTS.speak(targetWord, _curWritingWord.langCode);
 
@@ -1269,6 +1289,142 @@ window.toggleTrainSettings = function () {
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   btn.classList.toggle('active', open);
 };
+
+// ── UX: Green border & confetti ────────────────────────────────
+function _triggerGreenBorder(id) {
+  if (App.config && App.config.showGreenBorder === false) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('correct');
+
+  // Wait for layout so the card has its final size
+  requestAnimationFrame(function () {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const r = 16;
+    const halfTop = Math.max(0, w / 2 - r);
+    const side = Math.max(0, h - 2 * r);
+    const bottom = Math.max(0, w - 2 * r);
+    const arc = Math.PI * r / 2;
+    const length = 2 * halfTop + 2 * side + bottom + 4 * arc;
+
+    const d = 'M ' + (w / 2) + ' 0' +
+      ' L ' + (w - r) + ' 0' +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + w + ' ' + r +
+      ' L ' + w + ' ' + (h - r) +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + (w - r) + ' ' + h +
+      ' L ' + r + ' ' + h +
+      ' A ' + r + ' ' + r + ' 0 0 1 0 ' + (h - r) +
+      ' L 0 ' + r +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + r + ' 0' +
+      ' L ' + (w / 2) + ' 0';
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;filter:drop-shadow(0 0 6px #439b00)';
+
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#439b00');
+    path.setAttribute('stroke-width', '3');
+    path.setAttribute('stroke-linecap', 'butt');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-dasharray', length);
+    svg.appendChild(path);
+    el.appendChild(svg);
+
+    path.animate([
+      { strokeDashoffset: length },
+      { strokeDashoffset: 0 }
+    ], { duration: 600, easing: 'linear' });
+  });
+}
+
+function _checkComboConfetti() {
+  if (_trainStreak > 0 && _trainStreak % 10 === 0) {
+    _fireConfetti();
+  }
+}
+
+window.toggleGreenBorder = function (checked) {
+  if (!App.config) return;
+  App.config.showGreenBorder = checked;
+  saveConfig({ showGreenBorder: checked });
+};
+
+window.toggleConfetti = function (checked) {
+  if (!App.config) return;
+  App.config.showConfetti = checked;
+  saveConfig({ showConfetti: checked });
+};
+
+function _fireConfetti() {
+  if (App.config && App.config.showConfetti === false) return;
+
+  const colors = ['#439b00', '#ff4b4b', '#ffc800', '#1cb0f6', '#9b59b6', '#e67e22', '#2ecc71', '#e74c3c', '#3498db'];
+  const count = 150;
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 10 + 5,
+      h: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: Math.random() * 4 - 2,
+      vy: Math.random() * 3 + 2,
+      rot: Math.random() * 360,
+      rotSpd: Math.random() * 10 - 5,
+      opacity: 1
+    });
+  }
+
+  let frame = 0;
+  const maxFrames = 180;
+  const fadeStart = maxFrames * 0.55;
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.rot += p.rotSpd;
+      if (p.y < canvas.height + 20) {
+        alive = true;
+        const t = Math.max(0, Math.min(1, (frame - fadeStart) / (maxFrames - fadeStart)));
+        const alpha = 1 - t;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+    }
+    if (alive && frame < maxFrames) {
+      frame++;
+      requestAnimationFrame(animate);
+    } else {
+      canvas.remove();
+    }
+  }
+  animate();
+}
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

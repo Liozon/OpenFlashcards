@@ -327,5 +327,7 @@
   "vocab_dup_field": "Champ",
   "vocab_dup_forms": "formes",
   "vocab_dup_cases": "cas",
-  "vocab_dup_merge_group": "Fusionner ce groupe"
+  "vocab_dup_merge_group": "Fusionner ce groupe",
+  "train_green_border": "Bordure verte si correct",
+  "train_confetti": "Confettis sur combo (10 série)"
 }

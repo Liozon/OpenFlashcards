@@ -676,6 +676,7 @@ img {
 }
 
 .quiz-card {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 32px 28px;
@@ -687,6 +688,10 @@ img {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.quiz-card.correct {
+  border-color: transparent;
 }
 
 .question-word {
@@ -1528,6 +1533,33 @@ img {
 
 .train-settings-panel.open {
   max-height: 2000px;
+}
+
+/* ── CONFETTI CANVAS ──────────────────────────────────────────── */
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── TRAINING TOGGLE ROW ──────────────────────────────────────── */
+.train-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 12px;
+}
+
+.train-toggle-row label {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
