@@ -10,6 +10,7 @@
  *   - Dockerfile          → LABEL org.opencontainers.image.version
  *   - public/sw.js        → const CACHE_VERSION (format: ofc-v<version>)
  *   - build-and-export.sh → ARCHIVE filename
+ *   - public/index.html   → version placeholder in footer
  *
  * Usage:
  *   npm run sync-version                  # propagate current version
@@ -65,6 +66,14 @@ updateFile('build-and-export.sh', src =>
     src.replace(
         /^(BASE="Docker\.OpenFlashcards\.v)[^"]*(")/m,
         `$1${version}$2`
+    )
+);
+
+// ── public/index.html ─────────────────────────────────────────────────────────
+updateFile('public/index.html', src =>
+    src.replace(
+        /<!--version-->v[^<]*<!--\/version-->/g,
+        `<!--version-->v${version}<!--/version-->`
     )
 );
 

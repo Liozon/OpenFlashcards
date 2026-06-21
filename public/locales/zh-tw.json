@@ -327,5 +327,9 @@
   "vocab_dup_field": "欄位",
   "vocab_dup_forms": "個形式",
   "vocab_dup_cases": "個格",
-  "vocab_dup_merge_group": "合併此組"
+  "vocab_dup_merge_group": "合併此組",
+  "train_green_border": "動畫",
+  "train_confetti": "連擊彩花",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }

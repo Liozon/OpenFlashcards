@@ -676,6 +676,7 @@ img {
 }
 
 .quiz-card {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 32px 28px;
@@ -687,6 +688,10 @@ img {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.quiz-card.correct {
+  border-color: transparent;
 }
 
 .question-word {
@@ -1442,6 +1447,39 @@ img {
   background: var(--primary-bg);
 }
 
+.lang-result-item.highlighted {
+  background: var(--surface-2);
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ── COMBOBOX WRAPPER ───────────────────────────────────────── */
+.combobox-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.combobox-wrap input {
+  flex: 1;
+  padding-right: 32px !important;
+}
+
+.combobox-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: .7rem;
+  color: var(--text-muted);
+  transition: transform .2s;
+}
+
+.combobox-arrow.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
 /* ── ONBOARDING ─────────────────────────────────────────────── */
 .onboarding-screen {
   min-height: 100vh;
@@ -1498,42 +1536,63 @@ img {
   opacity: .6;
 }
 
-/* ── TRAIN SETTINGS PANEL (collapsible on mobile) ────────────── */
+/* ── TRAIN SETTINGS PANEL (collapsible) ─────────────────────── */
 .train-settings-toggle {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
 }
 
-@media (max-width: 640px) {
-  .train-settings-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 2px solid var(--border);
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all var(--transition);
-  }
+.train-settings-toggle.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
 
-  .train-settings-toggle.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-  }
+.train-settings-panel {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
 
-  .train-settings-panel {
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.3s ease;
-  }
+.train-settings-panel.open {
+  max-height: 2000px;
+}
 
-  .train-settings-panel.open {
-    max-height: 600px;
-  }
+/* ── CONFETTI CANVAS ──────────────────────────────────────────── */
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── TRAINING TOGGLE ROW ──────────────────────────────────────── */
+.train-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 12px;
+}
+
+.train-toggle-row label {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
@@ -1586,6 +1645,12 @@ img {
 
   .quiz-card {
     padding: 24px 18px;
+  }
+
+  .quiz-card > .next-row {
+    order: -1;
+    margin-top: 0 !important;
+    margin-bottom: 20px;
   }
 
   .page-content {
@@ -1651,6 +1716,24 @@ img {
 .label-pick-btn:not(.active) {
   opacity: .7;
 }
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.app-footer {
+  text-align: center;
+  padding: 24px 16px 32px;
+  font-size: .72rem;
+  color: var(--text-faint);
+}
+
+.app-footer a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.app-footer a:hover {
+  color: var(--text-muted);
+}
+
 /* ── OFFLINE MODE ─────────────────────────────────────────────── */
 .sync-offline-btn {
   position: relative;

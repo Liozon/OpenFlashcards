@@ -22,6 +22,7 @@ let _curWritingWord = null;
 let _writingLetterBank = [];
 let _writingEasyMode = false;
 let _writingSegments = [];
+let _trainSessionStarted = false;
 
 // ── Auto-flashcard mode state ─────────────────────────────────
 let _trainAutoContent = 'words';     // 'words' | 'phrases' | 'everything'
@@ -49,7 +50,7 @@ function renderTrain(el) {
 
   stopAutoTimer();
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
-  _trainTypes = []; _trainLabels = []; _trainMode = 'word'; _trainDirection = 'random';
+  _trainTypes = []; _trainLabels = []; _trainMode = 'flashcards'; _trainDirection = 'random';
 
   const ld = currentLangData();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
@@ -60,22 +61,27 @@ function renderTrain(el) {
   el.innerHTML =
     '<div class="page-title">🎯 ' + t('train_title') + '</div>' +
 
-    '<div class="score-bar">' +
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
+    '<div class="score-bar" id="scoreBar" style="flex:1;display:flex;gap:16px;justify-content:center;margin-bottom:0">' +
     '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
     '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
     '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
-    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="false" aria-controls="trainSettingsPanel">⚙️</button>' +
+    '</div>' +
+    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="true" aria-controls="trainSettingsPanel">⚙️</button>' +
     '</div>' +
 
-    '<div id="trainSettingsPanel" class="train-settings-panel">' +
+    '<div id="trainSettingsPanel" class="train-settings-panel open">' +
+
+    // ── 1. Mode ──
     '<div class="filter-row">' +
-    '<button class="type-btn active" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn active"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
+    '<button class="type-btn" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
     '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
     '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
     '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
+    // ── 2. Scope ──
     '<div class="filter-row" id="typeFilters">' +
     '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">🌍 ' + t('train_all') + '</button>' +
     '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
@@ -85,23 +91,25 @@ function renderTrain(el) {
     '<button class="type-btn" data-type="other"    onclick="toggleTypeFilter(\'other\',this)">🧩 ' + t('add_type_other').replace('🔀 ', '') + '</button>' +
     '</div>' +
 
+    '<div class="filter-row" id="autoContentFilters" style="display:none">' +
+    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
+    '</div>' +
+
+    // ── 3. Labels ──
+    '<div class="filter-row" id="labelFilters"></div>' +
+
+    // ── 4. Mode-specific settings ──
     '<div class="filter-row" id="dirFilters">' +
     '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
     '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
     '</div>' +
 
-    '<div class="filter-row" id="labelFilters"></div>' +
-
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
     '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
     '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
-    '</div>' +
-
-    '<div class="filter-row" id="autoContentFilters" style="display:none">' +
-    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
-    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="autoDirFilters" style="display:none">' +
@@ -117,12 +125,55 @@ function renderTrain(el) {
     '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
     '</div>' +
 
+    // ── 5. UX toggles ──
+    '<div id="trainUxToggles">' +
+    '<div class="train-toggle-row">' +
+    '<label>' + t('train_green_border') + '</label>' +
+    '<label class="toggle-switch">' +
+    '<input type="checkbox" id="trainGreenBorderToggle" ' + ((App.config && App.config.showGreenBorder !== false) ? 'checked' : '') + ' onchange="toggleGreenBorder(this.checked)">' +
+    '<span class="toggle-slider"></span>' +
+    '</label>' +
+    '</div>' +
+    '<div class="train-toggle-row">' +
+    '<label>' + t('train_confetti') + '</label>' +
+    '<label class="toggle-switch">' +
+    '<input type="checkbox" id="trainConfettiToggle" ' + ((App.config && App.config.showConfetti !== false) ? 'checked' : '') + ' onchange="toggleConfetti(this.checked)">' +
+    '<span class="toggle-slider"></span>' +
+    '</label>' +
+    '</div>' +
     '</div>' +
 
-    '<div id="quizArea"></div>';
+    // ── 6. Start button ──
+    '<div class="filter-row" id="startTrainingRow">' +
+    '<button class="btn btn-primary" style="font-size:1.1rem;padding:14px 48px" onclick="startTraining()">▶ ' + t('train_start') + '</button>' +
+    '</div>' +
+
+    '</div>' +
+
+    '<div id="quizArea">' +
+    '<div class="quiz-card" style="text-align:center">' +
+    '<p style="font-size:3rem;margin-bottom:16px">🎯</p>' +
+    '<p style="color:var(--text-muted);font-size:1.1rem">' + t('train_configure_prompt') + '</p>' +
+    '</div>' +
+    '</div>';
+
+  // Auto-collapse settings when user interacts with quiz area (only during active session)
+  document.getElementById('quizArea').addEventListener('click', function collapseOnQuizClick() {
+    if (!_trainSessionStarted) return;
+    const panel = document.getElementById('trainSettingsPanel');
+    const btn = document.getElementById('trainSettingsToggle');
+    if (panel && btn && panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('active');
+    }
+  });
 
   _populateLabelFilters(lang);
-  loadQuestion();
+
+  // Apply initial flashcard mode visibility
+  const autoBtn = document.getElementById('modeAuto');
+  if (autoBtn) setTrainMode('flashcards', autoBtn);
 }
 
 function _textColorForBg(hex) {
@@ -173,6 +224,24 @@ async function _populateLabelFilters(lang) {
   });
 }
 
+// ── Start training ─────────────────────────────────────────────────────────────
+window.startTraining = function () {
+  _trainSessionStarted = true;
+  const startRow = document.getElementById('startTrainingRow');
+  if (startRow) startRow.style.display = 'none';
+  const panel = document.getElementById('trainSettingsPanel');
+  const btn = document.getElementById('trainSettingsToggle');
+  if (panel && panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      btn.classList.remove('active');
+    }
+  }
+  if (_trainMode === 'flashcards') _trainAutoStarted = true;
+  loadQuestion();
+};
+
 // ── Mode / filter / direction ─────────────────────────────────────────────────
 window.setTrainMode = function (mode, btn) {
   stopAutoTimer();
@@ -187,6 +256,8 @@ window.setTrainMode = function (mode, btn) {
   document.getElementById('typeFilters').style.display = (isWord || isWriting || isMixed) ? '' : 'none';
   document.getElementById('dirFilters').style.display = (isWord || isMixed) ? '' : 'none';
   document.getElementById('writingDiffFilters').style.display = (isWriting || isPhrase || isMixed) ? '' : 'none';
+  document.getElementById('scoreBar').style.display = isAuto ? 'none' : '';
+  document.getElementById('trainUxToggles').style.display = isAuto ? 'none' : '';
   document.getElementById('autoContentFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoDirFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoTimeRow').style.display = isAuto ? '' : 'none';
@@ -202,7 +273,7 @@ window.setTrainMode = function (mode, btn) {
     if (autoRanges[0]) autoRanges[0].value = _trainAutoTime;
     if (autoRanges[1]) autoRanges[1].value = _trainAutoTtsDelay;
   }
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.toggleLabelFilter = function (labelId, btn) {
@@ -222,7 +293,7 @@ window.toggleLabelFilter = function (labelId, btn) {
     }
   }
   _refreshLabelStyles();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.toggleTypeFilter = function (type, btn) {
@@ -241,21 +312,21 @@ window.toggleTypeFilter = function (type, btn) {
       document.querySelector('#typeFilters .type-btn[data-type=""]').classList.add('active');
     }
   }
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setTrainDir = function (dir, btn) {
   _trainDirection = dir;
   document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setWritingDifficulty = function (easy, btn) {
   _writingEasyMode = easy;
   document.querySelectorAll('#writingDiffFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 // ── Auto-mode controls ──────────────────────────────────────────
@@ -265,7 +336,7 @@ window.setAutoContent = function (content, btn) {
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = (content !== 'phrases') ? '' : 'none';
   stopAutoTimer();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setAutoSideFirst = function (side, btn) {
@@ -273,7 +344,7 @@ window.setAutoSideFirst = function (side, btn) {
   document.querySelectorAll('#autoDirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   stopAutoTimer();
-  loadQuestion();
+  if (_trainSessionStarted) loadQuestion();
 };
 
 window.setAutoTime = function (seconds) {
@@ -400,7 +471,7 @@ function renderWordQuiz(q) {
     verbGroupBadge +
     dirLabel +
     '</div>' +
-    '<div class="question-word" id="qWord">' + esc(q.promptText) + '</div>' +
+    '<div class="question-word" id="qWord">' + esc(capitalizeFirst(q.promptText)) + '</div>' +
     (q.definition ? '<div class="question-def">' + esc(q.definition) + '</div>' : '') +
     '<p class="question-instr">' + t('train_question') + '</p>' +
     '<div class="choices-grid" id="choicesGrid"></div>' +
@@ -416,7 +487,7 @@ function renderWordQuiz(q) {
   q.choices.forEach(choice => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.textContent = choice;
+    btn.textContent = capitalizeFirst(choice);
     btn.addEventListener('click', () => handleWordAnswer(btn, choice, q));
     grid.appendChild(btn);
   });
@@ -438,6 +509,8 @@ async function handleWordAnswer(btn, answer, q) {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  if (correct) _triggerGreenBorder('wordQuizCard');
+  _checkComboConfetti();
 
   TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
 
@@ -500,6 +573,7 @@ async function handleWordAnswer(btn, answer, q) {
     }
 
     conjBox.innerHTML = conjHtml;
+    conjBox.className = 'conj-box';
     card.appendChild(conjBox);
   }
 
@@ -525,10 +599,12 @@ async function handleWordAnswer(btn, answer, q) {
       '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
       '</div>' +
       declRows;
+    declBox.className = 'decl-box';
     card.appendChild(declBox);
   }
 
   const nextRow = document.createElement('div');
+  nextRow.className = 'next-row';
   nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
   nextRow.innerHTML =
     '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +
@@ -731,6 +807,7 @@ window.checkPhraseAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  _checkComboConfetti();
 
   // Speak the whole sentence
   TTS.speak(expected, _curPhrase.langCode);
@@ -969,6 +1046,7 @@ window.checkWritingAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  _checkComboConfetti();
 
   TTS.speak(targetWord, _curWritingWord.langCode);
 
@@ -1233,8 +1311,8 @@ function renderAutoCard(card) {
   // Pre-fetch TTS audio for both sides so the server generates it in advance
   const prefetchTTS = (text, lang) => {
     if (!text || !lang) return;
-    fetch(TTS._url(text, lang, 'normal', id)).catch(() => {});
-    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => {});
+    fetch(TTS._url(text, lang, 'normal', id)).catch(() => { });
+    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => { });
   };
   prefetchTTS(frontWord, frontLang);
   prefetchTTS(backWord, backLang);
@@ -1248,6 +1326,147 @@ window.toggleTrainSettings = function () {
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   btn.classList.toggle('active', open);
 };
+
+// ── UX: Green border & confetti ────────────────────────────────
+function _triggerGreenBorder(id) {
+  if (App.config && App.config.showGreenBorder === false) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('correct');
+
+  // Wait for layout so the card has its final size
+  requestAnimationFrame(function () {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const r = 16;
+    const halfTop = Math.max(0, w / 2 - r);
+    const side = Math.max(0, h - 2 * r);
+    const bottom = Math.max(0, w - 2 * r);
+    const arc = Math.PI * r / 2;
+    const length = 2 * halfTop + 2 * side + bottom + 4 * arc;
+
+    const d = 'M ' + (w / 2) + ' 0' +
+      ' L ' + (w - r) + ' 0' +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + w + ' ' + r +
+      ' L ' + w + ' ' + (h - r) +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + (w - r) + ' ' + h +
+      ' L ' + r + ' ' + h +
+      ' A ' + r + ' ' + r + ' 0 0 1 0 ' + (h - r) +
+      ' L 0 ' + r +
+      ' A ' + r + ' ' + r + ' 0 0 1 ' + r + ' 0' +
+      ' L ' + (w / 2) + ' 0';
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;filter:drop-shadow(0 0 6px #439b00)';
+
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#439b00');
+    path.setAttribute('stroke-width', '3');
+    path.setAttribute('stroke-linecap', 'butt');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-dasharray', length);
+    svg.appendChild(path);
+    el.appendChild(svg);
+
+    path.animate([
+      { strokeDashoffset: length },
+      { strokeDashoffset: 0 }
+    ], { duration: 600, easing: 'linear' });
+  });
+}
+
+function _checkComboConfetti() {
+  if (_trainStreak > 0 && _trainStreak % 10 === 0) {
+    _fireConfetti();
+  }
+}
+
+window.toggleGreenBorder = function (checked) {
+  if (!App.config) return;
+  App.config.showGreenBorder = checked;
+  saveConfig({ showGreenBorder: checked });
+};
+
+window.toggleConfetti = function (checked) {
+  if (!App.config) return;
+  App.config.showConfetti = checked;
+  saveConfig({ showConfetti: checked });
+};
+
+function _fireConfetti() {
+  if (App.config && App.config.showConfetti === false) return;
+
+  const colors = ['#439b00', '#ff4b4b', '#ffc800', '#1cb0f6', '#9b59b6', '#e67e22', '#2ecc71', '#e74c3c', '#3498db'];
+  const count = 150;
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 10 + 5,
+      h: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: Math.random() * 4 - 2,
+      vy: Math.random() * 3 + 2,
+      rot: Math.random() * 360,
+      rotSpd: Math.random() * 10 - 5,
+      opacity: 1
+    });
+  }
+
+  let frame = 0;
+  const maxFrames = 180;
+  const fadeStart = maxFrames * 0.55;
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.rot += p.rotSpd;
+      if (p.y < canvas.height + 20) {
+        alive = true;
+        const t = Math.max(0, Math.min(1, (frame - fadeStart) / (maxFrames - fadeStart)));
+        const alpha = 1 - t;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+    }
+    if (alive && frame < maxFrames) {
+      frame++;
+      requestAnimationFrame(animate);
+    } else {
+      canvas.remove();
+    }
+  }
+  animate();
+}
+
+function capitalizeFirst(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

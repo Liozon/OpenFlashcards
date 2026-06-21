@@ -327,5 +327,9 @@
   "vocab_dup_field": "Campo",
   "vocab_dup_forms": "formas",
   "vocab_dup_cases": "casos",
-  "vocab_dup_merge_group": "Fusionar este grupo"
+  "vocab_dup_merge_group": "Fusionar este grupo",
+  "train_green_border": "Animaciones",
+  "train_confetti": "Combofettis",
+  "train_start": "Start",
+  "train_configure_prompt": "Configure your session above and click Start"
 }
