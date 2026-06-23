@@ -694,6 +694,22 @@ img {
   border-color: transparent;
 }
 
+.correct-border-svg {
+  /* glow is handled via box-shadow on the card's ::before for exterior-only */
+}
+.correct-breathe::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: breatheGlow 2.6s ease-in-out infinite;
+}
+@keyframes breatheGlow {
+  0%, 100% { box-shadow: 0 0 5px 3px rgba(67,155,0,0.15); }
+  50% { box-shadow: 0 0 22px 10px rgba(67, 155, 0, 0.8); }
+}
+
 .question-word {
   font-size: 2.2rem;
   font-weight: 900;

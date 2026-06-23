@@ -1363,7 +1363,8 @@ function _triggerGreenBorder(id) {
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('width', w);
     svg.setAttribute('height', h);
-    svg.style.cssText = 'position:absolute;top:' + (-bw) + 'px;left:' + (-bw) + 'px;pointer-events:none;overflow:visible;filter:drop-shadow(0 0 6px #439b00)';
+    svg.style.cssText = 'position:absolute;top:' + (-bw) + 'px;left:' + (-bw) + 'px;pointer-events:none;overflow:visible';
+    svg.classList.add('correct-border-svg');
 
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', d);
@@ -1376,10 +1377,11 @@ function _triggerGreenBorder(id) {
     svg.appendChild(path);
     el.appendChild(svg);
 
-    path.animate([
+    const anim = path.animate([
       { strokeDashoffset: length },
       { strokeDashoffset: 0 }
     ], { duration: 600, easing: 'linear' });
+    anim.onfinish = function () { el.classList.add('correct-breathe'); };
   });
 }
 
