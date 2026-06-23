@@ -237,7 +237,7 @@ window.navigate = function (page, params, _fromPopState) {
   }
 
   const content = document.getElementById('pageContent');
-  content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading…</p></div>';
+  content.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>' + t('app_loading') + '</p></div>';
 
   const renderers = {
     home: renderHome,
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function attemptLogin() {
     loginErr.classList.add('hidden');
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Signing in…';
+    loginBtn.textContent = t('app_signing_in');
     try {
       await doLogin(loginUser.value.trim(), loginPass.value);
       await bootApp();
@@ -550,7 +550,7 @@ function renderOnboarding(el) {
 
         <div class="field-group your-language">
           <label>${t('onb_your_language')}</label>
-          <input type="text" id="onbNativeSearch" placeholder="Search…" autocomplete="off">
+          <input type="text" id="onbNativeSearch" placeholder="${t('onb_search')}" autocomplete="off">
           <div id="onbNativeResults" class="lang-results" style="display:none"></div>
           <div id="onbNativeChip" style="margin-top:8px"></div>
         </div>
@@ -668,7 +668,7 @@ function renderOnboarding(el) {
         history.replaceState({ page: 'home' }, '', '#/home');
         navigate('home', {}, true);
       } catch (e) {
-        errEl.textContent = e.error || 'Setup failed.';
+        errEl.textContent = e.error || t('app_setup_failed');
         errEl.classList.remove('hidden');
       }
     });

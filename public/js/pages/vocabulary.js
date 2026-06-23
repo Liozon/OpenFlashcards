@@ -121,7 +121,7 @@ async function renderVocabulary(el, params) {
     renderLabelFilterRow();
     renderVocabGrid();
   } catch {
-    document.getElementById('vocabGrid').innerHTML = '<p style="color:var(--danger)">Failed to load vocabulary.</p>';
+    document.getElementById('vocabGrid').innerHTML = '<p style="color:var(--danger)">' + t('vocab_load_error') + '</p>';
   }
 }
 
@@ -324,7 +324,7 @@ function buildWordCard(w) {
       '<div class="progress-bar-fill" style="width:' + diffPct + '%"></div>' +
       '</div>') +
     (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
-    (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + Object.keys(w.declensions).length + ' case(s)</div>' : '') +
+    (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + t('vocab_decl_count').replace('{n}', Object.keys(w.declensions).length) + '</div>' : '') +
     labelHtml;
 
   // TTS button via DOM to avoid HTML injection issues
@@ -529,7 +529,7 @@ function _buildEditWordFields(state) {
 
   const vgHtml = (isVerb && verbGroups.length)
     ? `<div class="field-group">
-        <label>${t('add_verb_group')} <span class="optional">(optional)</span></label>
+        <label>${t('add_verb_group')} <span class="optional">${t('common_optional')}</span></label>
         <select id="meVerbGroup" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
           <option value="">— —</option>
           ${verbGroups.map(g => `<option value="${esc(g.name)}" ${(state.verbGroup || '') === (g.name) ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}
@@ -551,7 +551,7 @@ function _buildEditWordFields(state) {
       if (!pronounsForTense.length) return '';
       return `<details style="margin-bottom:14px">
           <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:6px">
-            ${esc(tense.targetName || tense.nativeName)} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">/ ${esc(tense.nativeName)}</span> <span style="font-size:.8rem;font-weight:400">(optional)</span>
+            ${esc(tense.targetName || tense.nativeName)} <span style="color:var(--text-faint);font-weight:400;font-size:.8rem">/ ${esc(tense.nativeName)}</span> <span style="font-size:.8rem;font-weight:400">${t('common_optional')}</span>
           </summary>
           <div style="font-size:.75rem;color:var(--text-faint);margin-bottom:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 2px">
             <span style="font-weight:600">${t('add_conj_pronoun')}</span>
@@ -575,7 +575,7 @@ function _buildEditWordFields(state) {
   const declHtml = !isVerb && declensions.length
     ? `<details style="margin-bottom:14px">
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-          ${t('add_declensions')} <span style="font-size:.8rem;font-weight:400">(optional)</span>
+          ${t('add_declensions')} <span style="font-size:.8rem;font-weight:400">${t('common_optional')}</span>
         </summary>
         ${declensions.map((d, i) => `
           <div class="field-group" style="margin-bottom:8px">
@@ -592,7 +592,7 @@ function _buildEditWordFields(state) {
     <div class="field-group"><label>${t('vocab_phrase_target') || 'Phrase (target language)'} <span class="required">*</span></label>
       <textarea id="meLiteral">${esc(state.literal || state.text || '')}</textarea></div>
     <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(state.translation)}"></div>
-    <div class="field-group"><label>${t('vocab_note') || 'Note'} <span class="optional">(optional)</span></label>
+    <div class="field-group"><label>${t('vocab_note')} <span class="optional">${t('common_optional')}</span></label>
       <input id="mePNote" value="${esc(state.helpNote || state.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`;
@@ -600,13 +600,13 @@ function _buildEditWordFields(state) {
 
   return `
     ${isNoun ? `<div class="field-group"><label>${t('vocab_article')}</label><input id="meArticle" value="${esc(state.article || '')}"></div>` : ''}
-    <div class="field-group"><label>${isVerb ? t('add_infinitive_label') || 'Infinitive in' : t('add_word_label') || 'Word in'} <strong style="font-weight:600">${langDataBase.flag ? langDataBase.flag + ' ' : ''}${langDataBase.name || lang}</strong> <span class="required">*</span></label><input id="meLiteral" value="${esc(literalFieldValue)}"></div>
+    <div class="field-group"><label>${isVerb ? t('add_infinitive_label') : t('add_word_label')} <strong style="font-weight:600">${langDataBase.flag ? langDataBase.flag + ' ' : ''}${langDataBase.name || lang}</strong> <span class="required">*</span></label><input id="meLiteral" value="${esc(literalFieldValue)}"></div>
     ${isVerb && state.infinitive && state.infinitive !== state.literal ? `<div class="field-group" style="opacity:.7"><label style="font-size:.82rem">${t('vocab_word')} (conjugated) <span style="font-weight:400;font-size:.78rem;color:var(--text-faint)">(kept for reference)</span></label><input id="meAltForm" value="${esc(state.literal)}" style="font-size:.85rem"></div>` : ''}
     <div class="field-group"><label>${t('vocab_translation')} <span class="required">*</span></label><input id="meTranslation" value="${esc(state.translation)}"></div>
     ${vgHtml}
     ${conjHtml}
     ${declHtml}
-    <div class="field-group"><label>${t('vocab_definition')} <span class="optional">(optional)</span></label><input id="meDefinition" value="${esc(state.definition || '')}"></div>
+    <div class="field-group"><label>${t('vocab_definition')} <span class="optional">${t('common_optional')}</span></label><input id="meDefinition" value="${esc(state.definition || '')}"></div>
     ${labelPickerHtml}
     <div id="meErr" class="alert alert-danger hidden"></div>`;
 }
@@ -714,7 +714,7 @@ window.editWord = function (id, lang) {
 
   openModal(t('vocab_edit_word'), `
     <div class="field-group">
-      <label>${t('add_type') || 'Type'} <span class="required">*</span></label>
+      <label>${t('add_type')} <span class="required">*</span></label>
       <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <option value="noun" ${w.type === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
         <option value="verb" ${w.type === 'verb' ? 'selected' : ''}>⚡ ${t('vocab_verb')}</option>
@@ -773,7 +773,7 @@ window.saveWordEdit = async function (id, lang) {
       const idx = _vocabWords.findIndex(x => x.id === id);
       if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
     } catch (e) {
-      document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+      document.getElementById('meErr').textContent = e.error || t('vocab_save_error');
       document.getElementById('meErr').classList.remove('hidden');
     }
     return;
@@ -866,7 +866,7 @@ window.saveWordEdit = async function (id, lang) {
     const idx = _vocabWords.findIndex(x => x.id === id);
     if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
-    document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+    document.getElementById('meErr').textContent = e.error || t('vocab_save_error');
     document.getElementById('meErr').classList.remove('hidden');
   }
 };
@@ -892,13 +892,13 @@ window.resetWordProgress = async function (id, lang) {
 };
 
 window.deleteWord = async function (id, lang) {
-  if (!confirm('Delete this word?')) return;
+  if (!confirm(t('vocab_delete_word_confirm'))) return;
   try {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
     renderVocabGrid();
     toast(`🗑️️ ${t('vocab_deleted')}`);
-  } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
+  } catch (e) { toast(e.error || t('vocab_delete_error'), 'danger'); }
 };
 
 window.editPhrase = function (id, lang) {
@@ -932,7 +932,7 @@ window.editPhrase = function (id, lang) {
 
   openModal(t('vocab_edit_phrase'), `
     <div class="field-group">
-      <label>${t('add_type') || 'Type'} <span class="required">*</span></label>
+      <label>${t('add_type')} <span class="required">*</span></label>
       <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <option value="phrase" ${pType === 'phrase' ? 'selected' : ''}>💬 ${t('vocab_phrase')}</option>
         <option value="noun" ${pType === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
@@ -991,7 +991,7 @@ window.savePhraseEdit = async function (id, lang) {
       const idx = _vocabPhrases.findIndex(p => p.id === id);
       if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
     } catch (e) {
-      document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+      document.getElementById('meErr').textContent = e.error || t('vocab_save_error');
       document.getElementById('meErr').classList.remove('hidden');
     }
     return;
@@ -1079,7 +1079,7 @@ window.savePhraseEdit = async function (id, lang) {
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
-    document.getElementById('meErr').textContent = e.error || 'Failed to save.';
+    document.getElementById('meErr').textContent = e.error || t('vocab_save_error');
     document.getElementById('meErr').classList.remove('hidden');
   }
 };
@@ -1105,13 +1105,13 @@ window.resetPhraseProgress = async function (id, lang) {
 };
 
 window.deletePhrase = async function (id, lang) {
-  if (!confirm('Delete this phrase?')) return;
+  if (!confirm(t('vocab_delete_phrase_confirm'))) return;
   try {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
     renderVocabGrid();
     toast(`🗑️ ${t('vocab_deleted')}`);
-  } catch (e) { toast(e.error || 'Failed to delete.', 'danger'); }
+  } catch (e) { toast(e.error || t('vocab_delete_error'), 'danger'); }
 };
 
 // ── Duplicates mode ──────────────────────────────────────────────────────────

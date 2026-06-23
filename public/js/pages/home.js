@@ -45,7 +45,7 @@ async function renderHome(el) {
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adverb\'})"><div class="stat-number">' + (stats.byType.adverb || 0) + '</div><div class="stat-label">' + t('home_adv') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'other\'})"><div class="stat-number">' + (stats.byType.other || 0) + '</div><div class="stat-label">' + t('home_other') + '</div></div>';
   } catch {
-    document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">Could not load stats.</p>';
+    document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">' + t('home_stats_error') + '</p>';
   }
 }
 

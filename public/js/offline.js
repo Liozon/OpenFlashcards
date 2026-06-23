@@ -191,7 +191,7 @@ window.Offline = (() => {
     const btn = document.createElement('button');
     btn.id        = 'offlineSyncBtn';
     btn.className = 'btn-icon offline-sync-btn';
-    btn.title     = t('offline_sync_btn') || 'Sync offline data';
+    btn.title     = t('offline_sync_btn');
     btn.innerHTML = '☁️';
     btn.style.cssText = 'position:relative';
 
@@ -230,8 +230,8 @@ window.Offline = (() => {
     const btn = document.getElementById('offlineSyncBtn');
     if (btn) {
       btn.title = n > 0
-        ? `${n} change(s) pending sync`
-        : (t('offline_sync_btn') || 'Sync offline data');
+        ? t('offline_pending_sync').replace('{n}', n)
+        : t('offline_sync_btn');
       btn.innerHTML = n > 0 ? '🔄' : (isOnline() ? '☁️' : '📴');
       btn.appendChild(badge);
     }

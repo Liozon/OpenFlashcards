@@ -3,7 +3,7 @@
 
 async function renderAdmin(el) {
   if (App.user.role !== 'admin') {
-    el.innerHTML = '<div class="card"><p>Access denied.</p></div>';
+    el.innerHTML = '<div class="card"><p>' + t('admin_access_denied') + '</p></div>';
     return;
   }
 
@@ -54,7 +54,7 @@ async function loadUserTable() {
   try {
     const users = await api('GET', '/admin/users');
     if (!users.length) {
-      wrap.innerHTML = '<p style="color:var(--text-muted)">No users.</p>';
+      wrap.innerHTML = '<p style="color:var(--text-muted)">' + t('admin_no_users') + '</p>';
       return;
     }
     wrap.innerHTML = `
@@ -100,7 +100,7 @@ async function loadUserTable() {
         </table>
       </div>`;
   } catch (e) {
-    wrap.innerHTML = `<p style="color:var(--danger)">${e.error || 'Failed to load users.'}</p>`;
+    wrap.innerHTML = `<p style="color:var(--danger)">${e.error || t('admin_load_failed')}</p>`;
   }
 }
 
@@ -302,7 +302,7 @@ window.createUser = async function () {
   okEl.classList.add('hidden');
 
   if (!username || !password) {
-    errEl.textContent = 'Username and password required.';
+    errEl.textContent = t('login_error_empty');
     errEl.classList.remove('hidden');
     return;
   }
@@ -315,20 +315,20 @@ window.createUser = async function () {
     setTimeout(() => okEl.classList.add('hidden'), 8000);
     loadUserTable();
   } catch (e) {
-    errEl.textContent = e.error || 'Failed to create user.';
+    errEl.textContent = e.error || t('admin_create_failed');
     errEl.classList.remove('hidden');
   }
 };
 
 window.resetPassword = function (id, username) {
-  openModal(`Reset password – ${username}`, `
+  openModal(`${t('admin_reset_title')} — ${username}`, `
     <div class="field-group">
-      <label>New password</label>
+      <label>${t('admin_reset_new')}</label>
       <input type="password" id="rpNew" autocomplete="new-password">
     </div>
     <div id="rpErr" class="alert alert-danger hidden"></div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-primary" onclick="submitResetPw('${id}')">Reset</button>`
+    `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
+     <button class="btn btn-primary" onclick="submitResetPw('${id}')">${t('admin_reset_btn')}</button>`
   );
 };
 
@@ -337,7 +337,7 @@ window.submitResetPw = async function (id) {
   const errEl = document.getElementById('rpErr');
   errEl.classList.add('hidden');
   if (!pw || pw.length < 4) {
-    errEl.textContent = 'Password must be at least 4 characters.';
+    errEl.textContent = t('settings_pw_tooshort');
     errEl.classList.remove('hidden');
     return;
   }
@@ -346,18 +346,18 @@ window.submitResetPw = async function (id) {
     closeModal();
     toast(`✓ ${t('admin_reset_ok')}`);
   } catch (e) {
-    errEl.textContent = e.error || 'Failed.';
+    errEl.textContent = e.error || t('admin_action_failed');
     errEl.classList.remove('hidden');
   }
 };
 
 window.deleteUser = async function (id, username) {
-  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  if (!confirm(t('admin_delete_confirm').replace('{user}', username))) return;
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
     toast(`🗑️ ${t('admin_deleted')}`);
-  } catch (e) { toast(e.error || 'Failed.', 'danger'); }
+  } catch (e) { toast(e.error || t('admin_action_failed'), 'danger'); }
 };
 
 function esc(s) {
