@@ -41,6 +41,60 @@ window.TTS = {
     return (h >>> 0).toString(16);
   },
 
+  // iOS detection — Safari requires shared Audio element for programmatic playback
+  _isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+
+  // Shared Audio element (iOS only — required by Safari autoplay policy)
+  _audio: null,
+  _unlockCtx: null,
+
+  _getAudio: function () {
+    if (!TTS._audio) {
+      TTS._audio = new Audio();
+      TTS._audio.volume = 1;
+    }
+    return TTS._audio;
+  },
+
+  // Must be called from a user gesture to unlock iOS audio context
+  unlock: function () {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = ctx.createBufferSource();
+      source.buffer = ctx.createBuffer(1, 1, 22050);
+      source.connect(ctx.destination);
+      source.start();
+      TTS._unlockCtx = ctx;
+    } catch (_) { }
+    // Use a temporary Audio for the silent unlock so it doesn't pollute the shared one
+    try {
+      const tmp = new Audio();
+      tmp.src = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gR2VuZXJpY1NvdW5kAAAAAFRXWFgAAAASAAADFGNvcHlyaWdodABMYXdmLiBBbGwgcmlnaHRzIGxlZ2FsbHkgcmVzZXJ2ZWQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      tmp.volume = 0.01;
+      tmp.play().catch(function () { });
+    } catch (_) { }
+  },
+
+  _play: function (url, fallback) {
+    if (TTS._isIOS) {
+      // iOS: reuse shared Audio element (Safari blocks new Audio() outside user gesture)
+      const audio = TTS._getAudio();
+      try { audio.pause(); } catch (_) { }
+      audio.src = url;
+      audio.play().catch(function () {
+        if (fallback) fallback();
+      });
+    } else {
+      // Android/Desktop: create fresh Audio each time
+      const audio = new Audio(url);
+      audio.volume = 1;
+      audio.play().catch(function () {
+        if (fallback) fallback();
+      });
+    }
+  },
+
   // Play text via proxy (normal speed). itemId = word/phrase UUID for cache key.
   speak: async function (text, langCode, itemId) {
     if (!text) return;
@@ -55,9 +109,7 @@ window.TTS = {
       if (buf) {
         const blob = new Blob([buf], { type: 'audio/mpeg' });
         const burl = URL.createObjectURL(blob);
-        const audio = new Audio(burl);
-        audio.volume = 1;
-        audio.play().catch(() => TTS._webSpeech(text, lang, false));
+        TTS._play(burl, () => TTS._webSpeech(text, lang, false));
         return;
       }
       // Not in IDB — if offline, fall back to Web Speech; if online, try network
@@ -67,9 +119,7 @@ window.TTS = {
       }
     }
     const url = TTS._url(text, lang, 'normal', itemId);
-    const audio = new Audio(url);
-    audio.volume = 1;
-    audio.play().catch(() => TTS._webSpeech(text, lang, false));
+    TTS._play(url, () => TTS._webSpeech(text, lang, false));
   },
 
   // Play text slowly. itemId = word/phrase UUID for cache key.
@@ -85,9 +135,7 @@ window.TTS = {
       if (buf) {
         const blob = new Blob([buf], { type: 'audio/mpeg' });
         const burl = URL.createObjectURL(blob);
-        const audio = new Audio(burl);
-        audio.volume = 1;
-        audio.play().catch(() => TTS._webSpeech(text, lang, true));
+        TTS._play(burl, () => TTS._webSpeech(text, lang, true));
         return;
       }
       if (isOffline) {
@@ -96,9 +144,7 @@ window.TTS = {
       }
     }
     const url = TTS._url(text, lang, 'slow', itemId);
-    const audio = new Audio(url);
-    audio.volume = 1;
-    audio.play().catch(() => TTS._webSpeech(text, lang, true));
+    TTS._play(url, () => TTS._webSpeech(text, lang, true));
   },
 
   // Fallback Web Speech API
