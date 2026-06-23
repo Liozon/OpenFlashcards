@@ -227,6 +227,7 @@ async function _populateLabelFilters(lang) {
 // ── Start training ─────────────────────────────────────────────────────────────
 window.startTraining = function () {
   _trainSessionStarted = true;
+  TTS.unlock();
   const startRow = document.getElementById('startTrainingRow');
   if (startRow) startRow.style.display = 'none';
   const panel = document.getElementById('trainSettingsPanel');
