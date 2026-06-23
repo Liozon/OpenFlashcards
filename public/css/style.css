@@ -781,11 +781,21 @@ img {
 
 /* ── PHRASE TRAINING ────────────────────────────────────────── */
 .phrase-card {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 28px;
   box-shadow: var(--shadow-lg);
   border: 1.5px solid var(--border);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.phrase-card.correct {
+  border-color: transparent;
 }
 
 .phrase-translation {

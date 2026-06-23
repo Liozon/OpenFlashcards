@@ -510,7 +510,6 @@ async function handleWordAnswer(btn, answer, q) {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
-  if (correct) _triggerGreenBorder('wordQuizCard');
   _checkComboConfetti();
 
   TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
@@ -613,6 +612,7 @@ async function handleWordAnswer(btn, answer, q) {
     '</div>' +
     '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + ' →</button>';
   card.appendChild(nextRow);
+  if (correct) _triggerGreenBorder('wordQuizCard');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -650,7 +650,7 @@ function renderPhraseQuiz(phrase) {
   }).join(' ');
 
   area.innerHTML =
-    '<div class="phrase-card">' +
+    '<div class="phrase-card" id="phraseQuizCard">' +
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
     '<div class="badge badge-phrase">💬 ' + t('train_phrases') + '</div>' +
     '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
@@ -808,6 +808,7 @@ window.checkPhraseAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  if (correct) _triggerGreenBorder('phraseQuizCard');
   _checkComboConfetti();
 
   // Speak the whole sentence
@@ -1047,6 +1048,7 @@ window.checkWritingAnswer = async function () {
 
   if (correct) { _trainCorrect++; _trainStreak++; } else { _trainWrong++; _trainStreak = 0; }
   updateScore();
+  if (correct) _triggerGreenBorder('writingQuizCard');
   _checkComboConfetti();
 
   TTS.speak(targetWord, _curWritingWord.langCode);
@@ -1335,10 +1337,10 @@ function _triggerGreenBorder(id) {
   if (!el) return;
   el.classList.add('correct');
 
-  // Wait for layout so the card has its final size
   requestAnimationFrame(function () {
     const w = el.offsetWidth;
     const h = el.offsetHeight;
+    const bw = parseFloat(getComputedStyle(el).borderTopWidth) || 1.5;
     const r = 16;
     const halfTop = Math.max(0, w / 2 - r);
     const side = Math.max(0, h - 2 * r);
@@ -1361,7 +1363,7 @@ function _triggerGreenBorder(id) {
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('width', w);
     svg.setAttribute('height', h);
-    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;filter:drop-shadow(0 0 6px #439b00)';
+    svg.style.cssText = 'position:absolute;top:' + (-bw) + 'px;left:' + (-bw) + 'px;pointer-events:none;overflow:visible;filter:drop-shadow(0 0 6px #439b00)';
 
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', d);
