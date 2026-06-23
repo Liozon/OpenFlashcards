@@ -682,9 +682,6 @@ function renderPhraseQuiz(phrase) {
     TTS.speak(phrase.text, lang);
   }
 
-  // Wire tooltip/TTS clicks
-  loadWordsForTooltips(lang, phrase);
-
   buildWordBank(phrase);
 }
 
