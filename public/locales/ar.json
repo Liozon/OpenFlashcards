@@ -331,5 +331,10 @@
   "train_green_border": "الرسوم المتحركة",
   "train_confetti": "كومبوفيتي",
   "train_start": "Start",
-  "train_configure_prompt": "Configure your session above and click Start"
+  "train_configure_prompt": "Configure your session above and click Start",
+  "settings_date_format": "تنسيق التاريخ",
+  "settings_date_format_desc": "اختر كيفية عرض التواريخ وإدخالها في مرشح تاريخ التدريب.",
+  "settings_date_format_example": "مثال مع تاريخ اليوم:",
+  "train_date_from": "من",
+  "train_date_to": "إلى"
 }

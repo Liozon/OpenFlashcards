@@ -331,5 +331,10 @@
   "train_green_border": "Animationen",
   "train_confetti": "Combofettis",
   "train_start": "Start",
-  "train_configure_prompt": "Configure your session above and click Start"
+  "train_configure_prompt": "Configure your session above and click Start",
+  "settings_date_format": "Datumsformat",
+  "settings_date_format_desc": "Wählen Sie, wie Daten im Trainings-Datumsfilter angezeigt und eingegeben werden.",
+  "settings_date_format_example": "Beispiel mit dem heutigen Datum:",
+  "train_date_from": "Von",
+  "train_date_to": "Bis"
 }
