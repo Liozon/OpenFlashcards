@@ -336,6 +336,5 @@
   "settings_date_format_desc": "Choose how dates are displayed and entered in the training date filter.",
   "settings_date_format_example": "Example with today's date:",
   "train_date_from": "From",
-  "train_date_to": "To",
-  "train_date_placeholder": "Date"
+  "train_date_to": "To"
 }
