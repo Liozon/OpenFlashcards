@@ -66,7 +66,7 @@ router.get('/config', (req, res) => {
 // PUT /api/config
 router.put('/config', (req, res) => {
   const cfg = getUserConfig(userId(req));
-  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode', 'showGreenBorder', 'showConfetti'];
+  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode', 'showGreenBorder', 'showConfetti', 'dateFormat'];
   allowed.forEach(k => { if (req.body[k] !== undefined) cfg[k] = req.body[k]; });
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
@@ -757,15 +757,17 @@ router.delete('/phrases/:id', (req, res) => {
 // QUIZ – Words
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/quiz?lang=fr[&type=verb,noun][&direction=random][&labels=id1,id2]
+// GET /api/quiz?lang=fr[&type=verb,noun][&direction=random][&labels=id1,id2][&dateFrom=2026-07-01][&dateTo=2026-07-31]
 router.get('/quiz', (req, res) => {
-  const { lang, direction = 'random' } = req.query;
+  const { lang, direction = 'random', dateFrom, dateTo } = req.query;
   const types = req.query.types ? req.query.types.split(',') : TYPES;
   const labels = req.query.labels ? req.query.labels.split(',') : [];
   if (!lang) return res.status(400).json({ error: 'lang required' });
 
   let pool = getWords(userId(req), lang).filter(w => types.includes(w.type));
   if (labels.length) pool = pool.filter(w => labels.some(lid => (w.labels || []).includes(lid)));
+  if (dateFrom) pool = pool.filter(w => w.createdAt >= dateFrom);
+  if (dateTo) pool = pool.filter(w => w.createdAt <= dateTo + 'T23:59:59.999Z');
   if (pool.length < 2) return res.status(400).json({ error: 'Add at least 2 words to start!' });
 
   // Sort by progress ratio asc (least learned first → prioritised)
@@ -908,13 +910,15 @@ router.post('/quiz/answer', (req, res) => {
 // QUIZ – Phrases
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/quiz/phrase?lang=fr[&labels=id1,id2]
+// GET /api/quiz/phrase?lang=fr[&labels=id1,id2][&dateFrom=2026-07-01][&dateTo=2026-07-31]
 router.get('/quiz/phrase', (req, res) => {
-  const { lang } = req.query;
+  const { lang, dateFrom, dateTo } = req.query;
   const labels = req.query.labels ? req.query.labels.split(',') : [];
   if (!lang) return res.status(400).json({ error: 'lang required' });
   let phrases = getPhrases(userId(req), lang);
   if (labels.length) phrases = phrases.filter(p => labels.some(lid => (p.labels || []).includes(lid)));
+  if (dateFrom) phrases = phrases.filter(p => p.createdAt >= dateFrom);
+  if (dateTo) phrases = phrases.filter(p => p.createdAt <= dateTo + 'T23:59:59.999Z');
   if (!phrases.length) return res.status(404).json({ error: 'No phrases yet.' });
   const phrase = phrases[Math.floor(Math.random() * phrases.length)];
   res.json(phrase);

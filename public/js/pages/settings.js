@@ -41,6 +41,19 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
+      <h2>📅 ${t('settings_date_format')}</h2>
+      <p style="color:var(--text-muted);margin-bottom:12px;font-size:.9rem">${t('settings_date_format_desc')}</p>
+      <div class="field-group">
+        <select id="dateFormatSelect" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.9rem;width:100%">
+          ${['DD/MM/YYYY', 'D/M/YYYY', 'DD-MM-YYYY', 'D-M-YYYY', 'DD.MM.YYYY', 'D.M.YYYY', 'MM/DD/YYYY', 'M/D/YYYY', 'MM-DD-YYYY', 'M-D-YYYY', 'MM.DD.YYYY', 'M.D.YYYY', 'YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYYMMDD'].map(fmt =>
+    `<option value="${fmt}" ${(cfg.dateFormat || 'DD/MM/YYYY') === fmt ? 'selected' : ''}>${fmt}</option>`
+  ).join('')}
+        </select>
+        <p id="dateFormatPreview" style="margin-top:8px;font-size:.85rem;color:var(--text-faint);text-align:center"></p>
+      </div>
+    </div>
+
+    <div class="card settings-section">
       <h2>🔐 ${t('settings_account')}</h2>
       <p style="color:var(--text-muted);margin-bottom:16px">${t('settings_logged_as')} <strong>${esc(App.user.username)}</strong></p>
       <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">${t('settings_change_pw')}</button>
@@ -86,6 +99,40 @@ async function renderSettings(el) {
     await saveConfig({ darkMode: this.checked });
     document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
   });
+
+  // ── Date format ────────────────────────────────────────────────────────────
+  function _fmtDatePreview(fmt) {
+    const d = new Date();
+    let sep = '';
+    if (fmt.includes('/')) sep = '/';
+    else if (fmt.includes('-')) sep = '-';
+    else if (fmt.includes('.')) sep = '.';
+    const parts = sep ? fmt.split(sep) : ['YYYY', 'MM', 'DD'];
+    const order = parts.map(p => p.includes('Y') ? 'year' : p.includes('M') ? 'month' : 'day');
+    const padded = parts.map(p => p.length > 1);
+    const vals = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+    return order.map((key, i) => {
+      const isPadded = key === 'year' ? true : padded[i];
+      return isPadded ? String(vals[key]).padStart(key === 'year' ? 4 : 2, '0') : String(vals[key]);
+    }).join(sep);
+  }
+
+  function _updateDatePreview() {
+    const preview = document.getElementById('dateFormatPreview');
+    if (!preview) return;
+    const fmt = document.getElementById('dateFormatSelect')?.value || 'DD/MM/YYYY';
+    preview.textContent = t('settings_date_format_example') + ' ' + _fmtDatePreview(fmt);
+  }
+
+  const dateFormatSelect = document.getElementById('dateFormatSelect');
+  if (dateFormatSelect) {
+    dateFormatSelect.addEventListener('change', async function () {
+      await saveConfig({ dateFormat: this.value });
+      _updateDatePreview();
+      toast(`✓ ${t('settings_config_saved')}`);
+    });
+    _updateDatePreview();
+  }
 
   // ── Offline mode toggle ────────────────────────────────────────────────────
   const offlineToggle = document.getElementById('offlineModeToggle');

@@ -331,5 +331,11 @@
   "train_green_border": "Green border on correct",
   "train_confetti": "Confetti on combo (10 streak)",
   "train_start": "Start",
-  "train_configure_prompt": "Configure your session above and click Start"
+  "train_configure_prompt": "Configure your session above and click Start",
+  "settings_date_format": "Date format",
+  "settings_date_format_desc": "Choose how dates are displayed and entered in the training date filter.",
+  "settings_date_format_example": "Example with today's date:",
+  "train_date_from": "From",
+  "train_date_to": "To",
+  "train_date_placeholder": "Date"
 }

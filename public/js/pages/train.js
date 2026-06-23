@@ -23,6 +23,63 @@ let _writingLetterBank = [];
 let _writingEasyMode = false;
 let _writingSegments = [];
 let _trainSessionStarted = false;
+let _trainDateFrom = '';
+let _trainDateTo = '';
+
+// ── Date format helpers ───────────────────────────────────────────────────────
+const _DATE_FORMATS = [
+  'DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','DD.MM.YYYY','D.M.YYYY',
+  'MM/DD/YYYY','M/D/YYYY','MM-DD-YYYY','M-D-YYYY','MM.DD.YYYY','M.D.YYYY',
+  'YYYY-MM-DD','YYYY/MM/DD','YYYY.MM.DD','YYYYMMDD'
+];
+
+function _dateFmtInfo(fmt) {
+  let sep = '';
+  if (fmt.includes('/')) sep = '/';
+  else if (fmt.includes('-')) sep = '-';
+  else if (fmt.includes('.')) sep = '.';
+  const parts = sep ? fmt.split(sep) : ['YYYY','MM','DD'];
+  const order = parts.map(p => p.includes('Y') ? 'year' : p.includes('M') ? 'month' : 'day');
+  const padded = parts.map(p => p.length > 1);
+  return { sep, order, padded };
+}
+
+function _parseDateStr(str, fmt) {
+  if (!str || !fmt) return '';
+  const info = _dateFmtInfo(fmt);
+  let parts;
+  if (info.sep) {
+    parts = str.split(info.sep);
+  } else {
+    if (str.length === 8) parts = [str.slice(0,4), str.slice(4,6), str.slice(6,8)];
+    else return '';
+  }
+  if (parts.length !== 3) return '';
+  const vals = {};
+  parts.forEach((p, i) => { vals[info.order[i]] = parseInt(p, 10); });
+  if (!vals.year || !vals.month || !vals.day) return '';
+  if (vals.month < 1 || vals.month > 12 || vals.day < 1 || vals.day > 31) return '';
+  return String(vals.year).padStart(4,'0') + '-' + String(vals.month).padStart(2,'0') + '-' + String(vals.day).padStart(2,'0');
+}
+
+function _fmtDateStr(iso, fmt) {
+  if (!iso || !fmt) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const vals = { year: parseInt(m[1],10), month: parseInt(m[2],10), day: parseInt(m[3],10) };
+  const info = _dateFmtInfo(fmt);
+  const parts = info.order.map(key => {
+    const val = vals[key];
+    const idx = info.order.indexOf(key);
+    const isPadded = key === 'year' ? true : info.padded[idx];
+    return isPadded ? String(val).padStart(key === 'year' ? 4 : 2, '0') : String(val);
+  });
+  return parts.join(info.sep);
+}
+
+function _getDateFormat() {
+  return (App.config && App.config.dateFormat) || 'DD/MM/YYYY';
+}
 
 // ── Auto-flashcard mode state ─────────────────────────────────
 let _trainAutoContent = 'words';     // 'words' | 'phrases' | 'everything'
@@ -51,6 +108,7 @@ function renderTrain(el) {
   stopAutoTimer();
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
   _trainTypes = []; _trainLabels = []; _trainMode = 'flashcards'; _trainDirection = 'random';
+  _trainDateFrom = ''; _trainDateTo = '';
 
   const ld = currentLangData();
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
@@ -100,7 +158,26 @@ function renderTrain(el) {
     // ── 3. Labels ──
     '<div class="filter-row" id="labelFilters"></div>' +
 
-    // ── 4. Mode-specific settings ──
+    // ── 4. Date filter ──
+    '<div id="dateFilters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin-bottom:20px">' +
+    '<span style="font-size:.85rem;color:var(--text-muted)">📅 ' + t('train_date_from') + '</span>' +
+    '<span style="position:relative;display:inline-block">' +
+    '<input type="text" id="trainDateFromDisplay" readonly placeholder="' + _getDateFormat() + '"' +
+    ' style="width:115px;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem;text-align:center;pointer-events:none">' +
+    '<input type="date" id="trainDateFrom" onchange="onDatePick(this,\'from\')" onclick="this.showPicker()"' +
+    ' style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.02;cursor:pointer;font-size:16px;color:transparent;background:transparent">' +
+    '</span>' +
+    '<span style="font-size:.85rem;color:var(--text-muted)">📅 ' + t('train_date_to') + '</span>' +
+    '<span style="position:relative;display:inline-block">' +
+    '<input type="text" id="trainDateToDisplay" readonly placeholder="' + _getDateFormat() + '"' +
+    ' style="width:115px;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem;text-align:center;pointer-events:none">' +
+    '<input type="date" id="trainDateTo" onchange="onDatePick(this,\'to\')" onclick="this.showPicker()"' +
+    ' style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.02;cursor:pointer;font-size:16px;color:transparent;background:transparent">' +
+    '</span>' +
+    '<button class="btn btn-secondary btn-sm" onclick="clearDateFilter()" style="padding:4px 10px;font-size:.78rem">✕</button>' +
+    '</div>' +
+
+    // ── 5. Mode-specific settings ──
     '<div class="filter-row" id="dirFilters">' +
     '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
@@ -125,7 +202,7 @@ function renderTrain(el) {
     '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
     '</div>' +
 
-    // ── 5. UX toggles ──
+    // ── 6. UX toggles ──
     '<div id="trainUxToggles">' +
     '<div class="train-toggle-row">' +
     '<label>' + t('train_green_border') + '</label>' +
@@ -143,7 +220,7 @@ function renderTrain(el) {
     '</div>' +
     '</div>' +
 
-    // ── 6. Start button ──
+    // ── 7. Start button ──
     '<div class="filter-row" id="startTrainingRow">' +
     '<button class="btn btn-primary" style="font-size:1.1rem;padding:14px 48px" onclick="startTraining()">▶ ' + t('train_start') + '</button>' +
     '</div>' +
@@ -316,6 +393,29 @@ window.toggleTypeFilter = function (type, btn) {
   if (_trainSessionStarted) loadQuestion();
 };
 
+window.onDatePick = function (input, which) {
+  const iso = input.value;
+  const displayId = 'trainDate' + (which === 'from' ? 'FromDisplay' : 'ToDisplay');
+  const displayEl = document.getElementById(displayId);
+  if (which === 'from') {
+    _trainDateFrom = iso;
+  } else {
+    _trainDateTo = iso;
+  }
+  if (displayEl) displayEl.value = iso ? _fmtDateStr(iso, _getDateFormat()) : '';
+  if (_trainSessionStarted) loadQuestion();
+};
+
+window.clearDateFilter = function () {
+  _trainDateFrom = '';
+  _trainDateTo = '';
+  ['trainDateFromDisplay','trainDateToDisplay','trainDateFrom','trainDateTo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  if (_trainSessionStarted) loadQuestion();
+};
+
 window.setTrainDir = function (dir, btn) {
   _trainDirection = dir;
   document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
@@ -415,6 +515,13 @@ async function loadMixedQuestion() {
 // ─────────────────────────────────────────────────────────────────────────────
 // WORD QUIZ
 // ─────────────────────────────────────────────────────────────────────────────
+function _dateParams() {
+  let s = '';
+  if (_trainDateFrom) s += '&dateFrom=' + encodeURIComponent(_trainDateFrom);
+  if (_trainDateTo) s += '&dateTo=' + encodeURIComponent(_trainDateTo);
+  return s;
+}
+
 async function loadWordQuestion() {
   const lang = currentLang();
   const area = document.getElementById('quizArea');
@@ -426,7 +533,7 @@ async function loadWordQuestion() {
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
 
   try {
-    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam + labelsParam);
+    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam + labelsParam + _dateParams());
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
@@ -626,7 +733,7 @@ async function loadPhraseQuestion() {
 
   try {
     const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam);
+    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam + _dateParams());
     renderPhraseQuiz(_curPhrase);
   } catch (e) {
     area.innerHTML =
@@ -849,7 +956,7 @@ async function loadWritingQuestion() {
     const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
     const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
     // Always native→target direction for writing mode
-    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=native' + typesParam + labelsParam);
+    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=native' + typesParam + labelsParam + _dateParams());
     _curWritingWord = q;
     renderWritingQuiz(q);
   } catch (e) {
@@ -1190,10 +1297,10 @@ async function loadAutoQuestion() {
       (_trainAutoContent === 'everything' && Math.random() < 0.5);
 
     if (pickPhrase) {
-      card = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam);
+      card = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam + _dateParams());
       card._type = 'phrase';
     } else {
-      card = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=random' + typesParam + labelsParam);
+      card = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=random' + typesParam + labelsParam + _dateParams());
       card._type = 'word';
     }
     _trainAutoCard = card;

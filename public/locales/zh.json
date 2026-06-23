@@ -331,5 +331,10 @@
   "train_green_border": "动画",
   "train_confetti": "连击彩花",
   "train_start": "Start",
-  "train_configure_prompt": "Configure your session above and click Start"
+  "train_configure_prompt": "Configure your session above and click Start",
+  "settings_date_format": "日期格式",
+  "settings_date_format_desc": "选择在训练日期过滤器中如何显示和输入日期。",
+  "settings_date_format_example": "以今天日期为例：",
+  "train_date_from": "从",
+  "train_date_to": "至"
 }
