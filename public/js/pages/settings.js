@@ -73,22 +73,21 @@ async function renderSettings(el) {
 
       <div id="offlineControls" style="display:${cfg.offlineMode ? '' : 'none'}">
         <div id="offlineStatus" class="offline-status-box" style="margin-bottom:14px"></div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
-            🔄 ${t('offline_sync_now')}
-          </button>
-          <button class="btn btn-secondary btn-sm" id="offlineClearBtn">
-            🗑️ ${t('offline_clear')}
-          </button>
-        </div>
-
         <div id="offlineSyncProgress" style="display:none;margin-top:12px">
           <div class="offline-progress-bar-wrap">
             <div class="offline-progress-bar" id="offlineProgressBar" style="width:0%"></div>
           </div>
           <p id="offlineProgressText" style="font-size:.82rem;color:var(--text-muted);margin-top:6px"></p>
         </div>
+      </div>
+
+      <div id="offlineActionRow" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" style="display:${cfg.offlineMode ? '' : 'none'}" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
+          🔄 ${t('offline_sync_now')}
+        </button>
+        <button class="btn btn-secondary btn-sm" id="offlineClearBtn" style="display:none">
+          🗑️ ${t('offline_clear')}
+        </button>
       </div>
     </div>`;
 
@@ -162,21 +161,36 @@ async function renderSettings(el) {
         `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>` +
         pendingHtml;
     }
+
+    // Show clear button only when there's offline data
+    const clearBtn = document.getElementById('offlineClearBtn');
+    if (clearBtn) {
+      clearBtn.style.display = meta ? '' : 'none';
+    }
   }
 
   offlineToggle.addEventListener('change', async function () {
     const enabled = this.checked;
     await saveConfig({ offlineMode: enabled });
     offlineControls.style.display = enabled ? '' : 'none';
+    const syncBtn = document.getElementById('offlineSyncNowBtn');
+    if (syncBtn) syncBtn.style.display = enabled ? '' : 'none';
     if (enabled) {
       await refreshOfflineStatus();
       toast(t('offline_enabled_toast'));
     } else {
-      toast(t('offline_disabled_toast'));
+      if (confirm(t('offline_disable_prompt'))) {
+        await OfflineDB.clearAll();
+        const clearBtn = document.getElementById('offlineClearBtn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        toast(t('offline_cleared'));
+      } else {
+        toast(t('offline_disabled_toast'));
+      }
     }
   });
 
-  if (cfg.offlineMode) refreshOfflineStatus();
+  refreshOfflineStatus(); // updates status & clear button visibility
 
   // Clear offline data
   document.getElementById('offlineClearBtn') && document.getElementById('offlineClearBtn').addEventListener('click', async () => {
@@ -641,26 +655,28 @@ window.openLangConfig = function (isoCode) {
         <span style="font-size:.9rem">${t('settings_tts_cache_enable')}</span>
       </label>
       <div id="ttsCacheSection" style="${ttsCacheEnabled ? '' : 'opacity:.45;pointer-events:none'}">
-      <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm">
-          ⚡ ${t('settings_tts_cache_generate')}
-        </button>
+        <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm">
+            ⚡ ${t('settings_tts_cache_generate')}
+          </button>
+        </div>
+        <div id="ttsCacheGenProgress" style="display:none;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span id="ttsCacheGenLabel" style="font-size:.83rem;color:var(--text-muted)"></span>
+            <button type="button" id="ttsCacheGenCancelBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.82rem;padding:0">${t('common_cancel')}</button>
+          </div>
+          <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden">
+            <div id="ttsCacheGenBar" style="height:100%;background:var(--primary);width:0%;transition:width .2s;border-radius:6px"></div>
+          </div>
+          <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
         <button type="button" id="ttsCachePurgeBtn" class="btn btn-danger btn-sm">
           🗑️ ${t('settings_tts_cache_purge')}
         </button>
       </div>
-      <div id="ttsCacheGenProgress" style="display:none;margin-top:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span id="ttsCacheGenLabel" style="font-size:.83rem;color:var(--text-muted)"></span>
-          <button type="button" id="ttsCacheGenCancelBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.82rem;padding:0">${t('common_cancel')}</button>
-        </div>
-        <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden">
-          <div id="ttsCacheGenBar" style="height:100%;background:var(--primary);width:0%;transition:width .2s;border-radius:6px"></div>
-        </div>
-        <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
-      </div>
-    </div>
     </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
@@ -725,13 +741,27 @@ window.openLangConfig = function (isoCode) {
   // ── TTS cache toggle ──────────────────────────────────────────────────────
   const cacheToggle = document.getElementById('ttsCacheToggle');
   if (cacheToggle) {
-    cacheToggle.addEventListener('click', () => {
+    cacheToggle.addEventListener('click', async () => {
+      const wasEnabled = ttsCacheEnabled;
       ttsCacheEnabled = !ttsCacheEnabled;
       cacheToggle.style.background = ttsCacheEnabled ? 'var(--primary)' : 'var(--border)';
       const knob = document.getElementById('ttsCacheKnob');
       if (knob) knob.style.left = ttsCacheEnabled ? '21px' : '3px';
       const section = document.getElementById('ttsCacheSection');
       if (section) { section.style.opacity = ttsCacheEnabled ? '1' : '0.45'; section.style.pointerEvents = ttsCacheEnabled ? '' : 'none'; }
+      // Prompt to purge cache when disabling
+      if (wasEnabled && !ttsCacheEnabled) {
+        if (confirm(t('settings_tts_cache_disable_prompt'))) {
+          const result = await TTS.purgeCache(isoCode);
+          const infoEl = document.getElementById('ttsCacheInfo');
+          if (result && result.ok) {
+            if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
+            toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+          } else {
+            toast(t('common_error'), 'danger');
+          }
+        }
+      }
     });
   }
 
