@@ -73,22 +73,21 @@ async function renderSettings(el) {
 
       <div id="offlineControls" style="display:${cfg.offlineMode ? '' : 'none'}">
         <div id="offlineStatus" class="offline-status-box" style="margin-bottom:14px"></div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
-            🔄 ${t('offline_sync_now')}
-          </button>
-          <button class="btn btn-secondary btn-sm" id="offlineClearBtn">
-            🗑️ ${t('offline_clear')}
-          </button>
-        </div>
-
         <div id="offlineSyncProgress" style="display:none;margin-top:12px">
           <div class="offline-progress-bar-wrap">
             <div class="offline-progress-bar" id="offlineProgressBar" style="width:0%"></div>
           </div>
           <p id="offlineProgressText" style="font-size:.82rem;color:var(--text-muted);margin-top:6px"></p>
         </div>
+      </div>
+
+      <div id="offlineActionRow" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" style="display:${cfg.offlineMode ? '' : 'none'}" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
+          🔄 ${t('offline_sync_now')}
+        </button>
+        <button class="btn btn-secondary btn-sm" id="offlineClearBtn" style="display:none">
+          🗑️ ${t('offline_clear')}
+        </button>
       </div>
     </div>`;
 
@@ -162,25 +161,54 @@ async function renderSettings(el) {
         `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>` +
         pendingHtml;
     }
+
+    // Show clear button only when there's offline data
+    const clearBtn = document.getElementById('offlineClearBtn');
+    if (clearBtn) {
+      clearBtn.style.display = meta ? '' : 'none';
+    }
   }
 
   offlineToggle.addEventListener('change', async function () {
     const enabled = this.checked;
-    await saveConfig({ offlineMode: enabled });
-    offlineControls.style.display = enabled ? '' : 'none';
     if (enabled) {
+      await saveConfig({ offlineMode: true });
+      offlineControls.style.display = '';
+      const syncBtn = document.getElementById('offlineSyncNowBtn');
+      if (syncBtn) syncBtn.style.display = '';
       await refreshOfflineStatus();
       toast(t('offline_enabled_toast'));
     } else {
-      toast(t('offline_disabled_toast'));
+      const choice = await confirmModal(t('offline_disable_prompt'), {
+        confirmLabel: t('offline_clear'),
+        cancelLabel: t('offline_keep_data'),
+        extraButton: t('common_cancel')
+      });
+      if (choice === -1) {
+        // Cancel deactivation: revert checkbox
+        this.checked = true;
+        return;
+      }
+      await saveConfig({ offlineMode: false });
+      offlineControls.style.display = 'none';
+      const syncBtn = document.getElementById('offlineSyncNowBtn');
+      if (syncBtn) syncBtn.style.display = 'none';
+      if (choice === true) {
+        await OfflineDB.clearAll();
+        const clearBtn = document.getElementById('offlineClearBtn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        toast(t('offline_cleared'));
+      } else {
+        toast(t('offline_disabled_toast'));
+      }
     }
   });
 
-  if (cfg.offlineMode) refreshOfflineStatus();
+  refreshOfflineStatus(); // updates status & clear button visibility
 
   // Clear offline data
   document.getElementById('offlineClearBtn') && document.getElementById('offlineClearBtn').addEventListener('click', async () => {
-    if (!confirm(t('offline_clear_confirm'))) return;
+    if (!await confirmModal(t('offline_clear_confirm'), { confirmLabel: t('offline_clear') })) return;
     await OfflineDB.clearAll();
     await refreshOfflineStatus();
     toast(t('offline_cleared'));
@@ -423,7 +451,7 @@ function renderLangChips() {
 }
 
 window.removeLang = async function (code) {
-  if (!confirm(t('settings_remove_confirm'))) return;
+  if (!await confirmModal(t('settings_remove_confirm'), { confirmLabel: t('common_delete') })) return;
   try {
     await api('DELETE', '/api/languages/' + encodeURIComponent(code));
     await loadConfig();
@@ -641,26 +669,26 @@ window.openLangConfig = function (isoCode) {
         <span style="font-size:.9rem">${t('settings_tts_cache_enable')}</span>
       </label>
       <div id="ttsCacheSection" style="${ttsCacheEnabled ? '' : 'opacity:.45;pointer-events:none'}">
-      <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm">
+        <div id="ttsCacheInfo" style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px">…</div>
+        <div id="ttsCacheGenProgress" style="display:none;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span id="ttsCacheGenLabel" style="font-size:.83rem;color:var(--text-muted)"></span>
+            <button type="button" id="ttsCacheGenCancelBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.82rem;padding:0">${t('common_cancel')}</button>
+          </div>
+          <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden">
+            <div id="ttsCacheGenBar" style="height:100%;background:var(--primary);width:0%;transition:width .2s;border-radius:6px"></div>
+          </div>
+          <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+        <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm" style="${ttsCacheEnabled ? '' : 'display:none'}">
           ⚡ ${t('settings_tts_cache_generate')}
         </button>
-        <button type="button" id="ttsCachePurgeBtn" class="btn btn-danger btn-sm">
+        <button type="button" id="ttsCachePurgeBtn" class="btn btn-danger btn-sm" style="display:none">
           🗑️ ${t('settings_tts_cache_purge')}
         </button>
       </div>
-      <div id="ttsCacheGenProgress" style="display:none;margin-top:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span id="ttsCacheGenLabel" style="font-size:.83rem;color:var(--text-muted)"></span>
-          <button type="button" id="ttsCacheGenCancelBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.82rem;padding:0">${t('common_cancel')}</button>
-        </div>
-        <div style="background:var(--surface-2);border-radius:6px;height:8px;overflow:hidden">
-          <div id="ttsCacheGenBar" style="height:100%;background:var(--primary);width:0%;transition:width .2s;border-radius:6px"></div>
-        </div>
-        <div id="ttsCacheGenCount" style="font-size:.78rem;color:var(--text-faint);margin-top:4px;text-align:right"></div>
-      </div>
-    </div>
     </div>
     <div id="lcErr" class="alert alert-danger hidden" style="margin-top:12px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
@@ -725,13 +753,50 @@ window.openLangConfig = function (isoCode) {
   // ── TTS cache toggle ──────────────────────────────────────────────────────
   const cacheToggle = document.getElementById('ttsCacheToggle');
   if (cacheToggle) {
-    cacheToggle.addEventListener('click', () => {
-      ttsCacheEnabled = !ttsCacheEnabled;
-      cacheToggle.style.background = ttsCacheEnabled ? 'var(--primary)' : 'var(--border)';
-      const knob = document.getElementById('ttsCacheKnob');
-      if (knob) knob.style.left = ttsCacheEnabled ? '21px' : '3px';
-      const section = document.getElementById('ttsCacheSection');
-      if (section) { section.style.opacity = ttsCacheEnabled ? '1' : '0.45'; section.style.pointerEvents = ttsCacheEnabled ? '' : 'none'; }
+    cacheToggle.addEventListener('click', async () => {
+      const wasEnabled = ttsCacheEnabled;
+      const willBeEnabled = !wasEnabled;
+      // Prompt first when disabling, before changing UI
+      if (wasEnabled && !willBeEnabled) {
+        const choice = await confirmModal(t('settings_tts_cache_disable_prompt'), {
+          confirmLabel: t('settings_tts_cache_purge'),
+          cancelLabel: t('settings_tts_cache_keep_files'),
+          extraButton: t('common_cancel')
+        });
+        if (choice === -1) return; // Don't change anything
+        // Proceed with disabling — get fresh DOM refs after modal restore
+        ttsCacheEnabled = false;
+        const freshToggle = document.getElementById('ttsCacheToggle');
+        if (freshToggle) freshToggle.style.background = 'var(--border)';
+        const freshKnob = document.getElementById('ttsCacheKnob');
+        if (freshKnob) freshKnob.style.left = '3px';
+        const freshSection = document.getElementById('ttsCacheSection');
+        if (freshSection) { freshSection.style.opacity = '0.45'; freshSection.style.pointerEvents = 'none'; }
+        const freshGenBtn = document.getElementById('ttsCacheGenBtn');
+        if (freshGenBtn) freshGenBtn.style.display = 'none';
+        if (choice === true) {
+          const result = await TTS.purgeCache(isoCode);
+          const infoEl = document.getElementById('ttsCacheInfo');
+          if (result && result.ok) {
+            if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
+            toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+            const freshPurgeBtn = document.getElementById('ttsCachePurgeBtn');
+            if (freshPurgeBtn) freshPurgeBtn.style.display = 'none';
+          } else {
+            toast(t('common_error'), 'danger');
+          }
+        }
+      } else {
+        // Enabling
+        ttsCacheEnabled = true;
+        cacheToggle.style.background = 'var(--primary)';
+        const knob = document.getElementById('ttsCacheKnob');
+        if (knob) knob.style.left = '21px';
+        const section = document.getElementById('ttsCacheSection');
+        if (section) { section.style.opacity = '1'; section.style.pointerEvents = ''; }
+        const genBtn2 = document.getElementById('ttsCacheGenBtn');
+        if (genBtn2) genBtn2.style.display = '';
+      }
     });
   }
 
@@ -740,30 +805,35 @@ window.openLangConfig = function (isoCode) {
     const infoEl = document.getElementById('ttsCacheInfo');
     if (!infoEl) return;
     const stats = await TTS.getCacheStats(isoCode);
+    const purgeBtn = document.getElementById('ttsCachePurgeBtn');
     if (stats.files === 0) {
       infoEl.textContent = t('settings_tts_cache_empty');
+      if (purgeBtn) purgeBtn.style.display = 'none';
     } else {
       const kb = (stats.sizeBytes / 1024).toFixed(1);
       infoEl.textContent = t('settings_tts_cache_info')
         .replace('{files}', stats.files)
         .replace('{size}', kb);
+      if (purgeBtn) purgeBtn.style.display = '';
     }
   })();
 
   const purgeBtn = document.getElementById('ttsCachePurgeBtn');
   if (purgeBtn) {
     purgeBtn.addEventListener('click', async () => {
-      if (!confirm(t('settings_tts_cache_confirm'))) return;
-      purgeBtn.disabled = true;
+      if (!await confirmModal(t('settings_tts_cache_confirm'), { confirmLabel: t('settings_tts_cache_purge') })) return;
+      const freshPurgeBtn = document.getElementById('ttsCachePurgeBtn');
+      if (freshPurgeBtn) freshPurgeBtn.disabled = true;
       const result = await TTS.purgeCache(isoCode);
       const infoEl = document.getElementById('ttsCacheInfo');
       if (result && result.ok) {
         if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
         toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+        if (freshPurgeBtn) freshPurgeBtn.style.display = 'none';
       } else {
         toast(t('common_error'), 'danger');
       }
-      purgeBtn.disabled = false;
+      if (freshPurgeBtn) freshPurgeBtn.disabled = false;
     });
   }
 
@@ -884,11 +954,13 @@ window.openLangConfig = function (isoCode) {
       const stats2 = await TTS.getCacheStats(langCode);
       if (stats2.files === 0) {
         infoEl2.textContent = t('settings_tts_cache_empty');
+        if (purgeBtn2) purgeBtn2.style.display = 'none';
       } else {
         const kb2 = (stats2.sizeBytes / 1024).toFixed(1);
         infoEl2.textContent = t('settings_tts_cache_info')
           .replace('{files}', stats2.files)
           .replace('{size}', kb2);
+        if (purgeBtn2) purgeBtn2.style.display = '';
       }
     }
   }

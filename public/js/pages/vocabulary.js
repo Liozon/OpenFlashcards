@@ -892,7 +892,7 @@ window.resetWordProgress = async function (id, lang) {
 };
 
 window.deleteWord = async function (id, lang) {
-  if (!confirm(t('vocab_delete_word_confirm'))) return;
+  if (!await confirmModal(t('vocab_delete_word_confirm'), { confirmLabel: t('common_delete') })) return;
   try {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
@@ -1105,7 +1105,7 @@ window.resetPhraseProgress = async function (id, lang) {
 };
 
 window.deletePhrase = async function (id, lang) {
-  if (!confirm(t('vocab_delete_phrase_confirm'))) return;
+  if (!await confirmModal(t('vocab_delete_phrase_confirm'), { confirmLabel: t('common_delete') })) return;
   try {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
@@ -1433,7 +1433,7 @@ window.mergeGroup = async function (groupKey, items, kind) {
   const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
   const keepId = sorted[0][0];
 
-  if (!confirm(t('vocab_dup_confirm_merge').replace('{n}', deleteIds.length - 1))) return;
+  if (!await confirmModal(t('vocab_dup_confirm_merge').replace('{n}', deleteIds.length - 1), { confirmLabel: t('vocab_dup_merge'), confirmBtnClass: 'btn-primary' })) return;
 
   try {
     const result = await api('POST', '/api/duplicates/merge', {
