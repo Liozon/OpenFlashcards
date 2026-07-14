@@ -334,7 +334,7 @@
   "nav_notebook": "Notebook",
   "notebook_title": "Notebook",
   "notebook_no_lang": "Select a language first in Settings.",
-  "notebook_welcome": "Welcome to your Notebook!",
+  "notebook_welcome": "Welcome to your notebook!",
   "notebook_welcome_desc": "Select a page from the sidebar, or create a new section and page to start taking notes.",
   "notebook_add_section": "Add section",
   "notebook_add_section_prompt": "Section name:",
@@ -401,5 +401,10 @@
   "notebook_move_down": "Move down",
   "notebook_switch_lang": "Switch notebook language",
   "notebook_reordered": "Reordered!",
-  "notebook_export_page": "Export page"
+  "notebook_export_page": "Export page",
+  "notebook_color": "Color",
+  "notebook_set_color": "Choose a color",
+  "notebook_remove_color": "Remove color",
+  "notebook_custom_color": "Custom color",
+  "home_notebook": "Note pages"
 }

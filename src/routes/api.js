@@ -1339,12 +1339,13 @@ router.post('/notebook/:code/sections', (req, res) => {
   const uid = userId(req);
   const lang = req.params.code;
   const notebook = getNotebook(uid, lang);
-  const { name } = req.body;
+  const { name, color } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
   const section = {
     id: randomUUID(),
     name: name.trim(),
     order: notebook.sections.length,
+    color: color || null,
     pages: []
   };
   notebook.sections.push(section);
@@ -1361,6 +1362,7 @@ router.put('/notebook/:code/sections/:sectionId', (req, res) => {
   if (!section) return res.status(404).json({ error: 'Section not found' });
   if (req.body.name !== undefined) section.name = req.body.name.trim();
   if (req.body.order !== undefined) section.order = req.body.order;
+  if (req.body.color !== undefined) section.color = req.body.color;
   saveNotebook(uid, lang, notebook);
   res.json({ ok: true, section });
 });
@@ -1384,11 +1386,12 @@ router.post('/notebook/:code/sections/:sectionId/pages', (req, res) => {
   const notebook = getNotebook(uid, lang);
   const section = notebook.sections.find(s => s.id === req.params.sectionId);
   if (!section) return res.status(404).json({ error: 'Section not found' });
-  const { name, content } = req.body;
+  const { name, content, color } = req.body;
   const page = {
     id: randomUUID(),
     name: name ? name.trim() : 'Untitled',
     content: content || '',
+    color: color || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     order: section.pages.length
@@ -1426,6 +1429,7 @@ router.put('/notebook/:code/pages/:pageId', (req, res) => {
   if (req.body.name !== undefined) foundPage.name = req.body.name.trim();
   if (req.body.content !== undefined) foundPage.content = req.body.content;
   if (req.body.order !== undefined) foundPage.order = req.body.order;
+  if (req.body.color !== undefined) foundPage.color = req.body.color;
   foundPage.updatedAt = new Date().toISOString();
 
   saveNotebook(uid, lang, notebook);

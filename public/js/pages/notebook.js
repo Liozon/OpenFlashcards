@@ -125,6 +125,22 @@ function getNotebookHTML() {
         </div>
       </div>
     </div>
+    <div class="nb-modal-overlay hidden" id="nbColorModal">
+      <div class="nb-modal-dialog">
+        <h3 id="nbColorModalTitle">${t('notebook_set_color')}</h3>
+        <div class="nb-color-grid" id="nbColorGrid"></div>
+        <div class="nb-color-custom-row">
+          <label class="nb-color-custom-btn" id="nbColorCustomBtn">
+            <span id="nbColorCustomLabel">🎨 ${t('notebook_custom_color')}</span>
+            <input type="color" id="nbColorCustomInput" class="nb-color-custom-input">
+          </label>
+        </div>
+        <button class="nb-color-remove" id="nbColorRemove">${t('notebook_remove_color')}</button>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="nbColorCancelBtn">${t('common_cancel')}</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -159,6 +175,22 @@ function bindNotebookEvents() {
   el.querySelector('#nbLinkSearch').addEventListener('input', searchPagesForLink);
   el.querySelector('#nbMoveConfirmBtn').addEventListener('click', confirmMovePage);
   el.querySelector('#nbMoveCancelBtn').addEventListener('click', () => el.querySelector('#nbMoveModal').classList.add('hidden'));
+  el.querySelector('#nbColorCancelBtn').addEventListener('click', () => { NB_colorTarget = null; el.querySelector('#nbColorModal').classList.add('hidden'); });
+  el.querySelector('#nbColorRemove').addEventListener('click', () => { applyColor(null); el.querySelector('#nbColorModal').classList.add('hidden'); });
+  el.querySelector('#nbColorGrid').addEventListener('click', (e) => {
+    const swatch = e.target.closest('.nb-color-swatch');
+    if (!swatch) return;
+    el.querySelectorAll('.nb-color-swatch').forEach(s => s.classList.remove('selected'));
+    swatch.classList.add('selected');
+    applyColor(swatch.dataset.color);
+    el.querySelector('#nbColorModal').classList.add('hidden');
+  });
+  el.querySelector('#nbColorCustomInput').addEventListener('input', (e) => {
+    const color = e.target.value;
+    el.querySelectorAll('.nb-color-swatch').forEach(s => s.classList.remove('selected'));
+    applyColor(color);
+    el.querySelector('#nbColorModal').classList.add('hidden');
+  });
 
   // Sidebar event delegation (attached once)
   el.querySelector('#nbSectionList').addEventListener('click', handleSidebarClick);
@@ -273,15 +305,18 @@ function renderSidebar() {
     const isActive = s.id === NB.currentSectionId;
     const hasPages = s.pages && s.pages.length;
     const totalSections = NB.sections.length;
+    const sectionStyle = s.color ? `background:linear-gradient(to right, ${s.color}44, transparent 70%)` : '';
     return `
     <div class="nb-section ${isActive ? 'active' : ''}" data-section-id="${s.id}">
-      <div class="nb-section-header">
+      <div class="nb-section-header" style="${sectionStyle}">
         <span class="nb-section-toggle">${hasPages ? '▾' : '▸'}</span>
+        ${s.color ? `<span class="nb-section-color-dot" style="background:${s.color}"></span>` : ''}
         <span class="nb-section-name">${escapeHtml(s.name)}</span>
         <div class="nb-section-actions">
           ${si > 0 ? `<button class="nb-context-btn" data-action="section-up" title="${window.t('notebook_move_up')}">↑</button>` : ''}
           ${si < totalSections - 1 ? `<button class="nb-context-btn" data-action="section-down" title="${window.t('notebook_move_down')}">↓</button>` : ''}
           <button class="nb-context-btn" data-action="rename-section" title="${window.t('notebook_rename')}">✏️</button>
+          <button class="nb-context-btn" data-action="section-color" title="${window.t('notebook_color')}">🎨</button>
           <button class="nb-context-btn" data-action="delete-section" title="${window.t('common_delete')}">🗑</button>
           <button class="nb-context-btn" data-action="add-page" title="${window.t('notebook_add_page')}">📄</button>
         </div>
@@ -290,13 +325,16 @@ function renderSidebar() {
         ${(s.pages || []).map((p, pi) => {
           const pActive = p.id === NB.currentPageId;
           const totalPages = (s.pages || []).length;
+          const pageStyle = p.color ? `background:linear-gradient(to right, ${p.color}33, transparent 70%)` : '';
           return `
-          <div class="nb-page-item ${pActive ? 'active' : ''}" data-page-id="${p.id}" data-section-id="${s.id}">
+          <div class="nb-page-item ${pActive ? 'active' : ''}" data-page-id="${p.id}" data-section-id="${s.id}" style="${pageStyle}">
+            ${p.color ? `<span class="nb-page-color-dot" style="background:${p.color}"></span>` : ''}
             <span class="nb-page-name">${escapeHtml(p.name)}</span>
             <div class="nb-page-actions">
               ${pi > 0 ? `<button class="nb-context-btn" data-action="page-up" title="${window.t('notebook_move_up')}">↑</button>` : ''}
               ${pi < totalPages - 1 ? `<button class="nb-context-btn" data-action="page-down" title="${window.t('notebook_move_down')}">↓</button>` : ''}
               <button class="nb-context-btn" data-action="rename-page" title="${window.t('notebook_rename')}">✏️</button>
+              <button class="nb-context-btn" data-action="page-color" title="${window.t('notebook_color')}">🎨</button>
               <button class="nb-context-btn" data-action="duplicate-page" title="${window.t('notebook_duplicate')}">📋</button>
               <button class="nb-context-btn" data-action="move-page" title="${window.t('notebook_move')}">↗</button>
               <button class="nb-context-btn" data-action="delete-page" title="${window.t('common_delete')}">🗑</button>
@@ -353,6 +391,8 @@ function handleSidebarClick(e) {
     case 'section-down': moveSectionDown(sectionId); break;
     case 'page-up': movePageUp(pageId, sectionId); break;
     case 'page-down': movePageDown(pageId, sectionId); break;
+    case 'section-color': showSectionColorPicker(sectionId); break;
+    case 'page-color': showPageColorPicker(pageId); break;
   }
 }
 
@@ -1016,6 +1056,73 @@ async function performSearch() {
     });
   } catch (e) {
     console.error('[notebook] search error:', e);
+  }
+}
+
+// ── Color customization ─────────────────────────────────────
+
+const NB_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e84393', '#00b894', '#6c5ce7', '#fd79a8', '#00cec9', '#636e72', '#2d3436'];
+
+let NB_colorTarget = null; // { type: 'section', id } or { type: 'page', id }
+let NB_colorResolve = null;
+
+function initColorGrid() {
+  const el = NB.el;
+  const grid = el.querySelector('#nbColorGrid');
+  if (!grid || grid.children.length) return;
+  NB_COLORS.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'nb-color-swatch';
+    swatch.style.background = c;
+    swatch.dataset.color = c;
+    grid.appendChild(swatch);
+  });
+}
+
+function showSectionColorPicker(sectionId) {
+  NB_colorTarget = { type: 'section', id: sectionId };
+  const section = NB.sections.find(s => s.id === sectionId);
+  initColorGrid();
+  const el = NB.el;
+  el.querySelector('#nbColorModalTitle').textContent = window.t('notebook_set_color') + ' — ' + (section ? escapeHtml(section.name) : '');
+  el.querySelectorAll('.nb-color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === (section && section.color)));
+  el.querySelector('#nbColorModal').classList.remove('hidden');
+}
+
+function showPageColorPicker(pageId) {
+  NB_colorTarget = { type: 'page', id: pageId };
+  let foundPage;
+  for (const s of NB.sections) {
+    const p = s.pages.find(pg => pg.id === pageId);
+    if (p) { foundPage = p; break; }
+  }
+  initColorGrid();
+  const el = NB.el;
+  el.querySelector('#nbColorModalTitle').textContent = window.t('notebook_set_color') + ' — ' + (foundPage ? escapeHtml(foundPage.name) : '');
+  el.querySelectorAll('.nb-color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === (foundPage && foundPage.color)));
+  el.querySelector('#nbColorModal').classList.remove('hidden');
+}
+
+async function applyColor(color) {
+  if (!NB_colorTarget) return;
+  const { type, id } = NB_colorTarget;
+  NB_colorTarget = null;
+  try {
+    if (type === 'section') {
+      await window.api('PUT', `/api/notebook/${NB.lang}/sections/${id}`, { color });
+      const section = NB.sections.find(s => s.id === id);
+      if (section) section.color = color;
+    } else {
+      await window.api('PUT', `/api/notebook/${NB.lang}/pages/${id}`, { color });
+      for (const s of NB.sections) {
+        const pg = s.pages.find(p => p.id === id);
+        if (pg) { pg.color = color; break; }
+      }
+    }
+    renderSidebar();
+  } catch (e) {
+    console.error('[notebook] color error:', e);
+    toast(window.t('common_error'), 'danger');
   }
 }
 
