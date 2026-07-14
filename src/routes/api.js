@@ -39,7 +39,8 @@ const { randomUUID } = require('crypto');
 const {
   getWords, saveWords,
   getPhrases, savePhrases,
-  getUserConfig, saveUserConfig
+  getUserConfig, saveUserConfig,
+  getNotebook, saveNotebook
 } = require('../utils/storage');
 const {
   getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
@@ -1312,6 +1313,201 @@ router.put('/offline/settings', (req, res) => {
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTEBOOK
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/notebook/:code – get the full notebook for a language
+router.get('/notebook/:code', (req, res) => {
+  const uid = userId(req);
+  const notebook = getNotebook(uid, req.params.code);
+  res.json(notebook);
+});
+
+// PUT /api/notebook/:code – save the full notebook for a language
+router.put('/notebook/:code', (req, res) => {
+  const uid = userId(req);
+  const { sections } = req.body;
+  if (!Array.isArray(sections)) return res.status(400).json({ error: 'sections array required' });
+  saveNotebook(uid, req.params.code, { sections });
+  res.json({ ok: true });
+});
+
+// POST /api/notebook/:code/sections – create a section
+router.post('/notebook/:code/sections', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const { name } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
+  const section = {
+    id: randomUUID(),
+    name: name.trim(),
+    order: notebook.sections.length,
+    pages: []
+  };
+  notebook.sections.push(section);
+  saveNotebook(uid, lang, notebook);
+  res.status(201).json({ ok: true, section });
+});
+
+// PUT /api/notebook/:code/sections/:sectionId – rename or reorder a section
+router.put('/notebook/:code/sections/:sectionId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const section = notebook.sections.find(s => s.id === req.params.sectionId);
+  if (!section) return res.status(404).json({ error: 'Section not found' });
+  if (req.body.name !== undefined) section.name = req.body.name.trim();
+  if (req.body.order !== undefined) section.order = req.body.order;
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true, section });
+});
+
+// DELETE /api/notebook/:code/sections/:sectionId – delete a section and all its pages
+router.delete('/notebook/:code/sections/:sectionId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const before = notebook.sections.length;
+  notebook.sections = notebook.sections.filter(s => s.id !== req.params.sectionId);
+  if (notebook.sections.length === before) return res.status(404).json({ error: 'Section not found' });
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true });
+});
+
+// POST /api/notebook/:code/sections/:sectionId/pages – create a page
+router.post('/notebook/:code/sections/:sectionId/pages', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const section = notebook.sections.find(s => s.id === req.params.sectionId);
+  if (!section) return res.status(404).json({ error: 'Section not found' });
+  const { name, content } = req.body;
+  const page = {
+    id: randomUUID(),
+    name: name ? name.trim() : 'Untitled',
+    content: content || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    order: section.pages.length
+  };
+  section.pages.push(page);
+  saveNotebook(uid, lang, notebook);
+  res.status(201).json({ ok: true, page });
+});
+
+// PUT /api/notebook/:code/pages/:pageId – update a page (name, content, order, move to section)
+router.put('/notebook/:code/pages/:pageId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+
+  // Find the page in any section
+  let foundSection = null;
+  let foundPage = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === req.params.pageId);
+    if (p) { foundSection = s; foundPage = p; break; }
+  }
+  if (!foundPage) return res.status(404).json({ error: 'Page not found' });
+
+  // Handle move to another section
+  if (req.body.targetSectionId && req.body.targetSectionId !== foundSection.id) {
+    const targetSection = notebook.sections.find(s => s.id === req.body.targetSectionId);
+    if (!targetSection) return res.status(404).json({ error: 'Target section not found' });
+    foundSection.pages = foundSection.pages.filter(p => p.id !== req.params.pageId);
+    foundPage.order = targetSection.pages.length;
+    targetSection.pages.push(foundPage);
+    foundSection = targetSection;
+  }
+
+  if (req.body.name !== undefined) foundPage.name = req.body.name.trim();
+  if (req.body.content !== undefined) foundPage.content = req.body.content;
+  if (req.body.order !== undefined) foundPage.order = req.body.order;
+  foundPage.updatedAt = new Date().toISOString();
+
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true, page: foundPage });
+});
+
+// POST /api/notebook/:code/pages/:pageId/duplicate – duplicate a page
+router.post('/notebook/:code/pages/:pageId/duplicate', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  for (const s of notebook.sections) {
+    const idx = s.pages.findIndex(p => p.id === req.params.pageId);
+    if (idx !== -1) {
+      const original = s.pages[idx];
+      const dup = JSON.parse(JSON.stringify(original));
+      dup.id = randomUUID();
+      dup.name = original.name + ' (copy)';
+      dup.createdAt = new Date().toISOString();
+      dup.updatedAt = new Date().toISOString();
+      dup.order = s.pages.length;
+      s.pages.push(dup);
+      saveNotebook(uid, lang, notebook);
+      return res.status(201).json({ ok: true, page: dup });
+    }
+  }
+  res.status(404).json({ error: 'Page not found' });
+});
+
+// DELETE /api/notebook/:code/pages/:pageId – delete a page
+router.delete('/notebook/:code/pages/:pageId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  let found = false;
+  for (const s of notebook.sections) {
+    const before = s.pages.length;
+    s.pages = s.pages.filter(p => p.id !== req.params.pageId);
+    if (s.pages.length !== before) { found = true; break; }
+  }
+  if (!found) return res.status(404).json({ error: 'Page not found' });
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true });
+});
+
+// GET /api/notebook/:code/search?q=... – search notebook pages
+router.get('/notebook/:code/search', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const q = (req.query.q || '').toLowerCase().trim();
+  if (!q) return res.json({ results: [] });
+  const notebook = getNotebook(uid, lang);
+  const results = [];
+  for (const s of notebook.sections) {
+    for (const p of s.pages) {
+      let score = 0;
+      if (p.name.toLowerCase().includes(q)) score += 10;
+      if ((p.content || '').toLowerCase().includes(q)) score += 1;
+      if (score > 0) {
+        results.push({
+          sectionId: s.id,
+          sectionName: s.name,
+          pageId: p.id,
+          pageName: p.name,
+          score,
+          snippet: snippetFromContent(p.content || '', q)
+        });
+      }
+    }
+  }
+  results.sort((a, b) => b.score - a.score);
+  res.json({ results: results.slice(0, 50) });
+});
+
+function snippetFromContent(content, query) {
+  const plain = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const idx = plain.toLowerCase().indexOf(query);
+  if (idx === -1) return plain.substring(0, 120);
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(plain.length, idx + query.length + 80);
+  return (start > 0 ? '…' : '') + plain.substring(start, end) + (end < plain.length ? '…' : '');
+}
 
 // Export helpers for admin route re-use
 router.EDGE_TTS_VOICES_EXPORT = EDGE_TTS_VOICES;

@@ -118,11 +118,24 @@ function savePhrases(userId, langCode, phrases) {
   writeJson(phrasesFile(userId, langCode), phrases);
 }
 
+function notebookFile(userId, langCode) {
+  return path.join(userDir(userId), `Notebook_${userId}_${langCode}.json`);
+}
+
+function getNotebook(userId, langCode) {
+  return readJson(notebookFile(userId, langCode), { sections: [] });
+}
+
+function saveNotebook(userId, langCode, notebook) {
+  writeJson(notebookFile(userId, langCode), notebook);
+}
+
 module.exports = {
   ensureDataDirs,
   readJson, writeJson,
   getUsers, saveUsers, getUserById, getUserByUsername,
   getUserConfig, saveUserConfig,
   getWords, saveWords,
-  getPhrases, savePhrases
+  getPhrases, savePhrases,
+  getNotebook, saveNotebook
 };

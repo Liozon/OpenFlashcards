@@ -230,7 +230,10 @@ window.navigate = function (page, params, _fromPopState) {
 
   // Push page to browser history so back/forward buttons work
   if (!_fromPopState) {
-    const hash = '#/' + page;
+    let hash = '#/' + page;
+    if (params && Object.keys(params).length) {
+      hash += '?' + Object.entries(params).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+    }
     if (window.location.hash !== hash) {
       history.pushState({ page, params }, '', hash);
     }
@@ -245,7 +248,8 @@ window.navigate = function (page, params, _fromPopState) {
     add: renderAdd,
     train: renderTrain,
     settings: renderSettings,
-    admin: renderAdmin
+    admin: renderAdmin,
+    notebook: renderNotebook
   };
 
   (renderers[page] || renderHome)(content, params || {});
@@ -256,28 +260,42 @@ window.addEventListener('popstate', function (e) {
   if (!App.user) return;
   const page = (e.state && e.state.page) || getPageFromHash();
   if (page) {
-    navigate(page, (e.state && e.state.params) || {}, true);
+    navigate(page, (e.state && e.state.params) || getParamsFromHash(), true);
   }
 });
 
 window.addEventListener('hashchange', function () {
   if (!App.user) return;
   const page = getPageFromHash();
+  const params = getParamsFromHash();
   if (page && page !== App.currentPage) {
-    navigate(page, {}, true);
+    navigate(page, params, true);
   }
 });
 
 function getPageFromHash() {
   const hash = window.location.hash;
   if (hash && hash.startsWith('#/')) {
-    const path = hash.slice(2).split('?')[0];
-    const page = path.split('/')[0];
-    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin'].includes(page)) {
+    const [pathPart, queryPart] = hash.slice(2).split('?');
+    const page = pathPart.split('/')[0];
+    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin', 'notebook'].includes(page)) {
       return page;
     }
   }
   return null;
+}
+
+function getParamsFromHash() {
+  const hash = window.location.hash;
+  const params = {};
+  if (hash && hash.includes('?')) {
+    const qs = hash.split('?')[1];
+    qs.split('&').forEach(pair => {
+      const [k, v] = pair.split('=').map(s => decodeURIComponent(s));
+      if (k) params[k] = v;
+    });
+  }
+  return params;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -505,6 +523,7 @@ function applyNavLabels() {
     navVocab: 'nav_vocabulary',
     navTrain: 'nav_train',
     navAdd: 'nav_add',
+    navNotebook: 'nav_notebook',
     navSettings: 'nav_settings',
     adminLink: 'nav_admin'
   };
@@ -514,6 +533,7 @@ function applyNavLabels() {
     navVocab: '📚',
     navTrain: '🎯',
     navAdd: '➕',
+    navNotebook: '📓',
     navSettings: '⚙️',
     adminLink: '🔑'
   };
