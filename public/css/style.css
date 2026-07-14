@@ -219,6 +219,12 @@ img {
   padding: 28px 20px 60px;
 }
 
+.page-content.notebook-active {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
 .page-title {
   font-size: 1.6rem;
   font-weight: 900;
@@ -1929,10 +1935,10 @@ img {
 
 .notebook-layout {
   display: flex;
-  height: calc(100vh - var(--nav-h) - 60px);
+  height: calc(100vh - var(--nav-h));
   gap: 0;
-  margin: -28px -20px -60px;
   overflow: hidden;
+  width: 100%;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────── */
@@ -2398,9 +2404,42 @@ img {
   flex-shrink: 0;
 }
 
+.nb-editor-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nb-editor-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 #nbEditorStatus {
   font-size: .75rem;
   color: var(--text-faint);
+}
+
+#nbSaveBtn {
+  font-size: .75rem;
+  padding: 4px 12px;
+}
+
+#nbDeletePage {
+  font-size: .75rem;
+  padding: 4px 10px;
+  opacity: 0.6;
+  transition: opacity var(--transition);
+}
+
+#nbDeletePage:hover {
+  opacity: 1;
+}
+
+#nbExportPage {
+  font-size: .75rem;
+  padding: 4px 10px;
 }
 
 /* ── Search box ────────────────────────────────────────────── */

@@ -80,9 +80,12 @@ function getNotebookHTML() {
           </div>
           <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_title_placeholder')}"></div>
           <div class="nb-editor-footer">
-            <span id="nbEditorStatus">${t('notebook_saved')}</span>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm btn-secondary" id="nbExportPage">📄</button>
+            <div class="nb-editor-footer-left">
+              <span id="nbEditorStatus">${t('notebook_saved')}</span>
+              <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
+            </div>
+            <div class="nb-editor-footer-right">
+              <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">📄</button>
               <button class="btn btn-sm btn-danger" id="nbDeletePage">${t('notebook_delete')}</button>
             </div>
           </div>
@@ -136,7 +139,9 @@ function bindNotebookEvents() {
   el.querySelector('#nbPageTitle').addEventListener('input', markDirty);
   el.querySelector('#nbDeletePage').addEventListener('click', deleteCurrentPage);
   el.querySelector('#nbExportPage').addEventListener('click', exportCurrentPage);
+  el.querySelector('#nbSaveBtn').addEventListener('click', () => saveCurrentPage());
   el.querySelector('#nbLangSelector').addEventListener('change', (e) => switchNotebookLang(e.target.value));
+  el.classList.add('notebook-active');
 
   el.querySelectorAll('.nb-tb-btn[data-cmd]').forEach(btn => {
     btn.addEventListener('click', () => handleToolbarCommand(btn.dataset.cmd));
@@ -1191,6 +1196,8 @@ window.navigate = function(page, params, _fromPopState) {
     saveCurrentPage();
   }
   if (NB.autoSaveInterval) clearInterval(NB.autoSaveInterval);
+  const pc = document.getElementById('pageContent');
+  if (pc) pc.classList.remove('notebook-active');
   origNavigate.call(window, page, params, _fromPopState);
 };
 

@@ -400,5 +400,6 @@
   "notebook_move_up": "Move up",
   "notebook_move_down": "Move down",
   "notebook_switch_lang": "Switch notebook language",
-  "notebook_reordered": "Reordered!"
+  "notebook_reordered": "Reordered!",
+  "notebook_export_page": "Export page"
 }
