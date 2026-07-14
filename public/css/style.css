@@ -1410,11 +1410,21 @@ img {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modal-footer .btn {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  word-break: break-word;
 }
 
 @media (max-width: 600px) {
-  .modal-footer {
-    flex-wrap: wrap;
+  .modal-footer .btn {
+    font-size: .82rem;
+    padding: 6px 12px;
   }
 
   .modal-footer .btn-reset-progress {

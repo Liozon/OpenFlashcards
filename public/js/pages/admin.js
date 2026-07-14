@@ -185,7 +185,7 @@ window.adminTtsPurge = async function (userId, username) {
   };
 
   const totalStr = `${statsData.totalFiles} ${t('admin_tts_files')} · ${fmtSize(statsData.totalBytes)}`;
-  if (!confirm(t('admin_tts_purge_confirm').replace('{user}', username).replace('{size}', totalStr))) return;
+  if (!await confirmModal(t('admin_tts_purge_confirm').replace('{user}', username).replace('{size}', totalStr), { confirmLabel: t('admin_tts_purge_btn') })) return;
 
   const purgeBtn = document.getElementById('adminTtsPurgeBtn');
   if (purgeBtn) purgeBtn.disabled = true;
@@ -213,7 +213,7 @@ window.adminTtsGenerate = async function (userId, username) {
     return;
   }
 
-  if (!confirm(t('admin_tts_gen_confirm').replace('{user}', username).replace('{n}', countData.total))) return;
+  if (!await confirmModal(t('admin_tts_gen_confirm').replace('{user}', username).replace('{n}', countData.total), { confirmLabel: t('admin_tts_gen_btn'), confirmBtnClass: 'btn-primary' })) return;
 
   const genBtn = document.getElementById('adminTtsGenBtn');
   const purgeBtn = document.getElementById('adminTtsPurgeBtn');
@@ -352,7 +352,7 @@ window.submitResetPw = async function (id) {
 };
 
 window.deleteUser = async function (id, username) {
-  if (!confirm(t('admin_delete_confirm').replace('{user}', username))) return;
+  if (!await confirmModal(t('admin_delete_confirm').replace('{user}', username), { confirmLabel: t('common_delete') })) return;
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();

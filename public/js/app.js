@@ -299,6 +299,57 @@ document.getElementById('modal').addEventListener('click', e => {
   if (e.target === document.getElementById('modal')) closeModal();
 });
 
+window.confirmModal = function (message, opts = {}) {
+  return new Promise(resolve => {
+    const okId = 'cmOk';
+    const cancelId = 'cmCancel';
+    const extraId = 'cmExtra';
+    let finished = false;
+    const modal = document.getElementById('modal');
+    const wasHidden = modal.classList.contains('hidden');
+    const prevTitle = document.getElementById('modalTitle').textContent;
+    const prevBody = document.getElementById('modalBody').innerHTML;
+    const prevFooter = document.getElementById('modalFooter').innerHTML;
+
+    function finish(val) {
+      if (finished) return;
+      finished = true;
+      if (wasHidden) {
+        closeModal();
+      } else {
+        openModal(prevTitle, prevBody, prevFooter);
+      }
+      resolve(val);
+    }
+
+    const extraHtml = opts.extraButton
+      ? `<button class="btn ${opts.extraButtonClass || 'btn-secondary'}" id="${extraId}">${opts.extraButton}</button>`
+      : '';
+
+    openModal(
+      opts.title || t('common_confirm') || 'Confirm',
+      `<p style="margin:0;line-height:1.5">${message}</p>`,
+      `${extraHtml}
+       <button class="btn btn-secondary" id="${cancelId}">${opts.cancelLabel || t('common_cancel')}</button>
+       <button class="btn ${opts.confirmBtnClass || 'btn-danger'}" id="${okId}">${opts.confirmLabel || t('common_delete') || 'Delete'}</button>`
+    );
+
+    document.getElementById(okId).addEventListener('click', () => finish(true));
+    document.getElementById(cancelId).addEventListener('click', () => finish(false));
+    if (opts.extraButton) {
+      document.getElementById(extraId).addEventListener('click', () => finish(-1));
+    }
+
+    const observer = new MutationObserver(() => {
+      if (modal.classList.contains('hidden')) {
+        observer.disconnect();
+        finish(false);
+      }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────────────────────
