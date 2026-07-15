@@ -259,6 +259,9 @@ function bindNotebookEvents() {
     }
   });
 
+  // Task list keyboard handling: Enter to continue list, Backspace to exit empty item
+  editor.addEventListener('keydown', handleTaskListKeydown);
+
   NB.autoSaveInterval = setInterval(() => { if (NB.dirty) saveCurrentPage(); }, 30000);
 
   initTableGridPicker();
@@ -734,6 +737,7 @@ function switchToEditMode() {
   el.querySelector('#nbEditorFooterLeft').classList.remove('hidden');
   updateEditorStatus();
   el.querySelector('#nbPageHeader').querySelector('#nbPageTitle').focus();
+  restoreTaskListBehaviour();
   // Restore table cells and code blocks (not toolbar elements)
   el.querySelector('#nbEditor').querySelectorAll('td[contenteditable], th[contenteditable], code[contenteditable]').forEach(c => c.setAttribute('contenteditable', 'true'));
 }
@@ -759,6 +763,7 @@ function openPage(sectionId, pageId) {
   el.querySelector('#nbEditorArea').classList.remove('hidden');
   el.querySelector('#nbPageTitle').value = page.name;
   el.querySelector('#nbEditor').innerHTML = page.content || '';
+  restoreTaskListBehaviour();
   rebindTableToolbars();
   el.querySelector('#nbPageMeta').textContent = window.t('notebook_last_updated') + ': ' + formatDate(page.updatedAt);
   NB.dirty = false;
@@ -897,6 +902,8 @@ async function handleToolbarCommand(cmd) {
 
 function insertTaskList() {
   const editor = NB.editor;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
   const ul = document.createElement('ul');
   ul.className = 'nb-task-list';
   const li = document.createElement('li');
@@ -904,9 +911,19 @@ function insertTaskList() {
   cb.type = 'checkbox';
   cb.className = 'nb-task-checkbox';
   li.appendChild(cb);
-  li.appendChild(document.createTextNode(' '));
+  const text = document.createTextNode('\u200B');
+  li.appendChild(text);
   ul.appendChild(li);
-  insertNodeAtCursor(ul);
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  // Insert at cursor and position inside the li text
+  range.insertNode(ul);
+  sel.removeAllRanges();
+  const r = document.createRange();
+  r.setStart(li, 1);
+  r.collapse(true);
+  sel.addRange(r);
+  editor.focus();
   markDirty();
 }
 
@@ -921,6 +938,109 @@ function restoreTaskListBehaviour() {
       li.insertBefore(cb, li.firstChild);
     }
   });
+}
+
+function isTaskItemEmpty(li) {
+  for (const n of li.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) return false;
+    if (n.nodeType === Node.ELEMENT_NODE && !n.classList.contains('nb-task-checkbox')) return false;
+  }
+  return true;
+}
+
+function handleTaskListKeydown(e) {
+  if (e.key !== 'Enter' && e.key !== 'Backspace') return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const start = sel.getRangeAt(0).startContainer;
+  const li = start.nodeType === Node.TEXT_NODE ? start.parentElement?.closest('li') : start?.closest?.('li');
+  if (!li) return;
+  const ul = li.closest('.nb-task-list');
+  if (!ul) return;
+
+  const empty = isTaskItemEmpty(li);
+
+  if (e.key === 'Backspace') {
+    if (!empty) return;
+    e.preventDefault();
+    const prev = li.previousElementSibling;
+    li.remove();
+    if (!ul.children.length) {
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      ul.replaceWith(p);
+      placeCursorAtStart(p);
+    } else if (prev) {
+      placeCursorAtEnd(prev);
+    } else {
+      placeCursorAtStart(ul.querySelector('li'));
+    }
+    markDirty();
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (empty) {
+      const next = li.nextElementSibling;
+      li.remove();
+      if (!ul.children.length) {
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        ul.replaceWith(p);
+        placeCursorAtStart(p);
+      } else if (next) {
+        placeCursorAtStart(next);
+      } else {
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        ul.parentNode.insertBefore(p, ul.nextSibling);
+        placeCursorAtStart(p);
+      }
+    } else {
+      const range = sel.getRangeAt(0);
+      const afterRange = document.createRange();
+      afterRange.setStart(range.endContainer, range.endOffset);
+      afterRange.setEnd(li, li.childNodes.length);
+      const afterFrag = afterRange.extractContents();
+
+      const newLi = document.createElement('li');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'nb-task-checkbox';
+      newLi.appendChild(cb);
+      newLi.appendChild(afterFrag);
+      if (!newLi.lastChild || newLi.lastChild.nodeType !== Node.TEXT_NODE) {
+        newLi.appendChild(document.createTextNode(''));
+      }
+
+      li.parentNode.insertBefore(newLi, li.nextSibling);
+      placeCursorAtStart(newLi);
+    }
+    markDirty();
+  }
+}
+
+function placeCursorAtStart(node) {
+  const sel = window.getSelection();
+  const range = document.createRange();
+  const cb = node.querySelector('.nb-task-checkbox');
+  const offset = cb ? Array.from(node.childNodes).indexOf(cb) + 1 : 0;
+  range.setStart(node, offset);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  node.closest?.('[contenteditable]')?.focus();
+}
+
+function placeCursorAtEnd(node) {
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.setStart(node, node.childNodes.length);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  node.closest?.('[contenteditable]')?.focus();
 }
 
 function insertNodeAtCursor(node) {

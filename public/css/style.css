@@ -2422,10 +2422,11 @@ img {
 }
 
 .nb-task-checkbox {
-  margin-top: 4px;
+  margin-top: 5px;
   flex-shrink: 0;
   cursor: pointer;
   accent-color: var(--primary);
+  user-select: none;
 }
 
 /* Page links */
