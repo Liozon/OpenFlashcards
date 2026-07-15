@@ -56,6 +56,7 @@ async function renderVocabulary(el, params) {
   // Determine initial filter from params
   const initFilter = (params.filter && params.filter !== 'mastered') ? params.filter : '';
   const initMastered = params.filter === 'mastered';
+  const initSearch = params.search ? decodeURIComponent(params.search) : '';
 
   el.innerHTML = `
     <div class="page-title">📚 ${t('vocab_title')}</div>
@@ -85,12 +86,27 @@ async function renderVocabulary(el, params) {
       <p style="font-size:2rem">📭</p>
       <p>${t('vocab_empty')}</p>
       <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
+    </div>
+    <div class="nb-modal-overlay hidden" id="vocabLinkModal">
+      <div class="nb-modal-dialog" style="width:420px;max-width:90vw">
+        <h3>${t('vocab_link_to_page')}</h3>
+        <input type="text" id="vocabLinkSearch" placeholder="${t('notebook_search_placeholder')}" autocomplete="off">
+        <div id="vocabLinkResults" style="max-height:320px;overflow-y:auto;margin-top:4px"></div>
+        <div style="text-align:right;margin-top:10px">
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('vocabLinkModal').classList.add('hidden')">${t('common_close')}</button>
+        </div>
+      </div>
     </div>`;
 
   _vocabFilter = initFilter;
-  _vocabSearch = '';
+  _vocabSearch = initSearch ? initSearch.toLowerCase() : '';
   _vocabLabel = '';
   _vocabMastered = initMastered;
+
+  if (initSearch) {
+    const searchInput = document.getElementById('vocabSearch');
+    if (searchInput) searchInput.value = initSearch;
+  }
 
   document.getElementById('vocabFilter').querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -286,6 +302,7 @@ function buildWordCard(w) {
   const wordLabelIds = w.labels || [];
   const editFn = isPhrase ? 'editPhrase' : 'editWord';
   const deleteFn = isPhrase ? 'deletePhrase' : 'deleteWord';
+  const linkFn = 'vocabLinkWord(\'' + w.id + '\',\'' + w.langCode + '\')';
 
   const div = document.createElement('div');
   div.className = 'word-card';
@@ -312,6 +329,7 @@ function buildWordCard(w) {
     '<div class="word-actions">' +
     '<span id="tts-' + w.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="' + editFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="' + linkFn + '" title="' + t('vocab_link_notebook') + '">🔗</button>' +
     '<button class="btn btn-sm btn-danger"    onclick="' + deleteFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
@@ -325,7 +343,8 @@ function buildWordCard(w) {
       '</div>') +
     (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
     (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + t('vocab_decl_count').replace('{n}', Object.keys(w.declensions).length) + '</div>' : '') +
-    labelHtml;
+    labelHtml +
+    buildNotebookLinksHtml(w.notebookLinks, w.id, 'word');
 
   // TTS button via DOM to avoid HTML injection issues
   const ttsSlot = div.querySelector('#tts-' + w.id);
@@ -366,6 +385,7 @@ function buildPhraseCard(p) {
     '<div class="word-actions">' +
     '<span id="ptts-' + p.id + '"></span>' +
     '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="vocabLinkPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_link_notebook') + '">🔗</button>' +
     '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
     '</div>' +
     '</div>' +
@@ -383,7 +403,8 @@ function buildPhraseCard(p) {
         '<div class="progress-bar-fill" style="width:' + pPct + '%"></div>' +
         '</div>';
     })()) +
-    labelHtml;
+    labelHtml +
+    buildNotebookLinksHtml(p.notebookLinks, p.id, 'phrase');
 
   const ttsSlot = div.querySelector('#ptts-' + p.id);
   if (ttsSlot) {
@@ -1527,3 +1548,152 @@ window.exitDuplicateMode = function () {
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+// ── Notebook Linking ────────────────────────────────────────────
+
+let _vocabLinkState = null; // { vocabId, vocabType, lang }
+
+function buildNotebookLinksHtml(links, vocabId, vocabType) {
+  if (!links || !links.length) return '';
+  return '<div class="vocab-notebook-links">' +
+    links.map(l =>
+      '<span class="vocab-notebook-link" onclick="navigateToNotebookPage(\'' + esc(l.pageId) + '\')" title="' + esc(l.sectionName || '') + ' / ' + esc(l.pageName) + '">' +
+      '📄 ' + esc(l.pageName) +
+      '<span class="vocab-notebook-link-del" onclick="event.stopPropagation();unlinkVocabPage(\'' + esc(vocabId) + '\',\'' + esc(vocabType) + '\',\'' + esc(l.pageId) + '\')">✕</span>' +
+      '</span>'
+    ).join('') +
+    '</div>';
+}
+
+window.navigateToNotebookPage = function (pageId) {
+  const l = window.currentLang();
+  window.navigate('notebook', { lang: l, page: pageId });
+};
+
+window.vocabLinkWord = function (id, lang) {
+  _vocabLinkState = { vocabId: id, vocabType: 'word', lang };
+  showVocabLinkPicker();
+};
+
+window.vocabLinkPhrase = function (id, lang) {
+  _vocabLinkState = { vocabId: id, vocabType: 'phrase', lang };
+  showVocabLinkPicker();
+};
+
+async function showVocabLinkPicker() {
+  const modal = document.getElementById('vocabLinkModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  document.getElementById('vocabLinkSearch').value = '';
+  document.getElementById('vocabLinkResults').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)"><div class="spinner"></div></div>';
+
+  try {
+    const notebook = await window.api('GET', '/api/notebook/' + _vocabLinkState.lang);
+    window._vocabLinkNotebook = notebook;
+    renderVocabLinkResults();
+  } catch {
+    document.getElementById('vocabLinkResults').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger)">' + window.t('common_error') + '</div>';
+  }
+
+  document.getElementById('vocabLinkSearch').oninput = renderVocabLinkResults;
+}
+
+function renderVocabLinkResults() {
+  const el = document.getElementById('vocabLinkResults');
+  const q = (document.getElementById('vocabLinkSearch').value || '').toLowerCase().trim();
+  const notebook = window._vocabLinkNotebook;
+  if (!notebook || !notebook.sections) { el.innerHTML = ''; return; }
+
+  const state = _vocabLinkState;
+  if (!state) return;
+
+  // Get linked page IDs for this vocab item
+  let linkedPages = [];
+  if (state.vocabType === 'word') {
+    const w = (_vocabWords || []).find(x => x.id === state.vocabId);
+    if (w && w.notebookLinks) linkedPages = w.notebookLinks.map(l => l.pageId);
+  } else {
+    const p = (_vocabPhrases || []).find(x => x.id === state.vocabId);
+    if (p && p.notebookLinks) linkedPages = p.notebookLinks.map(l => l.pageId);
+  }
+
+  const allPages = [];
+  for (const s of notebook.sections) {
+    for (const p of s.pages) {
+      if (!q || p.name.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)) {
+        allPages.push({ sectionId: s.id, sectionName: s.name, pageId: p.id, pageName: p.name, linked: linkedPages.includes(p.id) });
+      }
+    }
+  }
+
+  if (!allPages.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">' + window.t('notebook_no_pages_found') + '</div>';
+    return;
+  }
+
+  el.innerHTML = allPages.map(item => `
+    <div class="vocab-link-page-item ${item.linked ? 'linked' : ''}" data-page-id="${item.pageId}">
+      <span class="vocab-link-page-check">${item.linked ? '✓' : ''}</span>
+      <span class="vocab-link-page-section">${esc(item.sectionName)}</span>
+      <span class="vocab-link-page-name">${esc(item.pageName)}</span>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.vocab-link-page-item').forEach(item => {
+    item.addEventListener('click', () => toggleVocabLink(item.dataset.pageId));
+  });
+}
+
+async function toggleVocabLink(pageId) {
+  const state = _vocabLinkState;
+  if (!state) return;
+
+  let isLinked = false;
+  if (state.vocabType === 'word') {
+    const w = (_vocabWords || []).find(x => x.id === state.vocabId);
+    if (w && w.notebookLinks) isLinked = w.notebookLinks.some(l => l.pageId === pageId);
+  } else {
+    const p = (_vocabPhrases || []).find(x => x.id === state.vocabId);
+    if (p && p.notebookLinks) isLinked = p.notebookLinks.some(l => l.pageId === pageId);
+  }
+
+  try {
+    if (isLinked) {
+      await window.api('DELETE', '/api/vocab-link', { lang: state.lang, vocabId: state.vocabId, vocabType: state.vocabType, pageId });
+    } else {
+      await window.api('POST', '/api/vocab-link', { lang: state.lang, vocabId: state.vocabId, vocabType: state.vocabType, pageId });
+    }
+
+    // Refresh data
+    const lang = currentLang();
+    const [newWords, newPhrases] = await Promise.all([
+      window.api('GET', '/api/words?lang=' + encodeURIComponent(lang)),
+      window.api('GET', '/api/phrases?lang=' + encodeURIComponent(lang))
+    ]);
+    _vocabWords = newWords;
+    _vocabPhrases = newPhrases;
+
+    renderVocabGrid();
+    renderVocabLinkResults();
+    window.toast(isLinked ? window.t('vocab_link_removed') : window.t('vocab_link_added'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
+}
+
+window.unlinkVocabPage = async function (vocabId, vocabType, pageId) {
+  const lang = currentLang();
+  try {
+    await window.api('DELETE', '/api/vocab-link', { lang, vocabId, vocabType, pageId });
+    const [newWords, newPhrases] = await Promise.all([
+      window.api('GET', '/api/words?lang=' + encodeURIComponent(lang)),
+      window.api('GET', '/api/phrases?lang=' + encodeURIComponent(lang))
+    ]);
+    _vocabWords = newWords;
+    _vocabPhrases = newPhrases;
+    renderVocabGrid();
+    window.toast(window.t('vocab_link_removed'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
+};

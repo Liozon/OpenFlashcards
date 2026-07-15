@@ -655,11 +655,29 @@ router.put('/words/:id', (req, res) => {
 router.delete('/words/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
-  let words = getWords(userId(req), lang);
-  const before = words.length;
-  words = words.filter(w => w.id !== req.params.id);
-  if (words.length === before) return res.status(404).json({ error: 'Word not found.' });
-  saveWords(userId(req), lang, words);
+  const uid = userId(req);
+  let words = getWords(uid, lang);
+  const idx = words.findIndex(w => w.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
+
+  // Clean up notebook links pointing to this word
+  const deletedWord = words[idx];
+  if (deletedWord.notebookLinks && deletedWord.notebookLinks.length) {
+    const notebook = getNotebook(uid, lang);
+    for (const link of deletedWord.notebookLinks) {
+      for (const s of notebook.sections) {
+        const pg = s.pages.find(p => p.id === link.pageId);
+        if (pg && pg.vocabLinks) {
+          pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== req.params.id);
+        }
+      }
+    }
+    saveNotebook(uid, lang, notebook);
+  }
+
+  words.splice(idx, 1);
+  saveWords(uid, lang, words);
+  deleteItemAllSpeeds(uid, lang, req.params.id);
   res.json({ ok: true });
 });
 
@@ -746,11 +764,29 @@ router.put('/phrases/:id', (req, res) => {
 router.delete('/phrases/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
-  let phrases = getPhrases(userId(req), lang);
-  const before = phrases.length;
-  phrases = phrases.filter(p => p.id !== req.params.id);
-  if (phrases.length === before) return res.status(404).json({ error: 'Phrase not found.' });
-  savePhrases(userId(req), lang, phrases);
+  const uid = userId(req);
+  let phrases = getPhrases(uid, lang);
+  const idx = phrases.findIndex(p => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
+
+  // Clean up notebook links pointing to this phrase
+  const deletedPhrase = phrases[idx];
+  if (deletedPhrase.notebookLinks && deletedPhrase.notebookLinks.length) {
+    const notebook = getNotebook(uid, lang);
+    for (const link of deletedPhrase.notebookLinks) {
+      for (const s of notebook.sections) {
+        const pg = s.pages.find(p => p.id === link.pageId);
+        if (pg && pg.vocabLinks) {
+          pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== req.params.id);
+        }
+      }
+    }
+    saveNotebook(uid, lang, notebook);
+  }
+
+  phrases.splice(idx, 1);
+  savePhrases(uid, lang, phrases);
+  deleteItemAllSpeeds(uid, lang, req.params.id);
   res.json({ ok: true });
 });
 
@@ -1451,6 +1487,7 @@ router.post('/notebook/:code/pages/:pageId/duplicate', (req, res) => {
       dup.createdAt = new Date().toISOString();
       dup.updatedAt = new Date().toISOString();
       dup.order = s.pages.length;
+      dup.vocabLinks = []; // don't copy vocab links to duplicate
       s.pages.push(dup);
       saveNotebook(uid, lang, notebook);
       return res.status(201).json({ ok: true, page: dup });
@@ -1464,6 +1501,14 @@ router.delete('/notebook/:code/pages/:pageId', (req, res) => {
   const uid = userId(req);
   const lang = req.params.code;
   const notebook = getNotebook(uid, lang);
+
+  // Find the page and its vocab links before deleting
+  let deletedPageLinks = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === req.params.pageId);
+    if (p) { deletedPageLinks = p.vocabLinks || []; break; }
+  }
+
   let found = false;
   for (const s of notebook.sections) {
     const before = s.pages.length;
@@ -1471,6 +1516,32 @@ router.delete('/notebook/:code/pages/:pageId', (req, res) => {
     if (s.pages.length !== before) { found = true; break; }
   }
   if (!found) return res.status(404).json({ error: 'Page not found' });
+
+  // Clean up vocabulary links pointing to this page
+  if (deletedPageLinks && deletedPageLinks.length) {
+    const words = getWords(uid, lang);
+    for (const vl of deletedPageLinks) {
+      if (vl.vocabType === 'word') {
+        const w = words.find(w => w.id === vl.vocabId);
+        if (w && w.notebookLinks) {
+          w.notebookLinks = w.notebookLinks.filter(l => l.pageId !== req.params.pageId);
+        }
+      }
+    }
+    saveWords(uid, lang, words);
+
+    const phrases = getPhrases(uid, lang);
+    for (const vl of deletedPageLinks) {
+      if (vl.vocabType === 'phrase') {
+        const p = phrases.find(ph => ph.id === vl.vocabId);
+        if (p && p.notebookLinks) {
+          p.notebookLinks = p.notebookLinks.filter(l => l.pageId !== req.params.pageId);
+        }
+      }
+    }
+    savePhrases(uid, lang, phrases);
+  }
+
   saveNotebook(uid, lang, notebook);
   res.json({ ok: true });
 });
@@ -1512,6 +1583,118 @@ function snippetFromContent(content, query) {
   const end = Math.min(plain.length, idx + query.length + 80);
   return (start > 0 ? '…' : '') + plain.substring(start, end) + (end < plain.length ? '…' : '');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VOCAB LINKS (Vocabulary ↔ Notebook linking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/vocab-link – link a vocabulary item to a notebook page
+router.post('/vocab-link', (req, res) => {
+  const { lang, vocabId, vocabType, pageId } = req.body;
+  if (!lang || !vocabId || !vocabType || !pageId)
+    return res.status(400).json({ error: 'lang, vocabId, vocabType, pageId required' });
+  if (!['word', 'phrase'].includes(vocabType))
+    return res.status(400).json({ error: 'vocabType must be "word" or "phrase"' });
+
+  const uid = userId(req);
+
+  // Get vocabulary item
+  let vocabItem = null;
+  let words, phrases;
+  if (vocabType === 'word') {
+    words = getWords(uid, lang);
+    vocabItem = words.find(w => w.id === vocabId);
+  } else {
+    phrases = getPhrases(uid, lang);
+    vocabItem = phrases.find(p => p.id === vocabId);
+  }
+  if (!vocabItem) return res.status(404).json({ error: 'Vocabulary item not found' });
+
+  // Get notebook page
+  const notebook = getNotebook(uid, lang);
+  let foundSection = null;
+  let foundPage = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === pageId);
+    if (p) { foundSection = s; foundPage = p; break; }
+  }
+  if (!foundPage) return res.status(404).json({ error: 'Notebook page not found' });
+
+  // Add link to vocabulary item
+  if (!vocabItem.notebookLinks) vocabItem.notebookLinks = [];
+  if (!vocabItem.notebookLinks.find(l => l.pageId === pageId)) {
+    vocabItem.notebookLinks.push({
+      pageId: foundPage.id,
+      sectionId: foundSection.id,
+      pageName: foundPage.name,
+      sectionName: foundSection.name
+    });
+  }
+
+  // Add link to notebook page
+  if (!foundPage.vocabLinks) foundPage.vocabLinks = [];
+  if (!foundPage.vocabLinks.find(l => l.vocabId === vocabId)) {
+    const displayText = vocabType === 'phrase'
+      ? (vocabItem.text || vocabItem.literal || '')
+      : (vocabItem.literal || vocabItem.text || '');
+    foundPage.vocabLinks.push({
+      vocabId: vocabItem.id,
+      vocabType: vocabType,
+      text: displayText,
+      translation: vocabItem.translation || ''
+    });
+  }
+
+  // Save files
+  if (vocabType === 'word') {
+    saveWords(uid, lang, words);
+  } else {
+    savePhrases(uid, lang, phrases);
+  }
+  saveNotebook(uid, lang, notebook);
+
+  res.json({ ok: true });
+});
+
+// DELETE /api/vocab-link – remove a link between vocabulary and notebook
+router.delete('/vocab-link', (req, res) => {
+  const { lang, vocabId, vocabType, pageId } = req.body;
+  if (!lang || !vocabId || !vocabType || !pageId)
+    return res.status(400).json({ error: 'lang, vocabId, vocabType, pageId required' });
+  if (!['word', 'phrase'].includes(vocabType))
+    return res.status(400).json({ error: 'vocabType must be "word" or "phrase"' });
+
+  const uid = userId(req);
+
+  // Remove from vocabulary item
+  if (vocabType === 'word') {
+    const words = getWords(uid, lang);
+    const w = words.find(w => w.id === vocabId);
+    if (w && w.notebookLinks) {
+      w.notebookLinks = w.notebookLinks.filter(l => l.pageId !== pageId);
+    }
+    saveWords(uid, lang, words);
+  } else {
+    const phrases = getPhrases(uid, lang);
+    const p = phrases.find(ph => ph.id === vocabId);
+    if (p && p.notebookLinks) {
+      p.notebookLinks = p.notebookLinks.filter(l => l.pageId !== pageId);
+    }
+    savePhrases(uid, lang, phrases);
+  }
+
+  // Remove from notebook page
+  const notebook = getNotebook(uid, lang);
+  for (const s of notebook.sections) {
+    const pg = s.pages.find(p => p.id === pageId);
+    if (pg && pg.vocabLinks) {
+      pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== vocabId);
+    }
+  }
+  saveNotebook(uid, lang, notebook);
+
+  res.json({ ok: true });
+});
 
 // Export helpers for admin route re-use
 router.EDGE_TTS_VOICES_EXPORT = EDGE_TTS_VOICES;

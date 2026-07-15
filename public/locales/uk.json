@@ -187,6 +187,7 @@
   "admin_no_users": "Немає користувачів.",
   "admin_load_failed": "Не вдалося завантажити користувачів.",
   "common_cancel": "Скасувати",
+  "common_close": "Закрити",
   "common_confirm": "Підтвердити",
   "common_save": "Зберегти",
   "common_delete": "Видалити",
@@ -406,5 +407,17 @@
   "notebook_set_color": "Вибрати колір",
   "notebook_remove_color": "Видалити колір",
   "notebook_custom_color": "Свій колір",
-  "home_notebook": "Сторінки нотаток"
+  "home_notebook": "Сторінки нотаток",
+  "vocab_link_notebook": "Посилання на нотатник",
+  "vocab_link_to_page": "Посилання на сторінку нотатника",
+  "vocab_link_added": "Прив'язано до сторінки!",
+  "vocab_link_removed": "Посилання видалено",
+  "notebook_vocab_link": "Прив'язати словниковий запас",
+  "notebook_linked_vocab": "Прив'язаний словниковий запас",
+  "notebook_add_vocab_link": "Додати",
+  "notebook_link_vocab_title": "Прив'язати елемент словникового запасу",
+  "notebook_search_vocab": "Пошук словникового запасу…",
+  "notebook_no_vocab_found": "Словниковий запас не знайдено.",
+  "notebook_no_linked_vocab": "Немає прив'язаного словникового запасу.",
+  "notebook_select_page_first": "Спочатку виберіть сторінку"
 }

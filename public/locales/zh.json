@@ -187,6 +187,7 @@
   "admin_no_users": "没有用户。",
   "admin_load_failed": "加载用户失败。",
   "common_cancel": "取消",
+  "common_close": "关闭",
   "common_confirm": "确认",
   "common_save": "保存",
   "common_delete": "删除",
@@ -406,5 +407,17 @@
   "notebook_set_color": "选择颜色",
   "notebook_remove_color": "移除颜色",
   "notebook_custom_color": "自定义颜色",
-  "home_notebook": "笔记页"
+  "home_notebook": "笔记页",
+  "vocab_link_notebook": "链接到笔记本",
+  "vocab_link_to_page": "链接到笔记本页面",
+  "vocab_link_added": "已链接到页面！",
+  "vocab_link_removed": "链接已移除",
+  "notebook_vocab_link": "链接词汇",
+  "notebook_linked_vocab": "已链接的词汇",
+  "notebook_add_vocab_link": "添加",
+  "notebook_link_vocab_title": "链接词汇项",
+  "notebook_search_vocab": "搜索词汇…",
+  "notebook_no_vocab_found": "未找到词汇。",
+  "notebook_no_linked_vocab": "没有已链接的词汇。",
+  "notebook_select_page_first": "请先选择页面"
 }

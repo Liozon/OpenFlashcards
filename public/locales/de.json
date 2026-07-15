@@ -187,6 +187,7 @@
   "admin_no_users": "Keine Benutzer.",
   "admin_load_failed": "Benutzer konnten nicht geladen werden.",
   "common_cancel": "Abbrechen",
+  "common_close": "Schließen",
   "common_confirm": "Bestätigen",
   "common_save": "Speichern",
   "common_delete": "Löschen",
@@ -406,5 +407,17 @@
   "notebook_set_color": "Farbe auswählen",
   "notebook_remove_color": "Farbe entfernen",
   "notebook_custom_color": "Benutzerdefinierte Farbe",
-  "home_notebook": "Notizseiten"
+  "home_notebook": "Notizseiten",
+  "vocab_link_notebook": "Link zum Notizbuch",
+  "vocab_link_to_page": "Link zur Notizbuchseite",
+  "vocab_link_added": "Mit Seite verknüpft!",
+  "vocab_link_removed": "Link entfernt",
+  "notebook_vocab_link": "Wortschatz verknüpfen",
+  "notebook_linked_vocab": "Verknüpfter Wortschatz",
+  "notebook_add_vocab_link": "Hinzufügen",
+  "notebook_link_vocab_title": "Wortschatzeintrag verknüpfen",
+  "notebook_search_vocab": "Wortschatz durchsuchen…",
+  "notebook_no_vocab_found": "Kein Wortschatz gefunden.",
+  "notebook_no_linked_vocab": "Kein verknüpfter Wortschatz.",
+  "notebook_select_page_first": "Wählen Sie zuerst eine Seite aus"
 }

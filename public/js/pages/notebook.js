@@ -71,6 +71,7 @@ function getNotebookHTML() {
             <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="link" title="${t('notebook_link')}">🔗</button>
             <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">📄🔗</button>
+            <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">📝🔗</button>
             <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
           </div>
@@ -79,6 +80,13 @@ function getNotebookHTML() {
             <div class="nb-page-meta" id="nbPageMeta"></div>
           </div>
           <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_title_placeholder')}"></div>
+          <div class="nb-vocab-links-section" id="nbVocabLinksSection">
+            <div class="nb-vocab-links-header">
+              <span>📝 ${t('notebook_linked_vocab')}</span>
+              <button class="btn btn-sm btn-secondary" id="nbAddVocabLink" title="${t('notebook_add_vocab_link')}">➕ ${t('notebook_add_vocab_link')}</button>
+            </div>
+            <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
+          </div>
           <div class="nb-editor-footer">
             <div class="nb-editor-footer-left">
               <span id="nbEditorStatus">${t('notebook_saved')}</span>
@@ -112,6 +120,16 @@ function getNotebookHTML() {
         <div id="nbLinkResults" class="nb-link-results"></div>
         <div style="display:flex;justify-content:flex-end">
           <button class="btn btn-secondary btn-sm" id="nbLinkCancelBtn">${t('common_cancel')}</button>
+        </div>
+      </div>
+    </div>
+    <div class="nb-modal-overlay hidden" id="nbVocabLinkModal">
+      <div class="nb-modal-dialog">
+        <h3>${t('notebook_link_vocab_title')}</h3>
+        <input type="text" id="nbVocabLinkSearch" class="search-input" placeholder="${t('notebook_search_vocab')}" autocomplete="off">
+        <div id="nbVocabLinkResults" class="nb-link-results" style="max-height:300px;overflow-y:auto;margin-top:8px"></div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="nbVocabLinkCancelBtn">${t('common_close')}</button>
         </div>
       </div>
     </div>
@@ -173,6 +191,9 @@ function bindNotebookEvents() {
   el.querySelector('#nbTableCancelBtn').addEventListener('click', () => el.querySelector('#nbTableModal').classList.add('hidden'));
   el.querySelector('#nbLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbLinkModal').classList.add('hidden'));
   el.querySelector('#nbLinkSearch').addEventListener('input', searchPagesForLink);
+  el.querySelector('#nbAddVocabLink').addEventListener('click', showNotebookVocabLinkPicker);
+  el.querySelector('#nbVocabLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbVocabLinkModal').classList.add('hidden'));
+  el.querySelector('#nbVocabLinkSearch').addEventListener('input', searchVocabForLink);
   el.querySelector('#nbMoveConfirmBtn').addEventListener('click', confirmMovePage);
   el.querySelector('#nbMoveCancelBtn').addEventListener('click', () => el.querySelector('#nbMoveModal').classList.add('hidden'));
   el.querySelector('#nbColorCancelBtn').addEventListener('click', () => { NB_colorTarget = null; el.querySelector('#nbColorModal').classList.add('hidden'); });
@@ -323,10 +344,10 @@ function renderSidebar() {
       </div>
       <div class="nb-page-list ${isActive ? '' : 'hidden'}" data-section-id="${s.id}">
         ${(s.pages || []).map((p, pi) => {
-          const pActive = p.id === NB.currentPageId;
-          const totalPages = (s.pages || []).length;
-          const pageStyle = p.color ? `background:linear-gradient(to right, ${p.color}33, transparent 70%)` : '';
-          return `
+      const pActive = p.id === NB.currentPageId;
+      const totalPages = (s.pages || []).length;
+      const pageStyle = p.color ? `background:linear-gradient(to right, ${p.color}33, transparent 70%)` : '';
+      return `
           <div class="nb-page-item ${pActive ? 'active' : ''}" data-page-id="${p.id}" data-section-id="${s.id}" style="${pageStyle}">
             ${p.color ? `<span class="nb-page-color-dot" style="background:${p.color}"></span>` : ''}
             <span class="nb-page-name">${escapeHtml(p.name)}</span>
@@ -340,7 +361,7 @@ function renderSidebar() {
               <button class="nb-context-btn" data-action="delete-page" title="${window.t('common_delete')}">🗑</button>
             </div>
           </div>`;
-        }).join('')}
+    }).join('')}
       </div>
     </div>`;
   }).join('');
@@ -645,6 +666,7 @@ function openPage(sectionId, pageId) {
   NB.dirty = false;
   updateEditorStatus();
   renderSidebar();
+  renderVocabLinksList();
 
   // Re-bind notebook link clicks
   el.querySelector('#nbEditor').querySelectorAll('a[data-notebook-link]').forEach(a => {
@@ -753,6 +775,7 @@ function handleToolbarCommand(cmd) {
     case 'insertHorizontalRule': document.execCommand('insertHorizontalRule'); break;
     case 'link': insertHyperlink(); break;
     case 'pageLink': showPageLinkPicker(); break;
+    case 'vocabLink': showNotebookVocabLinkPicker(); break;
   }
   markDirty();
 }
@@ -873,7 +896,7 @@ function insertTable() {
   tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      tableAction(wrapper.querySelector('table'), btn.dataset.table-action);
+      tableAction(wrapper.querySelector('table'), btn.dataset.table - action);
     });
   });
 
@@ -1156,7 +1179,7 @@ function handleEditorPaste(e) {
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
         btn.addEventListener('click', (ev) => {
           ev.preventDefault();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.table-action);
+          tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
         });
       });
       insertNodeAtCursor(tblWrapper);
@@ -1212,7 +1235,7 @@ function handleEditorPaste(e) {
         tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
           btn.addEventListener('click', (ev) => {
             ev.preventDefault();
-            tableAction(tblWrapper.querySelector('table'), btn.dataset.table-action);
+            tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
           });
         });
         insertNodeAtCursor(tblWrapper);
@@ -1255,7 +1278,7 @@ function handleEditorPaste(e) {
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
         btn.addEventListener('click', (ev) => {
           ev.preventDefault();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.table-action);
+          tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
         });
       });
       insertNodeAtCursor(tblWrapper);
@@ -1278,6 +1301,148 @@ function highlightText(text, query) {
   return text.replace(re, '<mark>$1</mark>');
 }
 
+// ── Vocabulary linking ──────────────────────────────────────
+
+NB._vocabCache = null; // cached vocabulary for the picker
+
+function showNotebookVocabLinkPicker() {
+  if (!NB.currentPageId) {
+    nbToast(window.t('notebook_select_page_first'), 'warning');
+    return;
+  }
+  NB._vocabCache = null; // force refresh
+  NB.el.querySelector('#nbVocabLinkModal').classList.remove('hidden');
+  NB.el.querySelector('#nbVocabLinkSearch').value = '';
+  NB.el.querySelector('#nbVocabLinkResults').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)"><div class="spinner"></div></div>';
+  searchVocabForLink();
+}
+
+async function searchVocabForLink() {
+  const el = NB.el;
+  const q = (el.querySelector('#nbVocabLinkSearch').value || '').toLowerCase().trim();
+  const results = el.querySelector('#nbVocabLinkResults');
+  const lang = NB.lang;
+
+  // Get current page's already-linked vocab IDs
+  const section = NB.sections.find(s => s.id === NB.currentSectionId);
+  const page = section ? section.pages.find(p => p.id === NB.currentPageId) : null;
+  const linkedIds = (page && page.vocabLinks) ? page.vocabLinks.map(l => l.vocabId) : [];
+
+  // Load vocab cache if needed
+  if (!NB._vocabCache) {
+    try {
+      const [words, phrases] = await Promise.all([
+        window.api('GET', '/api/words?lang=' + encodeURIComponent(lang)),
+        window.api('GET', '/api/phrases?lang=' + encodeURIComponent(lang))
+      ]);
+      NB._vocabCache = [
+        ...words.map(w => ({ id: w.id, vocabType: 'word', text: w.literal || w.text || '', translation: w.translation })),
+        ...phrases.map(p => ({ id: p.id, vocabType: 'phrase', text: p.text || p.literal || '', translation: p.translation }))
+      ];
+    } catch {
+      results.innerHTML = '<div class="nb-link-empty" style="color:var(--danger)">' + window.t('common_error') + '</div>';
+      return;
+    }
+  }
+
+  let allVocab = NB._vocabCache.map(v => ({ ...v, linked: linkedIds.includes(v.id) }));
+
+  if (q) {
+    allVocab = allVocab.filter(v =>
+      v.text.toLowerCase().includes(q) ||
+      (v.translation || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (!allVocab.length) {
+    results.innerHTML = '<div class="nb-link-empty">' + window.t('notebook_no_vocab_found') + '</div>';
+    return;
+  }
+
+  results.innerHTML = allVocab.map(item => `
+    <div class="nb-link-item nb-vocab-link-item ${item.linked ? 'linked' : ''}" data-vocab-id="${item.id}" data-vocab-type="${item.vocabType}">
+      <span class="nb-link-check">${item.linked ? '✓' : ''}</span>
+      <span class="nb-link-name">${escapeHtml(item.text)}</span>
+      <span class="nb-link-section" style="font-size:.75rem">${escapeHtml(item.translation || '')}</span>
+    </div>
+  `).join('');
+
+  results.querySelectorAll('.nb-vocab-link-item').forEach(item => {
+    item.addEventListener('click', () => toggleVocabLinkOnPage(item.dataset.vocabId, item.dataset.vocabType));
+  });
+}
+
+async function toggleVocabLinkOnPage(vocabId, vocabType) {
+  if (!NB.currentPageId) return;
+  const lang = NB.lang;
+
+  const section = NB.sections.find(s => s.id === NB.currentSectionId);
+  const page = section ? section.pages.find(p => p.id === NB.currentPageId) : null;
+  const isLinked = page && page.vocabLinks && page.vocabLinks.some(l => l.vocabId === vocabId);
+
+  try {
+    if (isLinked) {
+      await window.api('DELETE', '/api/vocab-link', { lang, vocabId, vocabType, pageId: NB.currentPageId });
+    } else {
+      await window.api('POST', '/api/vocab-link', { lang, vocabId, vocabType, pageId: NB.currentPageId });
+    }
+
+    // Reload notebook data
+    const notebook = await window.api('GET', '/api/notebook/' + lang);
+    NB.notebook = notebook;
+    NB.sections = notebook.sections || [];
+    NB._vocabCache = null; // invalidate vocab cache
+
+    renderVocabLinksList();
+    searchVocabForLink();
+    window.toast(isLinked ? window.t('vocab_link_removed') : window.t('vocab_link_added'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
+}
+
+function renderVocabLinksList() {
+  const el = NB.el;
+  const list = el.querySelector('#nbVocabLinksList');
+  if (!list) return;
+
+  const section = NB.sections.find(s => s.id === NB.currentSectionId);
+  const page = section ? section.pages.find(p => p.id === NB.currentPageId) : null;
+  const links = (page && page.vocabLinks) || [];
+
+  if (!links.length) {
+    list.innerHTML = '<div class="nb-vocab-links-empty">' + window.t('notebook_no_linked_vocab') + '</div>';
+    return;
+  }
+
+  list.innerHTML = links.map(l => {
+    const text = l.text || '';
+    const escapedText = escapeHtml(text);
+    const encodedSearch = encodeURIComponent(text);
+    return '<span class="nb-vocab-link-chip" title="' + escapeHtml(l.translation || '') + '">' +
+      '<span class="nb-vocab-link-chip-text" onclick="window.navigate(\'vocabulary\',{search:\'' + encodedSearch + '\'})">' +
+      (l.vocabType === 'phrase' ? '💬 ' : '📝 ') + escapedText +
+      '</span>' +
+      '<span class="nb-vocab-link-chip-del" onclick="removeVocabLinkFromPage(\'' + escapeHtml(l.vocabId) + '\',\'' + l.vocabType + '\')">✕</span>' +
+      '</span>';
+  }).join('');
+}
+
+window.removeVocabLinkFromPage = async function (vocabId, vocabType) {
+  if (!NB.currentPageId) return;
+  try {
+    await window.api('DELETE', '/api/vocab-link', { lang: NB.lang, vocabId, vocabType, pageId: NB.currentPageId });
+    const notebook = await window.api('GET', '/api/notebook/' + NB.lang);
+    NB.notebook = notebook;
+    NB.sections = notebook.sections || [];
+    NB._vocabCache = null; // invalidate vocab cache
+    renderVocabLinksList();
+    window.toast(window.t('vocab_link_removed'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
+};
+
 function formatDate(iso) {
   if (!iso) return '';
   try {
@@ -1298,7 +1463,7 @@ window.addEventListener('beforeunload', () => {
 
 // Clean up on page navigation
 const origNavigate = window.navigate;
-window.navigate = function(page, params, _fromPopState) {
+window.navigate = function (page, params, _fromPopState) {
   if (NB.dirty && NB.currentPageId && page !== 'notebook') {
     saveCurrentPage();
   }

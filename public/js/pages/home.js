@@ -14,7 +14,7 @@ async function renderHome(el) {
       <button class="btn btn-primary" onclick="navigate('add')">➕ ${t('home_add_words')}</button>
       <button class="btn btn-secondary" onclick="navigate('train')">🎯 ${t('home_practice')}</button>
       <button class="btn btn-secondary" onclick="navigate('vocabulary')">📚 ${t('home_vocabulary')}</button>
-      <button class="btn btn-secondary" onclick="navigate('notebook')">📓 ${t('home_notebook')}</button>
+      <button class="btn btn-secondary" onclick="navigate('notebook')">📓 ${t('nav_notebook')}</button>
     </div>
     <div class="card">
       <h3 style="margin-bottom:12px;font-size:1rem">${t('home_active_lang')}</h3>
@@ -50,7 +50,7 @@ async function renderHome(el) {
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adjective\'})"><div class="stat-number">' + (stats.byType.adjective || 0) + '</div><div class="stat-label">' + t('home_adj') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adverb\'})"><div class="stat-number">' + (stats.byType.adverb || 0) + '</div><div class="stat-label">' + t('home_adv') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'other\'})"><div class="stat-number">' + (stats.byType.other || 0) + '</div><div class="stat-label">' + t('home_other') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'notebook\')"><div class="stat-number">' + notebookPages + '</div><div class="stat-label">' + t('home_notebook') + '</div></div>';
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'notebook\')"><div class="stat-number">' + notebookPages + '</div><div class="stat-label">' + t('nav_notebook') + '</div></div>';
   } catch {
     document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">' + t('home_stats_error') + '</p>';
   }

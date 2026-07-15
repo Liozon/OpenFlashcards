@@ -187,6 +187,7 @@
   "admin_no_users": "沒有使用者。",
   "admin_load_failed": "載入使用者失敗。",
   "common_cancel": "取消",
+  "common_close": "關閉",
   "common_confirm": "確認",
   "common_save": "儲存",
   "common_delete": "刪除",
@@ -406,5 +407,17 @@
   "notebook_set_color": "選擇顏色",
   "notebook_remove_color": "移除顏色",
   "notebook_custom_color": "自訂顏色",
-  "home_notebook": "筆記頁"
+  "home_notebook": "筆記頁",
+  "vocab_link_notebook": "連結到筆記本",
+  "vocab_link_to_page": "連結到筆記本頁面",
+  "vocab_link_added": "已連結到頁面！",
+  "vocab_link_removed": "連結已移除",
+  "notebook_vocab_link": "連結詞彙",
+  "notebook_linked_vocab": "已連結的詞彙",
+  "notebook_add_vocab_link": "新增",
+  "notebook_link_vocab_title": "連結詞彙項目",
+  "notebook_search_vocab": "搜尋詞彙…",
+  "notebook_no_vocab_found": "找不到詞彙。",
+  "notebook_no_linked_vocab": "沒有已連結的詞彙。",
+  "notebook_select_page_first": "請先選擇頁面"
 }

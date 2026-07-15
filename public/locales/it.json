@@ -187,6 +187,7 @@
   "admin_no_users": "Nessun utente.",
   "admin_load_failed": "Impossibile caricare gli utenti.",
   "common_cancel": "Annulla",
+  "common_close": "Chiudi",
   "common_confirm": "Conferma",
   "common_save": "Salva",
   "common_delete": "Elimina",
@@ -406,5 +407,17 @@
   "notebook_set_color": "Scegli un colore",
   "notebook_remove_color": "Rimuovi colore",
   "notebook_custom_color": "Colore personalizzato",
-  "home_notebook": "Pagine di appunti"
+  "home_notebook": "Pagine di appunti",
+  "vocab_link_notebook": "Collegamento al quaderno",
+  "vocab_link_to_page": "Collegamento alla pagina del quaderno",
+  "vocab_link_added": "Collegato alla pagina!",
+  "vocab_link_removed": "Collegamento rimosso",
+  "notebook_vocab_link": "Collega vocabolario",
+  "notebook_linked_vocab": "Vocabolario collegato",
+  "notebook_add_vocab_link": "Aggiungi",
+  "notebook_link_vocab_title": "Collega elemento del vocabolario",
+  "notebook_search_vocab": "Cerca nel vocabolario…",
+  "notebook_no_vocab_found": "Nessun vocabolario trovato.",
+  "notebook_no_linked_vocab": "Nessun vocabolario collegato.",
+  "notebook_select_page_first": "Seleziona prima una pagina"
 }

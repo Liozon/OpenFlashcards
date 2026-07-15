@@ -2592,6 +2592,166 @@ img {
   font-weight: 700;
 }
 
+/* ── Vocabulary notebook links (on vocab cards) ────────────── */
+.vocab-notebook-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.vocab-notebook-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: .75rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.vocab-notebook-link:hover {
+  background: var(--primary-bg-correct);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.vocab-notebook-link-del {
+  font-size: .65rem;
+  margin-left: 2px;
+  opacity: .5;
+  cursor: pointer;
+  line-height: 1;
+}
+.vocab-notebook-link-del:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+/* ── Modal search inputs (notebook page link + vocab link) ─── */
+#nbLinkSearch,
+#nbVocabLinkSearch,
+#vocabLinkSearch {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+#vocabLinkSearch:focus {
+  border-color: var(--primary);
+}
+
+/* ── Vocab link page picker (in vocabulary) ────────────────── */
+.vocab-link-page-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.vocab-link-page-item:hover {
+  background: var(--surface-2);
+}
+.vocab-link-page-item.linked {
+  background: var(--primary-bg-correct);
+}
+.vocab-link-page-check {
+  width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.vocab-link-page-section {
+  font-size: .72rem;
+  color: var(--text-faint);
+}
+.vocab-link-page-name {
+  font-size: .85rem;
+  color: var(--text);
+  flex: 1;
+}
+
+/* ── Notebook: Linked vocabulary section ───────────────────── */
+.nb-vocab-links-section {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.nb-vocab-links-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.nb-vocab-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 28px;
+}
+.nb-vocab-links-empty {
+  font-size: .78rem;
+  color: var(--text-faint);
+  font-style: italic;
+}
+.nb-vocab-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: .78rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--primary-bg-correct);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+.nb-vocab-link-chip-text {
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+.nb-vocab-link-chip-text:hover {
+  opacity: .7;
+}
+.nb-vocab-link-chip-del {
+  font-size: .65rem;
+  margin-left: 2px;
+  opacity: .5;
+  cursor: pointer;
+  line-height: 1;
+}
+.nb-vocab-link-chip-del:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+/* ── Vocab link picker items (in notebook) ─────────────────── */
+.nb-vocab-link-item .nb-link-check {
+  width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.nb-vocab-link-item.linked {
+  background: var(--primary-bg-correct);
+}
+
 /* ── Table size picker modal ───────────────────────────────── */
 .nb-table-modal {
   position: fixed;

@@ -187,6 +187,7 @@
   "admin_no_users": "No users.",
   "admin_load_failed": "Failed to load users.",
   "common_cancel": "Cancel",
+  "common_close": "Close",
   "common_confirm": "Confirm",
   "common_save": "Save",
   "common_delete": "Delete",
@@ -406,5 +407,17 @@
   "notebook_set_color": "Choose a color",
   "notebook_remove_color": "Remove color",
   "notebook_custom_color": "Custom color",
-  "home_notebook": "Note pages"
+  "home_notebook": "Note pages",
+  "vocab_link_notebook": "Link to notebook",
+  "vocab_link_to_page": "Link to notebook page",
+  "vocab_link_added": "Linked to page!",
+  "vocab_link_removed": "Link removed",
+  "notebook_vocab_link": "Link vocabulary",
+  "notebook_linked_vocab": "Linked vocabulary",
+  "notebook_add_vocab_link": "Add",
+  "notebook_link_vocab_title": "Link vocabulary item",
+  "notebook_search_vocab": "Search vocabulary…",
+  "notebook_no_vocab_found": "No vocabulary found.",
+  "notebook_no_linked_vocab": "No linked vocabulary.",
+  "notebook_select_page_first": "Select a page first"
 }

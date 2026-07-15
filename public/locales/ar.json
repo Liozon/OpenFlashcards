@@ -187,6 +187,7 @@
   "admin_no_users": "لا يوجد مستخدمون.",
   "admin_load_failed": "فشل تحميل المستخدمين.",
   "common_cancel": "إلغاء",
+  "common_close": "إغلاق",
   "common_confirm": "تأكيد",
   "common_save": "حفظ",
   "common_delete": "حذف",
@@ -406,5 +407,17 @@
   "notebook_set_color": "اختر لوناً",
   "notebook_remove_color": "إزالة اللون",
   "notebook_custom_color": "لون مخصص",
-  "home_notebook": "صفحات الملاحظات"
+  "home_notebook": "صفحات الملاحظات",
+  "vocab_link_notebook": "رابط إلى دفتر الملاحظات",
+  "vocab_link_to_page": "رابط إلى صفحة دفتر الملاحظات",
+  "vocab_link_added": "تم الربط بالصفحة!",
+  "vocab_link_removed": "تمت إزالة الرابط",
+  "notebook_vocab_link": "ربط المفردات",
+  "notebook_linked_vocab": "المفردات المرتبطة",
+  "notebook_add_vocab_link": "إضافة",
+  "notebook_link_vocab_title": "ربط عنصر مفردات",
+  "notebook_search_vocab": "البحث في المفردات…",
+  "notebook_no_vocab_found": "لم يتم العثور على مفردات.",
+  "notebook_no_linked_vocab": "لا توجد مفردات مرتبطة.",
+  "notebook_select_page_first": "حدد صفحة أولاً"
 }
