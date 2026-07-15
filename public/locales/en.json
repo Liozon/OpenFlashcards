@@ -389,6 +389,7 @@
   "notebook_open_link": "Open linked page",
   "notebook_broken_link": "This page no longer exists.",
   "notebook_page_title_placeholder": "Page title…",
+  "notebook_page_content_placeholder": "Start writing…",
   "notebook_last_updated": "Last updated",
   "notebook_saved": "All changes saved",
   "notebook_unsaved": "Unsaved changes",

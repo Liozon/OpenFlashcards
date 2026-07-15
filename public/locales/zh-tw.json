@@ -389,6 +389,7 @@
   "notebook_open_link": "開啟連結的頁面",
   "notebook_broken_link": "此頁面已不存在。",
   "notebook_page_title_placeholder": "頁面標題…",
+  "notebook_page_content_placeholder": "開始寫…",
   "notebook_last_updated": "最後更新",
   "notebook_saved": "所有變更已儲存",
   "notebook_unsaved": "未儲存的變更",

@@ -389,6 +389,7 @@
   "notebook_open_link": "Відкрити пов'язану сторінку",
   "notebook_broken_link": "Ця сторінка більше не існує.",
   "notebook_page_title_placeholder": "Заголовок сторінки…",
+  "notebook_page_content_placeholder": "Почніть писати…",
   "notebook_last_updated": "Останнє оновлення",
   "notebook_saved": "Усі зміни збережено",
   "notebook_unsaved": "Незбережені зміни",

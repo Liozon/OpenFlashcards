@@ -389,6 +389,7 @@
   "notebook_open_link": "打开链接的页面",
   "notebook_broken_link": "此页面已不存在。",
   "notebook_page_title_placeholder": "页面标题…",
+  "notebook_page_content_placeholder": "开始写…",
   "notebook_last_updated": "最后更新",
   "notebook_saved": "所有更改已保存",
   "notebook_unsaved": "未保存的更改",

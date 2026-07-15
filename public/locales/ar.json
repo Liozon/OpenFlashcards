@@ -389,6 +389,7 @@
   "notebook_open_link": "فتح الصفحة المرتبطة",
   "notebook_broken_link": "هذه الصفحة لم تعد موجودة.",
   "notebook_page_title_placeholder": "عنوان الصفحة…",
+  "notebook_page_content_placeholder": "ابدأ الكتابة…",
   "notebook_last_updated": "آخر تحديث",
   "notebook_saved": "تم حفظ جميع التغييرات",
   "notebook_unsaved": "تغييرات غير محفوظة",
