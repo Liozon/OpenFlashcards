@@ -79,7 +79,7 @@ function getNotebookHTML() {
             <input type="text" id="nbPageTitle" class="nb-page-title-input" placeholder="${t('notebook_page_title_placeholder')}">
             <div class="nb-page-meta" id="nbPageMeta"></div>
           </div>
-          <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_title_placeholder')}"></div>
+          <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_content_placeholder')}"></div>
           <div class="nb-vocab-links-section hidden" id="nbVocabLinksSection">
             <div class="nb-vocab-links-header">
               <span>📝 ${t('notebook_linked_vocab')}</span>
@@ -107,7 +107,6 @@ function getNotebookHTML() {
         </div>
         <p id="nbTableSizeLabel">1 × 1</p>
         <div style="display:flex;gap:8px;justify-content:center">
-          <button class="btn btn-primary btn-sm" id="nbTableInsertBtn">${t('notebook_table_insert_btn')}</button>
           <button class="btn btn-secondary btn-sm" id="nbTableCancelBtn">${t('common_cancel')}</button>
         </div>
       </div>
@@ -186,7 +185,6 @@ function bindNotebookEvents() {
     if (editor) editor.focus();
   });
 
-  el.querySelector('#nbTableInsertBtn').addEventListener('click', insertTable);
   el.querySelector('#nbTableCancelBtn').addEventListener('click', () => el.querySelector('#nbTableModal').classList.add('hidden'));
   el.querySelector('#nbLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbLinkModal').classList.add('hidden'));
   el.querySelector('#nbLinkSearch').addEventListener('input', searchPagesForLink);
@@ -847,6 +845,7 @@ function initTableGridPicker() {
         });
         el.querySelector('#nbTableSizeLabel').textContent = `${r + 1} × ${c + 1}`;
       });
+      cell.addEventListener('click', insertTable);
       grid.appendChild(cell);
     }
   }
@@ -895,7 +894,7 @@ function insertTable() {
   tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      tableAction(wrapper.querySelector('table'), btn.dataset.table - action);
+      tableAction(wrapper.querySelector('table'), btn.dataset.tableAction);
     });
   });
 
@@ -1178,7 +1177,7 @@ function handleEditorPaste(e) {
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
         btn.addEventListener('click', (ev) => {
           ev.preventDefault();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
+          tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
         });
       });
       insertNodeAtCursor(tblWrapper);
@@ -1234,7 +1233,7 @@ function handleEditorPaste(e) {
         tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
           btn.addEventListener('click', (ev) => {
             ev.preventDefault();
-            tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
+            tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
           });
         });
         insertNodeAtCursor(tblWrapper);
@@ -1277,7 +1276,7 @@ function handleEditorPaste(e) {
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
         btn.addEventListener('click', (ev) => {
           ev.preventDefault();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.table - action);
+          tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
         });
       });
       insertNodeAtCursor(tblWrapper);
