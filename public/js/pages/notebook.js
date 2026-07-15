@@ -246,7 +246,10 @@ function restorePageLinkClicks() {
 async function loadNotebook(lang) {
   try {
     NB.notebook = await window.api('GET', `/api/notebook/${lang}`);
-    NB.sections = NB.notebook.sections || [];
+    NB.sections = (NB.notebook.sections || []).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    NB.sections.forEach(s => {
+      if (s.pages) s.pages.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    });
     NB._langsLoaded[lang] = NB.sections;
     populateLangSelector();
     renderSidebar();
