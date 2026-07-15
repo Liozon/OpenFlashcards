@@ -2515,10 +2515,6 @@ img {
   color: var(--text-faint);
 }
 
-#nbSaveBtn {
-  font-size: .75rem;
-  padding: 4px 12px;
-}
 
 #nbDeletePage {
   font-size: .75rem;

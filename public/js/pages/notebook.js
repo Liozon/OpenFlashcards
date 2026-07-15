@@ -98,6 +98,7 @@ function getNotebookHTML() {
             <div class="nb-editor-footer-left" id="nbEditorFooterLeft">
               <span id="nbEditorStatus">${t('notebook_saved')}</span>
               <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
+              <button class="btn btn-sm btn-secondary" id="nbSaveCloseBtn">${t('notebook_save_close')}</button>
             </div>
             <div class="nb-editor-footer-right" style="display: none">
               <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">📄</button>
@@ -184,6 +185,7 @@ function bindNotebookEvents() {
   el.querySelector('#nbDeletePage').addEventListener('click', deleteCurrentPage);
   el.querySelector('#nbExportPage').addEventListener('click', exportCurrentPage);
   el.querySelector('#nbSaveBtn').addEventListener('click', () => saveCurrentPage());
+  el.querySelector('#nbSaveCloseBtn').addEventListener('click', saveAndCloseEdit);
   el.querySelector('#nbLangSelector').addEventListener('change', (e) => switchNotebookLang(e.target.value));
   el.classList.add('notebook-active');
 
@@ -820,6 +822,11 @@ async function saveCurrentPage() {
     console.error('[notebook] save error:', e);
     nbToast(window.t('common_error'), 'danger');
   }
+}
+
+async function saveAndCloseEdit() {
+  await saveCurrentPage();
+  switchToReadMode();
 }
 
 function markDirty() {

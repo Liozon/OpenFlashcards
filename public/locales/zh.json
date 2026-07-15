@@ -418,5 +418,6 @@
   "notebook_search_vocab": "搜索词汇…",
   "notebook_no_vocab_found": "未找到词汇。",
   "notebook_no_linked_vocab": "没有已链接的词汇。",
-  "notebook_select_page_first": "请先选择页面"
+  "notebook_select_page_first": "请先选择页面",
+  "notebook_save_close": "保存并关闭"
 }

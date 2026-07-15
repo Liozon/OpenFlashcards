@@ -418,5 +418,6 @@
   "notebook_search_vocab": "Пошук словникового запасу…",
   "notebook_no_vocab_found": "Словниковий запас не знайдено.",
   "notebook_no_linked_vocab": "Немає прив'язаного словникового запасу.",
-  "notebook_select_page_first": "Спочатку виберіть сторінку"
+  "notebook_select_page_first": "Спочатку виберіть сторінку",
+  "notebook_save_close": "Зберегти & закрити"
 }

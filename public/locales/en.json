@@ -418,5 +418,6 @@
   "notebook_search_vocab": "Search vocabulary…",
   "notebook_no_vocab_found": "No vocabulary found.",
   "notebook_no_linked_vocab": "No linked vocabulary.",
-  "notebook_select_page_first": "Select a page first"
+  "notebook_select_page_first": "Select a page first",
+  "notebook_save_close": "Save & close"
 }

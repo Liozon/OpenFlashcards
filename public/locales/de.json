@@ -418,5 +418,6 @@
   "notebook_search_vocab": "Wortschatz durchsuchen…",
   "notebook_no_vocab_found": "Kein Wortschatz gefunden.",
   "notebook_no_linked_vocab": "Kein verknüpfter Wortschatz.",
-  "notebook_select_page_first": "Wählen Sie zuerst eine Seite aus"
+  "notebook_select_page_first": "Wählen Sie zuerst eine Seite aus",
+  "notebook_save_close": "Speichern & schließen"
 }

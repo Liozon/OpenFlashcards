@@ -418,5 +418,6 @@
   "notebook_search_vocab": "搜尋詞彙…",
   "notebook_no_vocab_found": "找不到詞彙。",
   "notebook_no_linked_vocab": "沒有已連結的詞彙。",
-  "notebook_select_page_first": "請先選擇頁面"
+  "notebook_select_page_first": "請先選擇頁面",
+  "notebook_save_close": "保存並關閉"
 }

@@ -418,5 +418,6 @@
   "notebook_search_vocab": "البحث في المفردات…",
   "notebook_no_vocab_found": "لم يتم العثور على مفردات.",
   "notebook_no_linked_vocab": "لا توجد مفردات مرتبطة.",
-  "notebook_select_page_first": "حدد صفحة أولاً"
+  "notebook_select_page_first": "حدد صفحة أولاً",
+  "notebook_save_close": "حفظ وإغلاق"
 }
