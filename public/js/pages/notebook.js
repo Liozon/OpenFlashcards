@@ -217,13 +217,14 @@ function bindNotebookEvents() {
   const editor = el.querySelector('#nbEditor');
   NB.editor = editor;
   editor.addEventListener('input', markDirty);
-  editor.addEventListener('keydown', (e) => {
+  editor.addEventListener('paste', handleEditorPaste);
+
+  el.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       saveCurrentPage();
     }
   });
-  editor.addEventListener('paste', handleEditorPaste);
 
   NB.autoSaveInterval = setInterval(() => { if (NB.dirty) saveCurrentPage(); }, 30000);
 
