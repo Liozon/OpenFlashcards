@@ -395,6 +395,14 @@
     // ── /api/languages ───────────────────────────────────────────────────────
     if (p === '/api/languages') return bundle.config.targetLangs || [];
 
+    // ── /api/notebook/:lang ──────────────────────────────────────────────────
+    const notebookMatch = p.match(/^\/api\/notebook\/([a-zA-Z]{2}(-[a-zA-Z]+)?)$/);
+    if (notebookMatch) {
+      const notebookLang = notebookMatch[1];
+      const nbData = (bundle.languages && bundle.languages[notebookLang]) || {};
+      return nbData.notebook || { sections: [] };
+    }
+
     // ── fallback ─────────────────────────────────────────────────────────────
     return {};
   }

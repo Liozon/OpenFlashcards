@@ -1255,6 +1255,7 @@ router.get('/offline/bundle', async (req, res) => {
       bundle.langs[lang] = {
         words: getWords(uid, lang),
         phrases: getPhrases(uid, lang),
+        notebook: getNotebook(uid, lang),
       };
     }
 

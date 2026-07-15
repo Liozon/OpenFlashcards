@@ -7,7 +7,7 @@
 const router  = require('express').Router();
 const fs      = require('fs');
 const path    = require('path');
-const { getWords, getPhrases, getUserConfig } = require('../utils/storage');
+const { getWords, getPhrases, getNotebook, getUserConfig } = require('../utils/storage');
 const { cacheStats } = require('../utils/tts-cache');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', '..', 'data');
@@ -28,7 +28,8 @@ router.get('/bundle', async (req, res) => {
       const code = lang.isoCode;
       languages[code] = {
         words:   getWords(uid, code),
-        phrases: getPhrases(uid, code)
+        phrases: getPhrases(uid, code),
+        notebook: getNotebook(uid, code)
       };
     }
 

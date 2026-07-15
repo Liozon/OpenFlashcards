@@ -69,21 +69,23 @@ window.Offline = (() => {
       { key: '/api/config?',    value: config },
     ];
 
-    // 2. Words, phrases, labels, stats per language
+    // 2. Words, phrases, labels, stats, notebook per language
     let done = 0;
-    const total = langs.length * 4 + 1;
+    const total = langs.length * 5 + 1;
     for (const lang of langs) {
-      const [words, phrases, labels, stats] = await Promise.all([
+      const [words, phrases, labels, stats, notebook] = await Promise.all([
         fetch(`/api/words?lang=${lang}`).then(r => r.json()),
         fetch(`/api/phrases?lang=${lang}`).then(r => r.json()),
         fetch(`/api/labels?lang=${lang}`).then(r => r.json()),
         fetch(`/api/stats?lang=${lang}`).then(r => r.json()),
+        fetch(`/api/notebook/${lang}`).then(r => r.json()),
       ]);
-      entries.push({ key: `/api/words?lang=${lang}`,   value: words   });
-      entries.push({ key: `/api/phrases?lang=${lang}`, value: phrases });
-      entries.push({ key: `/api/labels?lang=${lang}`,  value: labels  });
-      entries.push({ key: `/api/stats?lang=${lang}`,   value: stats   });
-      done += 4;
+      entries.push({ key: `/api/words?lang=${lang}`,     value: words   });
+      entries.push({ key: `/api/phrases?lang=${lang}`,   value: phrases });
+      entries.push({ key: `/api/labels?lang=${lang}`,    value: labels  });
+      entries.push({ key: `/api/stats?lang=${lang}`,     value: stats   });
+      entries.push({ key: `/api/notebook/${lang}`,       value: notebook});
+      done += 5;
       onProgress && onProgress({ phase: 'data', pct: Math.round(done / total * 50) });
     }
 
