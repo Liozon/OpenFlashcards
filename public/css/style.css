@@ -2201,6 +2201,44 @@ img {
   height: 100%;
 }
 
+/* ── Read header ──────────────────────────────────────────── */
+.nb-read-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.nb-read-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  margin: 0;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.nb-read-header .nb-page-meta {
+  display: block;
+  margin-top: 2px;
+}
+
+.nb-editor[contenteditable="false"] {
+  opacity: 0.85;
+}
+
+.nb-editor-readonly {
+  cursor: default;
+  user-select: text;
+}
+
+.nb-editor-readonly a {
+  pointer-events: auto;
+}
+
 /* ── Toolbar ──────────────────────────────────────────────── */
 .nb-editor-toolbar {
   display: flex;
@@ -2434,10 +2472,14 @@ img {
 }
 
 .nb-table-toolbar {
-  display: flex;
+  display: none;
   gap: 4px;
   padding: 4px 0;
   margin-bottom: 4px;
+}
+
+.nb-table-toolbar.visible {
+  display: flex;
 }
 
 .nb-table-toolbar .nb-tb-btn {

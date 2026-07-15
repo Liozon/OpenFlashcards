@@ -12,7 +12,7 @@ function renderNotebook(el, params) {
 
   // Clean up any previous notebook instance
   if (NB.autoSaveInterval) clearInterval(NB.autoSaveInterval);
-  NB = { el, lang, notebook: null, sections: [], currentSectionId: null, currentPageId: null, searchQuery: '', dirty: false };
+  NB = { el, lang, notebook: null, sections: [], currentSectionId: null, currentPageId: null, searchQuery: '', dirty: false, editMode: false };
 
   el.innerHTML = getNotebookHTML();
 
@@ -50,6 +50,13 @@ function getNotebookHTML() {
           <p>${t('notebook_welcome_desc')}</p>
         </div>
         <div class="nb-editor-area hidden" id="nbEditorArea">
+          <div class="nb-read-header hidden" id="nbReadHeader">
+            <div>
+              <h2 class="nb-read-title" id="nbReadTitle"></h2>
+              <span class="nb-page-meta" id="nbReadMeta"></span>
+            </div>
+            <button class="btn btn-sm btn-primary" id="nbEditBtn">✏️</button>
+          </div>
           <div class="nb-editor-toolbar" id="nbToolbar">
             <button class="nb-tb-btn" data-cmd="bold" title="${t('notebook_bold')}"><b>B</b></button>
             <button class="nb-tb-btn" data-cmd="italic" title="${t('notebook_italic')}"><i>I</i></button>
@@ -76,7 +83,7 @@ function getNotebookHTML() {
             <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
           </div>
-          <div class="nb-page-header">
+          <div class="nb-page-header" id="nbPageHeader">
             <input type="text" id="nbPageTitle" class="nb-page-title-input" placeholder="${t('notebook_page_title_placeholder')}">
             <div class="nb-page-meta" id="nbPageMeta"></div>
           </div>
@@ -88,7 +95,7 @@ function getNotebookHTML() {
             <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
           </div>
           <div class="nb-editor-footer">
-            <div class="nb-editor-footer-left">
+            <div class="nb-editor-footer-left" id="nbEditorFooterLeft">
               <span id="nbEditorStatus">${t('notebook_saved')}</span>
               <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
             </div>
@@ -173,6 +180,7 @@ function bindNotebookEvents() {
   });
   el.querySelector('#nbSearchInput').addEventListener('input', () => { NB.searchQuery = el.querySelector('#nbSearchInput').value; performSearch(); });
   el.querySelector('#nbPageTitle').addEventListener('input', markDirty);
+  el.querySelector('#nbEditBtn').addEventListener('click', switchToEditMode);
   el.querySelector('#nbDeletePage').addEventListener('click', deleteCurrentPage);
   el.querySelector('#nbExportPage').addEventListener('click', exportCurrentPage);
   el.querySelector('#nbSaveBtn').addEventListener('click', () => saveCurrentPage());
@@ -220,6 +228,13 @@ function bindNotebookEvents() {
   NB.editor = editor;
   editor.addEventListener('input', markDirty);
   editor.addEventListener('paste', handleEditorPaste);
+  editor.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.nb-table-wrapper');
+    hideAllTableToolbars();
+    if (wrapper && NB.editMode) {
+      wrapper.querySelector('.nb-table-toolbar').classList.add('visible');
+    }
+  });
 
   el.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -526,6 +541,9 @@ async function renamePagePrompt(pageId) {
     renderSidebar();
     if (NB.currentPageId === pageId) {
       NB.el.querySelector('#nbPageTitle').value = name.trim();
+      if (!NB.editMode) {
+        NB.el.querySelector('#nbReadTitle').textContent = name.trim();
+      }
     }
     nbToast(window.t('notebook_renamed'));
   } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
@@ -645,6 +663,64 @@ async function savePagesOrder(sectionId, pages) {
   }
 }
 
+// ── Mode switching ──────────────────────────────────────────
+
+function hideAllTableToolbars() {
+  NB.el.querySelectorAll('.nb-table-toolbar.visible').forEach(t => t.classList.remove('visible'));
+}
+
+function rebindTableToolbars() {
+  const editor = NB.el.querySelector('#nbEditor');
+  if (!editor) return;
+  editor.querySelectorAll('.nb-table-wrapper').forEach(wrapper => {
+    const toolbar = wrapper.querySelector('.nb-table-toolbar');
+    if (!toolbar) return;
+    const table = wrapper.querySelector('table');
+    if (!table) return;
+    toolbar.contentEditable = 'false';
+    toolbar.querySelectorAll('button').forEach(b => b.contentEditable = 'false');
+    toolbar.querySelectorAll('[data-table-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        tableAction(table, btn.dataset.tableAction);
+      });
+    });
+  });
+}
+
+function switchToReadMode() {
+  NB.editMode = false;
+  const el = NB.el;
+  el.querySelector('#nbReadHeader').classList.remove('hidden');
+  el.querySelector('#nbReadTitle').textContent = el.querySelector('#nbPageTitle').value;
+  el.querySelector('#nbReadMeta').textContent = el.querySelector('#nbPageMeta').textContent;
+  el.querySelector('#nbToolbar').classList.add('hidden');
+  el.querySelector('#nbPageHeader').classList.add('hidden');
+  el.querySelector('#nbEditor').setAttribute('contenteditable', 'false');
+  el.querySelector('#nbEditor').classList.add('nb-editor-readonly');
+  el.querySelector('#nbEditorStatus').textContent = '';
+  el.querySelector('#nbEditorFooterLeft').classList.add('hidden');
+  hideAllTableToolbars();
+  // Disable table cells and code blocks (not toolbar elements)
+  el.querySelector('#nbEditor').querySelectorAll('td[contenteditable], th[contenteditable], code[contenteditable]').forEach(c => c.setAttribute('contenteditable', 'false'));
+}
+
+function switchToEditMode() {
+  NB.editMode = true;
+  const el = NB.el;
+  el.querySelector('#nbReadHeader').classList.add('hidden');
+  el.querySelector('#nbToolbar').classList.remove('hidden');
+  el.querySelector('#nbPageHeader').classList.remove('hidden');
+  el.querySelector('#nbEditor').setAttribute('contenteditable', 'true');
+  el.querySelector('#nbEditor').classList.remove('nb-editor-readonly');
+  el.querySelector('#nbEditorFooterLeft').classList.remove('hidden');
+  updateEditorStatus();
+  el.querySelector('#nbPageHeader').querySelector('#nbPageTitle').focus();
+  // Restore table cells and code blocks (not toolbar elements)
+  el.querySelector('#nbEditor').querySelectorAll('td[contenteditable], th[contenteditable], code[contenteditable]').forEach(c => c.setAttribute('contenteditable', 'true'));
+}
+
 // ── Page navigation ────────────────────────────────────────
 
 function openPage(sectionId, pageId) {
@@ -666,11 +742,20 @@ function openPage(sectionId, pageId) {
   el.querySelector('#nbEditorArea').classList.remove('hidden');
   el.querySelector('#nbPageTitle').value = page.name;
   el.querySelector('#nbEditor').innerHTML = page.content || '';
+  rebindTableToolbars();
   el.querySelector('#nbPageMeta').textContent = window.t('notebook_last_updated') + ': ' + formatDate(page.updatedAt);
   NB.dirty = false;
   updateEditorStatus();
   renderSidebar();
   renderVocabLinksList();
+
+  // Set mode: pages with content open in read mode, empty/new pages in edit mode
+  const hasContent = page.content && page.content.trim().length > 0 && page.content !== '<br>';
+  if (hasContent) {
+    switchToReadMode();
+  } else {
+    switchToEditMode();
+  }
 
   // Re-bind notebook link clicks
   el.querySelector('#nbEditor').querySelectorAll('a[data-notebook-link]').forEach(a => {
@@ -886,6 +971,7 @@ function insertTable() {
   wrapper.className = 'nb-table-wrapper';
   const tblToolbar = document.createElement('div');
   tblToolbar.className = 'nb-table-toolbar';
+  tblToolbar.contentEditable = 'false';
   tblToolbar.innerHTML = `
     <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
     <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
@@ -901,6 +987,7 @@ function insertTable() {
   tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       tableAction(wrapper.querySelector('table'), btn.dataset.tableAction);
     });
   });
@@ -1229,17 +1316,19 @@ function handleEditorPaste(e) {
         tblWrapper.className = 'nb-table-wrapper';
         const tblToolbar = document.createElement('div');
         tblToolbar.className = 'nb-table-toolbar';
+        tblToolbar.contentEditable = 'false';
         tblToolbar.innerHTML = `
-          <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
-          <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
-          <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
-          <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
-        `;
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+      `;
         tblWrapper.appendChild(tblToolbar);
-        tblWrapper.appendChild(newTable);
+        tblWrapper.appendChild(table);
         tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
           btn.addEventListener('click', (ev) => {
             ev.preventDefault();
+            ev.stopPropagation();
             tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
           });
         });
@@ -1272,6 +1361,7 @@ function handleEditorPaste(e) {
       tblWrapper.className = 'nb-table-wrapper';
       const tblToolbar = document.createElement('div');
       tblToolbar.className = 'nb-table-toolbar';
+      tblToolbar.contentEditable = 'false';
       tblToolbar.innerHTML = `
         <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
         <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
@@ -1283,6 +1373,7 @@ function handleEditorPaste(e) {
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
         btn.addEventListener('click', (ev) => {
           ev.preventDefault();
+          ev.stopPropagation();
           tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
         });
       });
