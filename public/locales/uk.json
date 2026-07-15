@@ -419,5 +419,7 @@
   "notebook_no_vocab_found": "Словниковий запас не знайдено.",
   "notebook_no_linked_vocab": "Немає прив'язаного словникового запасу.",
   "notebook_select_page_first": "Спочатку виберіть сторінку",
-  "notebook_save_close": "Зберегти & закрити"
+  "notebook_save_close": "Зберегти & закрити",
+  "notebook_image": "Вставити зображення",
+  "notebook_image_too_large": "Зображення занадто велике (макс. 10 МБ)"
 }

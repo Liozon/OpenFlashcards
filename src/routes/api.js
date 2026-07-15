@@ -36,11 +36,14 @@ function normConj(entry) {
 
 const router = require('express').Router();
 const { randomUUID } = require('crypto');
+const path = require('path');
+const fs = require('fs');
+const sharp = require('sharp');
 const {
   getWords, saveWords,
   getPhrases, savePhrases,
   getUserConfig, saveUserConfig,
-  getNotebook, saveNotebook
+  getNotebook, saveNotebook, imagesDir
 } = require('../utils/storage');
 const {
   getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
@@ -1584,6 +1587,97 @@ function snippetFromContent(content, query) {
   const end = Math.min(plain.length, idx + query.length + 80);
   return (start > 0 ? '…' : '') + plain.substring(start, end) + (end < plain.length ? '…' : '');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTEBOOK IMAGES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/notebook/:code/images – upload an image (base64 JSON body)
+router.post('/notebook/:code/images', async (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const { image } = req.body;
+  if (!image) return res.status(400).json({ error: 'image data required' });
+
+  const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!matches) return res.status(400).json({ error: 'Invalid image data' });
+
+  const srcExt = matches[1].toLowerCase();
+  let buffer = Buffer.from(matches[2], 'base64');
+
+  // Optimize: resize oversized images, convert to WebP, compress
+  let ext = 'webp';
+  try {
+    const img = sharp(buffer);
+    const metadata = await img.metadata();
+
+    // Skip animated GIFs (keep original format)
+    if (srcExt === 'gif' && (metadata.pages && metadata.pages > 1)) {
+      ext = 'gif';
+    } else {
+      let pipeline = img;
+
+      // Resize if longest edge > 1920px (maintain aspect ratio)
+      if (metadata.width > 1920 || metadata.height > 1920) {
+        pipeline = pipeline.resize({
+          width: metadata.width > metadata.height ? 1920 : undefined,
+          height: metadata.height >= metadata.width ? 1920 : undefined,
+          fit: 'inside',
+          withoutEnlargement: true
+        });
+      }
+
+      // Re-encode with compression
+      if (srcExt === 'gif') {
+        ext = 'gif';
+        pipeline = pipeline.gif();
+      } else {
+        pipeline = pipeline.webp({ quality: 80, effort: 4 });
+      }
+
+      buffer = await pipeline.toBuffer();
+    }
+  } catch (err) {
+    console.error('[notebook] image optimization error:', err);
+    // Fall through: save original buffer with original extension
+    ext = srcExt === 'gif' ? 'gif' : srcExt;
+  }
+
+  const filename = randomUUID() + '.' + ext;
+  const filepath = path.join(imagesDir(uid, lang), filename);
+
+  fs.writeFileSync(filepath, buffer);
+
+  const url = `/api/notebook/${lang}/images/${filename}`;
+  res.json({ url, filename });
+});
+
+// DELETE /api/notebook/:code/images/:filename – delete a notebook image file
+router.delete('/notebook/:code/images/:filename', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filepath = path.join(imagesDir(uid, lang), filename);
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Image not found' });
+  fs.unlinkSync(filepath);
+  res.json({ ok: true });
+});
+
+// GET /api/notebook/:code/images/:filename – serve a notebook image
+router.get('/notebook/:code/images/:filename', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filepath = path.join(imagesDir(uid, lang), filename);
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Image not found' });
+  res.sendFile(filepath);
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VOCAB LINKS (Vocabulary ↔ Notebook linking)

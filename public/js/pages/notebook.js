@@ -68,6 +68,8 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="heading3" title="H3">H3</button>
             <button class="nb-tb-btn" data-cmd="heading4" title="H4">H4</button>
             <span class="nb-tb-sep"></span>
+            <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
+            <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="insertUnorderedList" title="${t('notebook_bullet_list')}">≡</button>
             <button class="nb-tb-btn" data-cmd="insertOrderedList" title="${t('notebook_numbered_list')}">#</button>
             <button class="nb-tb-btn" data-cmd="taskList" title="${t('notebook_task_list')}">☑</button>
@@ -81,8 +83,9 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">📓🔗</button>
             <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">📚🔗</button>
             <span class="nb-tb-sep"></span>
-            <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
+            <button class="nb-tb-btn" data-cmd="insertImage" title="${t('notebook_image')}">🖼️</button>
           </div>
+          <input type="file" id="nbImageInput" accept="image/*" style="display:none">
           <div class="nb-page-header" id="nbPageHeader">
             <input type="text" id="nbPageTitle" class="nb-page-title-input" placeholder="${t('notebook_page_title_placeholder')}">
             <div class="nb-page-meta" id="nbPageMeta"></div>
@@ -96,9 +99,9 @@ function getNotebookHTML() {
           </div>
           <div class="nb-editor-footer">
             <div class="nb-editor-footer-left" id="nbEditorFooterLeft">
-              <span id="nbEditorStatus">${t('notebook_saved')}</span>
               <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
               <button class="btn btn-sm btn-secondary" id="nbSaveCloseBtn">${t('notebook_save_close')}</button>
+              <span id="nbEditorStatus">${t('notebook_saved')}</span>
             </div>
             <div class="nb-editor-footer-right" style="display: none">
               <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">📄</button>
@@ -228,6 +231,7 @@ function bindNotebookEvents() {
 
   const editor = el.querySelector('#nbEditor');
   NB.editor = editor;
+  initImageResize();
   editor.addEventListener('input', markDirty);
   editor.addEventListener('paste', handleEditorPaste);
   editor.addEventListener('click', (e) => {
@@ -242,6 +246,15 @@ function bindNotebookEvents() {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       saveCurrentPage();
+    }
+  });
+
+  // Deselect image on Escape; delete selected image on Delete/Backspace
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { deselectImage(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && NB_selectedImg && NB.editMode) {
+      e.preventDefault();
+      deleteSelectedImage();
     }
   });
 
@@ -693,6 +706,7 @@ function rebindTableToolbars() {
 
 function switchToReadMode() {
   NB.editMode = false;
+  deselectImage();
   const el = NB.el;
   el.querySelector('#nbReadHeader').classList.remove('hidden');
   el.querySelector('#nbReadTitle').textContent = el.querySelector('#nbPageTitle').value;
@@ -872,6 +886,7 @@ async function handleToolbarCommand(cmd) {
     case 'link': await insertHyperlink(); break;
     case 'pageLink': showPageLinkPicker(); break;
     case 'vocabLink': showNotebookVocabLinkPicker(); break;
+    case 'insertImage': insertImage(); break;
   }
   markDirty();
 }
@@ -1051,6 +1066,231 @@ function insertCodeBlock() {
   code.textContent = window.t('notebook_code_hint');
   pre.appendChild(code);
   insertNodeAtCursor(pre);
+  markDirty();
+}
+
+// ── Images ─────────────────────────────────────────────────
+
+function insertImage() {
+  const el = NB.el;
+  const input = el.querySelector('#nbImageInput');
+  input.value = '';
+  input.onchange = async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      nbToast(window.t('notebook_image_too_large'), 'danger');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target.result;
+      try {
+        const res = await window.api('POST', `/api/notebook/${NB.lang}/images`, { image: dataUrl });
+        const editor = NB.editor;
+        if (!editor) return;
+        editor.focus();
+        const img = document.createElement('img');
+        img.src = res.url;
+        img.alt = file.name;
+        img.className = 'nb-editor-image';
+        img.style.maxWidth = '100%';
+        insertNodeAtCursor(img);
+        markDirty();
+      } catch (err) {
+        nbToast(err.error || window.t('common_error'), 'danger');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+async function pasteImageFromClipboard(file) {
+  if (file.size > 10 * 1024 * 1024) {
+    nbToast(window.t('notebook_image_too_large'), 'danger');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    try {
+      const res = await window.api('POST', `/api/notebook/${NB.lang}/images`, { image: dataUrl });
+      const editor = NB.editor;
+      if (!editor) return;
+      editor.focus();
+      const img = document.createElement('img');
+      img.src = res.url;
+      img.alt = 'pasted image';
+      img.className = 'nb-editor-image';
+      img.style.maxWidth = '100%';
+      insertNodeAtCursor(img);
+      markDirty();
+    } catch (err) {
+      nbToast(err.error || window.t('common_error'), 'danger');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Image resize (8 handles, Shift for aspect ratio) ────────
+
+let NB_selectedImg = null;
+let NB_resizeOverlay = null;
+let NB_resizeState = null;
+
+function initImageResize() {
+  if (NB_resizeOverlay) return;
+  const editor = NB.editor;
+  if (!editor) return;
+
+  NB_resizeOverlay = document.createElement('div');
+  NB_resizeOverlay.className = 'nb-image-resize-overlay';
+  NB_resizeOverlay.contentEditable = 'false';
+  ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(pos => {
+    const h = document.createElement('div');
+    h.className = 'nb-image-resize-handle';
+    h.dataset.pos = pos;
+    h.contentEditable = 'false';
+    NB_resizeOverlay.appendChild(h);
+  });
+  editor.parentNode.appendChild(NB_resizeOverlay);
+
+  editor.addEventListener('click', (e) => {
+    const img = e.target.closest('.nb-editor-image');
+    if (img && NB.editMode) {
+      selectImage(img);
+      e.stopPropagation();
+    } else if (!e.target.closest('.nb-image-resize-handle')) {
+      deselectImage();
+    }
+  });
+
+  editor.addEventListener('scroll', repositionOverlay);
+  window.addEventListener('resize', repositionOverlay);
+}
+
+function selectImage(img) {
+  deselectImage();
+  NB_selectedImg = img;
+  NB_resizeOverlay.classList.add('visible');
+  repositionOverlay();
+
+  NB_resizeOverlay.querySelectorAll('.nb-image-resize-handle').forEach(h => {
+    h.addEventListener('mousedown', onHandleMouseDown);
+  });
+}
+
+function deselectImage() {
+  NB_selectedImg = null;
+  NB_resizeState = null;
+  if (NB_resizeOverlay) NB_resizeOverlay.classList.remove('visible');
+}
+
+function repositionOverlay() {
+  if (!NB_selectedImg || !NB_resizeOverlay) return;
+  const imgRect = NB_selectedImg.getBoundingClientRect();
+  const containerRect = NB_resizeOverlay.parentNode.getBoundingClientRect();
+  NB_resizeOverlay.style.left = (imgRect.left - containerRect.left) + 'px';
+  NB_resizeOverlay.style.top = (imgRect.top - containerRect.top) + 'px';
+  NB_resizeOverlay.style.width = imgRect.width + 'px';
+  NB_resizeOverlay.style.height = imgRect.height + 'px';
+}
+
+function onHandleMouseDown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const img = NB_selectedImg;
+  if (!img) return;
+  const ml = parseFloat(img.style.marginLeft) || 0;
+  const mt = parseFloat(img.style.marginTop) || 0;
+  NB_resizeState = {
+    img,
+    startX: e.clientX,
+    startY: e.clientY,
+    startW: img.offsetWidth,
+    startH: img.offsetHeight,
+    startML: ml,
+    startMT: mt,
+    pos: e.currentTarget.dataset.pos
+  };
+  document.addEventListener('mousemove', onResizeMove);
+  document.addEventListener('mouseup', onResizeEnd);
+}
+
+function onResizeMove(e) {
+  const s = NB_resizeState;
+  if (!s) return;
+  const dx = e.clientX - s.startX;
+  const dy = e.clientY - s.startY;
+  const ratio = s.startW / s.startH;
+  const shift = e.shiftKey;
+
+  let newW, newH;
+
+  switch (s.pos) {
+    case 'se': newW = s.startW + dx; newH = s.startH + dy; break;
+    case 'sw': newW = s.startW - dx; newH = s.startH + dy; break;
+    case 'ne': newW = s.startW + dx; newH = s.startH - dy; break;
+    case 'nw': newW = s.startW - dx; newH = s.startH - dy; break;
+    case 'e':  newW = s.startW + dx; newH = s.startH; break;
+    case 'w':  newW = s.startW - dx; newH = s.startH; break;
+    case 's':  newW = s.startW; newH = s.startH + dy; break;
+    case 'n':  newW = s.startW; newH = s.startH - dy; break;
+  }
+
+  if (shift && ['nw', 'ne', 'se', 'sw'].includes(s.pos)) {
+    if (Math.abs(dx / s.startW) > Math.abs(dy / s.startH)) {
+      newH = newW / ratio;
+    } else {
+      newW = newH * ratio;
+    }
+  } else if (shift) {
+    if (s.pos === 'e' || s.pos === 'w') newH = newW / ratio;
+    else newW = newH * ratio;
+  }
+
+  newW = Math.max(30, newW);
+  newH = Math.max(30, newH);
+
+  const dw = newW - s.startW;
+  const dh = newH - s.startH;
+  let ml = s.startML, mt = s.startMT;
+
+  // Compensate position so the edge opposite the handle stays fixed
+  if (['nw', 'sw', 'w'].includes(s.pos)) ml = s.startML - dw;
+  if (['nw', 'ne', 'n'].includes(s.pos)) mt = s.startMT - dh;
+
+  s.img.style.width = newW + 'px';
+  s.img.style.height = newH + 'px';
+  s.img.style.marginLeft = ml + 'px';
+  s.img.style.marginTop = mt + 'px';
+  repositionOverlay();
+}
+
+function onResizeEnd() {
+  if (NB_resizeState && NB_resizeState.img) markDirty();
+  NB_resizeState = null;
+  document.removeEventListener('mousemove', onResizeMove);
+  document.removeEventListener('mouseup', onResizeEnd);
+}
+
+async function deleteSelectedImage() {
+  const img = NB_selectedImg;
+  if (!img || !NB.editMode) return;
+  const src = img.getAttribute('src') || '';
+  const match = src.match(/\/images\/([^/]+)$/);
+  const filename = match ? match[1] : null;
+  try {
+    if (filename) {
+      const lang = NB.lang;
+      await window.api('DELETE', `/api/notebook/${lang}/images/${encodeURIComponent(filename)}`);
+    }
+  } catch (err) {
+    // File may already be deleted or not exist; proceed with DOM removal anyway
+  }
+  img.remove();
+  deselectImage();
   markDirty();
 }
 
@@ -1251,6 +1491,14 @@ async function applyColor(color) {
 // ── Paste handling for tabular data ─────────────────────────
 
 function handleEditorPaste(e) {
+  // Handle image paste from clipboard
+  const imageFiles = Array.from(e.clipboardData.files || []).filter(f => f.type.startsWith('image/'));
+  if (imageFiles.length) {
+    e.preventDefault();
+    pasteImageFromClipboard(imageFiles[0]);
+    return;
+  }
+
   const html = e.clipboardData.getData('text/html');
   if (html && (html.includes('<table') || html.includes('<tr') || html.includes('<td') || html.includes('<th'))) {
     e.preventDefault();

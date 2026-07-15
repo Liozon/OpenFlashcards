@@ -419,5 +419,7 @@
   "notebook_no_vocab_found": "No vocabulary found.",
   "notebook_no_linked_vocab": "No linked vocabulary.",
   "notebook_select_page_first": "Select a page first",
-  "notebook_save_close": "Save & close"
+  "notebook_save_close": "Save & close",
+  "notebook_image": "Insert image",
+  "notebook_image_too_large": "Image too large (max 10 MB)"
 }

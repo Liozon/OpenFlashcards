@@ -130,6 +130,12 @@ function saveNotebook(userId, langCode, notebook) {
   writeJson(notebookFile(userId, langCode), notebook);
 }
 
+function imagesDir(userId, langCode) {
+  const d = path.join(userDir(userId), 'images', langCode);
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  return d;
+}
+
 module.exports = {
   ensureDataDirs,
   readJson, writeJson,
@@ -137,5 +143,5 @@ module.exports = {
   getUserConfig, saveUserConfig,
   getWords, saveWords,
   getPhrases, savePhrases,
-  getNotebook, saveNotebook
+  getNotebook, saveNotebook, imagesDir
 };

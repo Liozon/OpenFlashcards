@@ -419,5 +419,7 @@
   "notebook_no_vocab_found": "找不到詞彙。",
   "notebook_no_linked_vocab": "沒有已連結的詞彙。",
   "notebook_select_page_first": "請先選擇頁面",
-  "notebook_save_close": "保存並關閉"
+  "notebook_save_close": "保存並關閉",
+  "notebook_image": "插入圖片",
+  "notebook_image_too_large": "圖片太大（最大 10 MB）"
 }
