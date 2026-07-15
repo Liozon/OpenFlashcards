@@ -1991,6 +1991,10 @@ img {
   gap: 4px;
 }
 
+#nbToggleActions {
+  display: none;
+}
+
 .nb-section-list {
   flex: 1;
   overflow-y: auto;
@@ -3053,14 +3057,30 @@ img {
     font-size: .7rem;
   }
 
-  /* Force toolbox always visible on mobile (no hover) */
-  .nb-section-actions,
-  .nb-page-actions {
-    opacity: 1;
+  #nbToggleActions {
+    display: inline-block;
   }
 
-  .nb-section-header:hover .nb-section-actions,
-  .nb-page-item:hover .nb-page-actions {
+  /* Hide actions on mobile by default, shown via toggle */
+  .nb-page-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .nb-section-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .nb-actions-open .nb-page-actions,
+  .nb-actions-open .nb-section-actions {
     opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Sticky footer on mobile */
+  .nb-editor-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
   }
 }

@@ -34,6 +34,7 @@ function getNotebookHTML() {
           <div class="nb-sidebar-actions">
             <button class="nb-tb-btn btn-sm" id="nbSearchToggle" title="${t('notebook_search')}">🔍</button>
             <button class="nb-tb-btn btn-sm" id="nbAddSection" title="${t('notebook_add_section')}">➕</button>
+            <button class="nb-tb-btn btn-sm" id="nbToggleActions" title="Page actions">⚙️</button>
           </div>
         </div>
         <div class="nb-search-box hidden" id="nbSearchBox">
@@ -167,6 +168,9 @@ function bindNotebookEvents() {
 
   el.querySelector('#nbSearchToggle').addEventListener('click', toggleSearch);
   el.querySelector('#nbAddSection').addEventListener('click', addSectionPrompt);
+  el.querySelector('#nbToggleActions').addEventListener('click', () => {
+    el.querySelector('#nbSidebar').classList.toggle('nb-actions-open');
+  });
   el.querySelector('#nbSearchInput').addEventListener('input', () => { NB.searchQuery = el.querySelector('#nbSearchInput').value; performSearch(); });
   el.querySelector('#nbPageTitle').addEventListener('input', markDirty);
   el.querySelector('#nbDeletePage').addEventListener('click', deleteCurrentPage);
