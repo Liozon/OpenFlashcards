@@ -69,9 +69,9 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="insertBlockquote" title="${t('notebook_quote')}">💬</button>
             <button class="nb-tb-btn" data-cmd="insertHorizontalRule" title="${t('notebook_divider')}">—</button>
             <span class="nb-tb-sep"></span>
-            <button class="nb-tb-btn" data-cmd="link" title="${t('notebook_link')}">🔗</button>
-            <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">📄🔗</button>
-            <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">📝🔗</button>
+            <button class="nb-tb-btn" data-cmd="link" title="${t('notebook_link')}">🌐🔗</button>
+            <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">📓🔗</button>
+            <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">📚🔗</button>
             <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
           </div>
