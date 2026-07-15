@@ -421,5 +421,6 @@
   "notebook_select_page_first": "حدد صفحة أولاً",
   "notebook_save_close": "حفظ وإغلاق",
   "notebook_image": "إدراج صورة",
-  "notebook_image_too_large": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت)"
+  "notebook_image_too_large": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت)",
+  "notebook_paragraph": "فقرة"
 }

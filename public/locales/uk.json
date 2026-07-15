@@ -421,5 +421,6 @@
   "notebook_select_page_first": "Спочатку виберіть сторінку",
   "notebook_save_close": "Зберегти & закрити",
   "notebook_image": "Вставити зображення",
-  "notebook_image_too_large": "Зображення занадто велике (макс. 10 МБ)"
+  "notebook_image_too_large": "Зображення занадто велике (макс. 10 МБ)",
+  "notebook_paragraph": "Абзац"
 }

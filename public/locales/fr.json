@@ -421,5 +421,6 @@
   "notebook_select_page_first": "Sélectionnez d'abord une page",
   "notebook_save_close": "Sauvegarder & fermer",
   "notebook_image": "Insérer une image",
-  "notebook_image_too_large": "Image trop volumineuse (10 Mo max)"
+  "notebook_image_too_large": "Image trop volumineuse (10 Mo max)",
+  "notebook_paragraph": "Paragraphe"
 }

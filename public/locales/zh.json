@@ -421,5 +421,6 @@
   "notebook_select_page_first": "请先选择页面",
   "notebook_save_close": "保存并关闭",
   "notebook_image": "插入图片",
-  "notebook_image_too_large": "图片太大（最大 10 MB）"
+  "notebook_image_too_large": "图片太大（最大 10 MB）",
+  "notebook_paragraph": "段落"
 }

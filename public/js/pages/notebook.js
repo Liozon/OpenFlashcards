@@ -67,11 +67,12 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="heading2" title="H2">H2</button>
             <button class="nb-tb-btn" data-cmd="heading3" title="H3">H3</button>
             <button class="nb-tb-btn" data-cmd="heading4" title="H4">H4</button>
+            <button class="nb-tb-btn" data-cmd="paragraph" title="${t('notebook_paragraph')}">P</button>
             <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
             <span class="nb-tb-sep"></span>
-            <button class="nb-tb-btn" data-cmd="insertUnorderedList" title="${t('notebook_bullet_list')}">≡</button>
-            <button class="nb-tb-btn" data-cmd="insertOrderedList" title="${t('notebook_numbered_list')}">#</button>
+            <button class="nb-tb-btn" data-cmd="insertUnorderedList" title="${t('notebook_bullet_list')}">◉</button>
+            <button class="nb-tb-btn" data-cmd="insertOrderedList" title="${t('notebook_numbered_list')}">⒈</button>
             <button class="nb-tb-btn" data-cmd="taskList" title="${t('notebook_task_list')}">☑</button>
             <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="insertTable" title="${t('notebook_table')}">⊞</button>
@@ -876,6 +877,7 @@ async function handleToolbarCommand(cmd) {
     case 'heading2': document.execCommand('formatBlock', false, 'h2'); break;
     case 'heading3': document.execCommand('formatBlock', false, 'h3'); break;
     case 'heading4': document.execCommand('formatBlock', false, 'h4'); break;
+    case 'paragraph': document.execCommand('formatBlock', false, 'p'); break;
     case 'insertUnorderedList': document.execCommand('insertUnorderedList'); break;
     case 'insertOrderedList': document.execCommand('insertOrderedList'); break;
     case 'taskList': insertTaskList(); break;
@@ -1233,10 +1235,10 @@ function onResizeMove(e) {
     case 'sw': newW = s.startW - dx; newH = s.startH + dy; break;
     case 'ne': newW = s.startW + dx; newH = s.startH - dy; break;
     case 'nw': newW = s.startW - dx; newH = s.startH - dy; break;
-    case 'e':  newW = s.startW + dx; newH = s.startH; break;
-    case 'w':  newW = s.startW - dx; newH = s.startH; break;
-    case 's':  newW = s.startW; newH = s.startH + dy; break;
-    case 'n':  newW = s.startW; newH = s.startH - dy; break;
+    case 'e': newW = s.startW + dx; newH = s.startH; break;
+    case 'w': newW = s.startW - dx; newH = s.startH; break;
+    case 's': newW = s.startW; newH = s.startH + dy; break;
+    case 'n': newW = s.startW; newH = s.startH - dy; break;
   }
 
   if (shift && ['nw', 'ne', 'se', 'sw'].includes(s.pos)) {
