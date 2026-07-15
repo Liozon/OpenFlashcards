@@ -368,6 +368,76 @@ window.confirmModal = function (message, opts = {}) {
   });
 };
 
+window.promptModal = function (message, opts = {}) {
+  return new Promise(resolve => {
+    const inputId = 'pmInput';
+    const okId = 'pmOk';
+    const cancelId = 'pmCancel';
+    const modal = document.getElementById('modal');
+    const wasHidden = modal.classList.contains('hidden');
+    const prevTitle = document.getElementById('modalTitle').textContent;
+    const prevBody = document.getElementById('modalBody').innerHTML;
+    const prevFooter = document.getElementById('modalFooter').innerHTML;
+
+    function finish(val) {
+      if (wasHidden) {
+        closeModal();
+      } else {
+        openModal(prevTitle, prevBody, prevFooter);
+      }
+      resolve(val);
+    }
+
+    const defaultValue = opts.default || '';
+    const placeholder = opts.placeholder || '';
+
+    openModal(
+      opts.title || message,
+      `<input type="text" id="${inputId}" class="search-input" style="width:100%;box-sizing:border-box" value="${defaultValue.replace(/"/g, '&quot;')}" placeholder="${placeholder.replace(/"/g, '&quot;')}" autofocus>
+       <p id="pmError" class="alert alert-danger hidden" style="margin-top:8px"></p>`,
+      `<button class="btn btn-secondary" id="${cancelId}">${opts.cancelLabel || t('common_cancel')}</button>
+       <button class="btn btn-primary" id="${okId}">${opts.confirmLabel || t('common_confirm') || 'OK'}</button>`
+    );
+
+    const input = document.getElementById(inputId);
+    input.focus();
+    input.select();
+
+    function getValue() {
+      const val = input.value.trim();
+      if (opts.required && !val) {
+        const err = document.getElementById('pmError');
+        err.textContent = opts.requiredMessage || 'This field is required';
+        err.classList.remove('hidden');
+        return null;
+      }
+      return val;
+    }
+
+    document.getElementById(okId).addEventListener('click', () => {
+      const val = getValue();
+      if (val !== null) finish(val);
+    });
+    document.getElementById(cancelId).addEventListener('click', () => finish(null));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = getValue();
+        if (val !== null) finish(val);
+      }
+      if (e.key === 'Escape') finish(null);
+    });
+
+    const observer = new MutationObserver(() => {
+      if (modal.classList.contains('hidden')) {
+        observer.disconnect();
+        finish(null);
+      }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────────────────────

@@ -342,7 +342,6 @@
   "notebook_add_page": "添加页面",
   "notebook_add_page_prompt": "页面名称：",
   "notebook_rename": "重命名",
-  "notebook_rename_prompt": "新名称：",
   "notebook_duplicate": "复制",
   "notebook_move": "移动",
   "notebook_move_confirm": "选择目标分区：",

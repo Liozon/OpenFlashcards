@@ -342,7 +342,6 @@
   "notebook_add_page": "新增頁面",
   "notebook_add_page_prompt": "頁面名稱：",
   "notebook_rename": "重新命名",
-  "notebook_rename_prompt": "新名稱：",
   "notebook_duplicate": "複製",
   "notebook_move": "移動",
   "notebook_move_confirm": "選擇目標區段：",

@@ -342,7 +342,6 @@
   "notebook_add_page": "Añadir página",
   "notebook_add_page_prompt": "Nombre de la página:",
   "notebook_rename": "Renombrar",
-  "notebook_rename_prompt": "Nuevo nombre:",
   "notebook_duplicate": "Duplicar",
   "notebook_move": "Mover",
   "notebook_move_confirm": "Selecciona una sección de destino:",

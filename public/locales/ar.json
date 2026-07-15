@@ -342,7 +342,6 @@
   "notebook_add_page": "إضافة صفحة",
   "notebook_add_page_prompt": "اسم الصفحة:",
   "notebook_rename": "إعادة تسمية",
-  "notebook_rename_prompt": "الاسم الجديد:",
   "notebook_duplicate": "تكرار",
   "notebook_move": "نقل",
   "notebook_move_confirm": "حدد قسمًا مستهدفًا:",

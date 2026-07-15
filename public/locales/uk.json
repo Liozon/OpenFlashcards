@@ -342,7 +342,6 @@
   "notebook_add_page": "Додати сторінку",
   "notebook_add_page_prompt": "Назва сторінки:",
   "notebook_rename": "Перейменувати",
-  "notebook_rename_prompt": "Нова назва:",
   "notebook_duplicate": "Дублювати",
   "notebook_move": "Перемістити",
   "notebook_move_confirm": "Виберіть цільовий розділ:",

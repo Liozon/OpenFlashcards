@@ -342,7 +342,7 @@ function renderSidebar() {
           <button class="nb-context-btn" data-action="add-page" title="${window.t('notebook_add_page')}">📄</button>
         </div>
       </div>
-      <div class="nb-page-list ${isActive ? '' : 'hidden'}" data-section-id="${s.id}">
+      <div class="nb-page-list" data-section-id="${s.id}">
         ${(s.pages || []).map((p, pi) => {
       const pActive = p.id === NB.currentPageId;
       const totalPages = (s.pages || []).length;
@@ -420,8 +420,8 @@ function handleSidebarClick(e) {
 // ── Section CRUD ───────────────────────────────────────────
 
 async function addSectionPrompt() {
-  const name = prompt(window.t('notebook_add_section_prompt'));
-  if (!name || !name.trim()) return;
+  const name = await window.promptModal(window.t('notebook_add_section_prompt'), { required: true });
+  if (!name) return;
   try {
     const data = await window.api('POST', `/api/notebook/${NB.lang}/sections`, { name: name.trim() });
     NB.sections.push(data.section);
@@ -433,8 +433,8 @@ async function addSectionPrompt() {
 async function renameSectionPrompt(sectionId) {
   const section = NB.sections.find(s => s.id === sectionId);
   if (!section) return;
-  const name = prompt(window.t('notebook_rename_prompt'), section.name);
-  if (!name || !name.trim() || name.trim() === section.name) return;
+  const name = await window.promptModal(window.t('notebook_rename'), { default: section.name, required: true });
+  if (!name || name === section.name) return;
   try {
     await window.api('PUT', `/api/notebook/${NB.lang}/sections/${sectionId}`, { name: name.trim() });
     section.name = name.trim();
@@ -495,8 +495,8 @@ async function saveSectionsOrder() {
 // ── Page CRUD ──────────────────────────────────────────────
 
 async function addPagePrompt(sectionId) {
-  const name = prompt(window.t('notebook_add_page_prompt'));
-  if (!name || !name.trim()) return;
+  const name = await window.promptModal(window.t('notebook_add_page_prompt'), { required: true });
+  if (!name) return;
   try {
     const data = await window.api('POST', `/api/notebook/${NB.lang}/sections/${sectionId}/pages`, { name: name.trim() });
     const section = NB.sections.find(s => s.id === sectionId);
@@ -514,8 +514,8 @@ async function renamePagePrompt(pageId) {
     if (p) { foundPage = p; break; }
   }
   if (!foundPage) return;
-  const name = prompt(window.t('notebook_rename_prompt'), foundPage.name);
-  if (!name || !name.trim() || name.trim() === foundPage.name) return;
+  const name = await window.promptModal(window.t('notebook_rename'), { default: foundPage.name, required: true });
+  if (!name || name === foundPage.name) return;
   try {
     await window.api('PUT', `/api/notebook/${NB.lang}/pages/${pageId}`, { name: name.trim() });
     foundPage.name = name.trim();
@@ -752,7 +752,7 @@ function updateEditorStatus() {
 
 // ── Toolbar commands ───────────────────────────────────────
 
-function handleToolbarCommand(cmd) {
+async function handleToolbarCommand(cmd) {
   const editor = NB.editor;
   if (!editor) return;
   editor.focus();
@@ -773,7 +773,7 @@ function handleToolbarCommand(cmd) {
     case 'insertCodeBlock': insertCodeBlock(); break;
     case 'insertBlockquote': document.execCommand('formatBlock', false, 'blockquote'); break;
     case 'insertHorizontalRule': document.execCommand('insertHorizontalRule'); break;
-    case 'link': insertHyperlink(); break;
+    case 'link': await insertHyperlink(); break;
     case 'pageLink': showPageLinkPicker(); break;
     case 'vocabLink': showNotebookVocabLinkPicker(); break;
   }
@@ -957,10 +957,10 @@ function insertCodeBlock() {
 
 // ── Hyperlinks (external) ──────────────────────────────────
 
-function insertHyperlink() {
+async function insertHyperlink() {
   const sel = window.getSelection();
   const text = sel.toString().trim();
-  const url = prompt(window.t('notebook_link_url'), 'https://');
+  const url = await window.promptModal(window.t('notebook_link_url'), { default: 'https://' });
   if (!url || !url.trim()) return;
   document.execCommand('createLink', false, url);
   markDirty();
