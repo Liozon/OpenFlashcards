@@ -1943,7 +1943,7 @@ img {
 
 /* ── Sidebar ─────────────────────────────────────────────── */
 .nb-sidebar {
-  width: 280px;
+  /* width: 280px; */
   min-width: 280px;
   background: var(--surface-2);
   border-right: 2px solid var(--border);
@@ -1992,7 +1992,7 @@ img {
 }
 
 #nbToggleActions {
-  display: none;
+  display: inline-block;
 }
 
 .nb-section-list {
@@ -2051,11 +2051,8 @@ img {
   display: flex;
   gap: 2px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition);
-}
-
-.nb-section-header:hover .nb-section-actions {
-  opacity: 1;
 }
 
 .nb-section-color-dot {
@@ -2114,6 +2111,7 @@ img {
   display: flex;
   gap: 2px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition);
   position: absolute;
   right: 16px;
@@ -2127,8 +2125,10 @@ img {
   background: linear-gradient(to left, rgba(30,30,30,0.97) 80%, rgba(30,30,30,0.8) 60%, transparent);
 }
 
-.nb-page-item:hover .nb-page-actions {
+.nb-actions-open .nb-page-actions,
+.nb-actions-open .nb-section-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .nb-context-btn {
@@ -3093,26 +3093,6 @@ img {
 
   .nb-page-meta {
     font-size: .7rem;
-  }
-
-  #nbToggleActions {
-    display: inline-block;
-  }
-
-  /* Hide actions on mobile by default, shown via toggle */
-  .nb-page-actions {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .nb-section-actions {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .nb-actions-open .nb-page-actions,
-  .nb-actions-open .nb-section-actions {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   /* Sticky footer on mobile */
