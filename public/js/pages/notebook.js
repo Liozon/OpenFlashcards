@@ -91,7 +91,7 @@ function getNotebookHTML() {
               <span id="nbEditorStatus">${t('notebook_saved')}</span>
               <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
             </div>
-            <div class="nb-editor-footer-right">
+            <div class="nb-editor-footer-right" style="display: none">
               <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">📄</button>
               <button class="btn btn-sm btn-danger" id="nbDeletePage">${t('notebook_delete')}</button>
             </div>
