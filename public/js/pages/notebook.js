@@ -80,10 +80,9 @@ function getNotebookHTML() {
             <div class="nb-page-meta" id="nbPageMeta"></div>
           </div>
           <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_title_placeholder')}"></div>
-          <div class="nb-vocab-links-section" id="nbVocabLinksSection">
+          <div class="nb-vocab-links-section hidden" id="nbVocabLinksSection">
             <div class="nb-vocab-links-header">
               <span>📝 ${t('notebook_linked_vocab')}</span>
-              <button class="btn btn-sm btn-secondary" id="nbAddVocabLink" title="${t('notebook_add_vocab_link')}">➕ ${t('notebook_add_vocab_link')}</button>
             </div>
             <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
           </div>
@@ -191,7 +190,6 @@ function bindNotebookEvents() {
   el.querySelector('#nbTableCancelBtn').addEventListener('click', () => el.querySelector('#nbTableModal').classList.add('hidden'));
   el.querySelector('#nbLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbLinkModal').classList.add('hidden'));
   el.querySelector('#nbLinkSearch').addEventListener('input', searchPagesForLink);
-  el.querySelector('#nbAddVocabLink').addEventListener('click', showNotebookVocabLinkPicker);
   el.querySelector('#nbVocabLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbVocabLinkModal').classList.add('hidden'));
   el.querySelector('#nbVocabLinkSearch').addEventListener('input', searchVocabForLink);
   el.querySelector('#nbMoveConfirmBtn').addEventListener('click', confirmMovePage);
@@ -1404,6 +1402,7 @@ async function toggleVocabLinkOnPage(vocabId, vocabType) {
 function renderVocabLinksList() {
   const el = NB.el;
   const list = el.querySelector('#nbVocabLinksList');
+  const sectionEl = el.querySelector('#nbVocabLinksSection');
   if (!list) return;
 
   const section = NB.sections.find(s => s.id === NB.currentSectionId);
@@ -1411,9 +1410,10 @@ function renderVocabLinksList() {
   const links = (page && page.vocabLinks) || [];
 
   if (!links.length) {
-    list.innerHTML = '<div class="nb-vocab-links-empty">' + window.t('notebook_no_linked_vocab') + '</div>';
+    sectionEl.classList.add('hidden');
     return;
   }
+  sectionEl.classList.remove('hidden');
 
   list.innerHTML = links.map(l => {
     const text = l.text || '';
