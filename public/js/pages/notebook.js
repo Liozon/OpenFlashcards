@@ -2,6 +2,7 @@
 'use strict';
 
 let NB = {};
+let NB_docKeydownBound = false;
 
 function renderNotebook(el, params) {
   const lang = params.lang || window.currentLang();
@@ -263,6 +264,17 @@ function bindNotebookEvents() {
   editor.addEventListener('keydown', handleTaskListKeydown);
 
   NB.autoSaveInterval = setInterval(() => { if (NB.dirty) saveCurrentPage(); }, 30000);
+
+  // Document-level 'e' key to switch to edit mode (catches events that don't bubble through el)
+  if (!NB_docKeydownBound) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'e' && !e.ctrlKey && !e.metaKey && !e.altKey && !NB.editMode && NB.currentPageId && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        e.preventDefault();
+        switchToEditMode();
+      }
+    });
+    NB_docKeydownBound = true;
+  }
 
   initTableGridPicker();
   restorePageLinkClicks();
