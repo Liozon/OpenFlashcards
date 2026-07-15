@@ -331,12 +331,12 @@ function renderSidebar() {
         ${s.color ? `<span class="nb-section-color-dot" style="background:${s.color}"></span>` : ''}
         <span class="nb-section-name">${escapeHtml(s.name)}</span>
         <div class="nb-section-actions">
-          ${si > 0 ? `<button class="nb-context-btn" data-action="section-up" title="${window.t('notebook_move_up')}">↑</button>` : ''}
-          ${si < totalSections - 1 ? `<button class="nb-context-btn" data-action="section-down" title="${window.t('notebook_move_down')}">↓</button>` : ''}
+          ${si > 0 ? `<button class="nb-context-btn" data-action="section-up" title="${window.t('notebook_move_up')}">⬆️</button>` : ''}
+          ${si < totalSections - 1 ? `<button class="nb-context-btn" data-action="section-down" title="${window.t('notebook_move_down')}">⬇️</button>` : ''}
           <button class="nb-context-btn" data-action="rename-section" title="${window.t('notebook_rename')}">✏️</button>
           <button class="nb-context-btn" data-action="section-color" title="${window.t('notebook_color')}">🎨</button>
           <button class="nb-context-btn" data-action="delete-section" title="${window.t('common_delete')}">🗑️</button>
-          <button class="nb-context-btn" data-action="add-page" title="${window.t('notebook_add_page')}">📄</button>
+          <button class="nb-context-btn" data-action="add-page" title="${window.t('notebook_add_page')}">➕</button>
         </div>
       </div>
       <div class="nb-page-list" data-section-id="${s.id}">

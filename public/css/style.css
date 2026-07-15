@@ -2085,6 +2085,7 @@ img {
   font-size: .84rem;
   border-left: 3px solid transparent;
   transition: background var(--transition), border-color var(--transition);
+  position: relative;
 }
 
 .nb-page-item:hover {
@@ -2101,8 +2102,7 @@ img {
 
 .nb-page-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -2111,6 +2111,16 @@ img {
   gap: 2px;
   opacity: 0;
   transition: opacity var(--transition);
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 28px;
+  background: linear-gradient(to left, rgba(255,255,255,0.97) 80%, rgba(255,255,255,0.8) 60%, transparent);
+}
+
+[data-theme="dark"] .nb-page-actions {
+  background: linear-gradient(to left, rgba(30,30,30,0.97) 80%, rgba(30,30,30,0.8) 60%, transparent);
 }
 
 .nb-page-item:hover .nb-page-actions {
