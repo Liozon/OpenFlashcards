@@ -40,7 +40,7 @@ async function renderHome(el) {
     try {
       const nb = await api('GET', '/api/notebook/' + encodeURIComponent(lang));
       notebookPages = (nb.sections || []).reduce((sum, s) => sum + (s.pages || []).length, 0);
-    } catch {}
+    } catch { }
     document.getElementById('statsGrid').innerHTML =
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {})"><div class="stat-number">' + stats.totalWords + '</div><div class="stat-label">' + t('home_total_words') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'phrase\'})"><div class="stat-number">' + stats.totalPhrases + '</div><div class="stat-label">' + t('home_phrases') + '</div></div>' +
@@ -50,7 +50,7 @@ async function renderHome(el) {
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adjective\'})"><div class="stat-number">' + (stats.byType.adjective || 0) + '</div><div class="stat-label">' + t('home_adj') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adverb\'})"><div class="stat-number">' + (stats.byType.adverb || 0) + '</div><div class="stat-label">' + t('home_adv') + '</div></div>' +
       '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'other\'})"><div class="stat-number">' + (stats.byType.other || 0) + '</div><div class="stat-label">' + t('home_other') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'notebook\')"><div class="stat-number">' + notebookPages + '</div><div class="stat-label">' + t('nav_notebook') + '</div></div>';
+      '<div class="stat-card stat-card-clickable" onclick="navigate(\'notebook\')"><div class="stat-number">' + notebookPages + '</div><div class="stat-label">' + t('home_notebook') + '</div></div>';
   } catch {
     document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">' + t('home_stats_error') + '</p>';
   }
