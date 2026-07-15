@@ -243,7 +243,7 @@ async function loadNotebook(lang) {
         }
       }
       // Page not found - broken link from another notebook
-      toast(window.t('notebook_broken_link'), 'danger');
+      nbToast(window.t('notebook_broken_link'), 'danger');
       NB.pendingPageId = null;
     }
   } catch (e) {
@@ -405,8 +405,8 @@ async function addSectionPrompt() {
     const data = await window.api('POST', `/api/notebook/${NB.lang}/sections`, { name: name.trim() });
     NB.sections.push(data.section);
     renderSidebar();
-    toast(window.t('notebook_section_added'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_section_added'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 async function renameSectionPrompt(sectionId) {
@@ -418,8 +418,8 @@ async function renameSectionPrompt(sectionId) {
     await window.api('PUT', `/api/notebook/${NB.lang}/sections/${sectionId}`, { name: name.trim() });
     section.name = name.trim();
     renderSidebar();
-    toast(window.t('notebook_renamed'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_renamed'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 async function deleteSectionPrompt(sectionId) {
@@ -430,8 +430,8 @@ async function deleteSectionPrompt(sectionId) {
     NB.sections = NB.sections.filter(s => s.id !== sectionId);
     if (NB.currentSectionId === sectionId) { NB.currentSectionId = null; NB.currentPageId = null; showWelcome(); }
     renderSidebar();
-    toast(window.t('notebook_deleted'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_deleted'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 // ── Section reordering ──────────────────────────────────────
@@ -464,10 +464,10 @@ async function saveSectionsOrder() {
       await window.api('PUT', `/api/notebook/${NB.lang}/sections/${NB.sections[i].id}`, { order: i });
     }
     renderSidebar();
-    toast(window.t('notebook_reordered'));
+    nbToast(window.t('notebook_reordered'));
   } catch (e) {
     console.error('[notebook] reorder error:', e);
-    toast(window.t('common_error'), 'danger');
+    nbToast(window.t('common_error'), 'danger');
   }
 }
 
@@ -482,8 +482,8 @@ async function addPagePrompt(sectionId) {
     if (section) section.pages.push(data.page);
     renderSidebar();
     openPage(sectionId, data.page.id);
-    toast(window.t('notebook_page_added'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_page_added'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 async function renamePagePrompt(pageId) {
@@ -502,8 +502,8 @@ async function renamePagePrompt(pageId) {
     if (NB.currentPageId === pageId) {
       NB.el.querySelector('#nbPageTitle').value = name.trim();
     }
-    toast(window.t('notebook_renamed'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_renamed'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 async function duplicatePage(pageId) {
@@ -516,8 +516,8 @@ async function duplicatePage(pageId) {
       }
     }
     renderSidebar();
-    toast(window.t('notebook_duplicated'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_duplicated'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 let NB_movePageId = null;
@@ -528,7 +528,7 @@ function movePagePrompt(pageId) {
   const select = el.querySelector('#nbMoveSectionSelect');
   const currentSection = NB.sections.find(s => s.pages.some(p => p.id === pageId));
   const others = NB.sections.filter(s => s.id !== (currentSection ? currentSection.id : null));
-  if (!others.length) { toast(window.t('notebook_no_other_sections'), 'danger'); return; }
+  if (!others.length) { nbToast(window.t('notebook_no_other_sections'), 'danger'); return; }
   select.innerHTML = others.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   el.querySelector('#nbMoveModal').classList.remove('hidden');
 }
@@ -540,8 +540,8 @@ async function confirmMovePage() {
   try {
     await window.api('PUT', `/api/notebook/${NB.lang}/pages/${NB_movePageId}`, { targetSectionId });
     await loadNotebook(NB.lang);
-    toast(window.t('notebook_moved'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_moved'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
   NB_movePageId = null;
 }
 
@@ -555,8 +555,8 @@ async function deletePagePrompt(pageId) {
     }
     if (NB.currentPageId === pageId) { NB.currentPageId = null; showWelcome(); }
     renderSidebar();
-    toast(window.t('notebook_deleted'));
-  } catch (e) { toast(e.error || window.t('common_error'), 'danger'); }
+    nbToast(window.t('notebook_deleted'));
+  } catch (e) { nbToast(e.error || window.t('common_error'), 'danger'); }
 }
 
 function deleteCurrentPage() {
@@ -575,7 +575,7 @@ function exportCurrentPage() {
   a.download = title.replace(/[^a-zA-Z0-9_-]/g, '_') + '.html';
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('📄 ' + window.t('notebook_renamed'));
+  nbToast('📄 ' + window.t('notebook_renamed'));
 }
 
 // ── Page reordering ─────────────────────────────────────────
@@ -613,10 +613,10 @@ async function savePagesOrder(sectionId, pages) {
       await window.api('PUT', `/api/notebook/${NB.lang}/pages/${pages[i].id}`, { order: i });
     }
     renderSidebar();
-    toast(window.t('notebook_reordered'));
+    nbToast(window.t('notebook_reordered'));
   } catch (e) {
     console.error('[notebook] reorder error:', e);
-    toast(window.t('common_error'), 'danger');
+    nbToast(window.t('common_error'), 'danger');
   }
 }
 
@@ -670,7 +670,7 @@ function navigateToLinkedPage(pageId) {
       return;
     }
   }
-  toast(window.t('notebook_broken_link'), 'danger');
+  nbToast(window.t('notebook_broken_link'), 'danger');
 }
 
 function showWelcome() {
@@ -707,7 +707,7 @@ async function saveCurrentPage() {
     renderSidebar();
   } catch (e) {
     console.error('[notebook] save error:', e);
-    toast(window.t('common_error'), 'danger');
+    nbToast(window.t('common_error'), 'danger');
   }
 }
 
@@ -1122,7 +1122,7 @@ async function applyColor(color) {
     renderSidebar();
   } catch (e) {
     console.error('[notebook] color error:', e);
-    toast(window.t('common_error'), 'danger');
+    nbToast(window.t('common_error'), 'danger');
   }
 }
 
@@ -1285,7 +1285,7 @@ function formatDate(iso) {
   } catch { return iso; }
 }
 
-function toast(msg, type) {
+function nbToast(msg, type) {
   if (window.toast) window.toast(msg, type);
 }
 
