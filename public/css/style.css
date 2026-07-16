@@ -2119,6 +2119,23 @@ img {
   transform: translateX(16px);
 }
 
+.nb-section-add-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: .75rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: .6;
+  transition: opacity var(--transition), background var(--transition);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.nb-section-add-btn:hover {
+  opacity: 1;
+  background: var(--surface-2);
+}
+
 .nb-section-color-dot {
   width: 8px;
   height: 8px;

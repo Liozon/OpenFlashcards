@@ -432,8 +432,8 @@ function renderSidebar() {
           <button class="nb-context-btn" data-action="rename-section" title="${window.t('notebook_rename')}">✏️</button>
           <button class="nb-context-btn" data-action="section-color" title="${window.t('notebook_color')}">🎨</button>
           <button class="nb-context-btn" data-action="delete-section" title="${window.t('common_delete')}">🗑️</button>
-          <button class="nb-context-btn" data-action="add-page" title="${window.t('notebook_add_page')}">➕</button>
         </div>
+        <button class="nb-section-add-btn" data-action="add-page" title="${window.t('notebook_add_page')}">➕</button>
       </div>
       <div class="nb-page-list" data-section-id="${s.id}">
         ${(s.pages || []).map((p, pi) => {
