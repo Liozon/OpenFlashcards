@@ -43,7 +43,9 @@ function getNotebookHTML() {
           <div id="nbSearchResults" class="nb-search-results"></div>
         </div>
         <div class="nb-section-list" id="nbSectionList"></div>
+        <button class="nb-sidebar-toggle" id="nbSidebarToggle" title="Collapse sidebar">◀</button>
       </div>
+      <button class="nb-sidebar-reopen hidden" id="nbSidebarReopen" title="Expand sidebar">▶</button>
       <div class="nb-main" id="nbMain">
         <div class="nb-welcome" id="nbWelcome">
           <div class="nb-welcome-icon">📓</div>
@@ -180,6 +182,8 @@ function bindNotebookEvents() {
   const el = NB.el;
 
   el.querySelector('#nbSearchToggle').addEventListener('click', toggleSearch);
+  el.querySelector('#nbSidebarToggle').addEventListener('click', toggleSidebar);
+  el.querySelector('#nbSidebarReopen').addEventListener('click', toggleSidebar);
   el.querySelector('#nbAddSection').addEventListener('click', addSectionPrompt);
   el.querySelector('#nbToggleActions').addEventListener('click', () => {
     el.querySelector('#nbSidebar').classList.toggle('nb-actions-open');
@@ -1519,6 +1523,18 @@ function toggleSearch() {
   } else {
     el.querySelector('#nbSearchResults').innerHTML = '';
   }
+}
+
+function toggleSidebar() {
+  const el = NB.el;
+  const layout = el.querySelector('.notebook-layout');
+  const toggleBtn = el.querySelector('#nbSidebarToggle');
+  const reopenBtn = el.querySelector('#nbSidebarReopen');
+  layout.classList.toggle('nb-sidebar-collapsed');
+  const collapsed = layout.classList.contains('nb-sidebar-collapsed');
+  toggleBtn.textContent = collapsed ? '▶' : '◀';
+  toggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  reopenBtn.classList.toggle('hidden', !collapsed);
 }
 
 async function performSearch() {
