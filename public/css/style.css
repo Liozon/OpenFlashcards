@@ -2036,7 +2036,7 @@ img {
   outline: none;
   flex: 1;
   min-width: 0;
-  margin-right: 8px;
+  margin-right: 20px;
   transition: border-color var(--transition);
 }
 
