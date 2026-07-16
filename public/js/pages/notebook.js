@@ -164,7 +164,7 @@ function getNotebookHTML() {
     <div class="nb-modal-overlay hidden" id="nbMoveModal">
       <div class="nb-modal-dialog">
         <h3>${t('notebook_move')}</h3>
-        <select id="nbMoveSectionSelect" class="nb-move-select"></select>
+        <select id="nbMoveSectionSelect" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)"></select>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
           <button class="btn btn-primary btn-sm" id="nbMoveConfirmBtn">${t('notebook_move_to')}</button>
           <button class="btn btn-secondary btn-sm" id="nbMoveCancelBtn">${t('common_cancel')}</button>
@@ -372,7 +372,7 @@ function populateLangSelector() {
   const langs = (window.App && window.App.config && window.App.config.targetLangs) || [];
   sel.innerHTML = langs.map(l => {
     const flag = l.flag || '🌐';
-    const label = flag + ' ' + l.isoCode.toUpperCase() + ' — ' + l.name;
+    const label = flag + ' ' + l.isoCode.toUpperCase() /* + ' — ' + l.name */;
     return `<option value="${l.isoCode}" ${l.isoCode === NB.lang ? 'selected' : ''}>${label}</option>`;
   }).join('');
   sel.classList.toggle('hidden', langs.length < 2);
