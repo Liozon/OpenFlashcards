@@ -73,6 +73,20 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="paragraph" title="${t('notebook_paragraph')}">P</button>
             <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
+            <select id="nbFontSize" class="nb-font-size" title="${t('notebook_font_size')}">
+              <option value="" disabled hidden>—</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="36">36</option>
+              <option value="48">48</option>
+            </select>
             <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="insertUnorderedList" title="${t('notebook_bullet_list')}">◉</button>
             <button class="nb-tb-btn" data-cmd="insertOrderedList" title="${t('notebook_numbered_list')}">⒈</button>
@@ -208,6 +222,23 @@ function bindNotebookEvents() {
     if (editor) editor.focus();
   });
 
+  let _fontSelectOpened = false;
+  el.querySelector('#nbFontSize').addEventListener('mousedown', function() {
+    _fontSelectOpened = true;
+  });
+  el.querySelector('#nbFontSize').addEventListener('change', function(e) {
+    _fontSelectOpened = false;
+    if (!e.target.value) return;
+    NB._fontSizeApplied = true;
+    applyFontSize(e.target.value);
+  });
+  el.querySelector('#nbFontSize').addEventListener('blur', function() {
+    if (_fontSelectOpened && this.value) {
+      _fontSelectOpened = false;
+      applyFontSize(this.value, true);
+    }
+  });
+
   el.querySelector('#nbTableCancelBtn').addEventListener('click', () => el.querySelector('#nbTableModal').classList.add('hidden'));
   el.querySelector('#nbLinkCancelBtn').addEventListener('click', () => el.querySelector('#nbLinkModal').classList.add('hidden'));
   el.querySelector('#nbLinkSearch').addEventListener('input', searchPagesForLink);
@@ -244,8 +275,16 @@ function bindNotebookEvents() {
     const wrapper = e.target.closest('.nb-table-wrapper');
     hideAllTableToolbars();
     if (wrapper && NB.editMode) {
-      wrapper.querySelector('.nb-table-toolbar').classList.add('visible');
+      const tb = wrapper.querySelector('.nb-table-toolbar');
+      if (tb) tb.classList.add('visible');
     }
+    syncToolbarState();
+  });
+
+  let _syncTimer;
+  document.addEventListener('selectionchange', () => {
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(syncToolbarState, 100);
   });
 
   el.addEventListener('keydown', (e) => {
@@ -885,6 +924,91 @@ function updateEditorStatus() {
 }
 
 // ── Toolbar commands ───────────────────────────────────────
+
+function applyFontSize(size, skipFocus) {
+  const editor = NB.editor;
+  if (!editor) return;
+  if (!skipFocus) editor.focus();
+  const px = parseInt(size, 10);
+  if (isNaN(px)) return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) {
+    const block = range.startContainer?.parentElement?.closest?.('p, h1, h2, h3, h4, h5, h6, li, div, td, th') || range.startContainer?.parentElement;
+    if (block) block.style.fontSize = px + 'px';
+    markDirty();
+    return;
+  }
+  const fragment = range.extractContents();
+  fragment.querySelectorAll('[style*="font-size"]').forEach(el => {
+    el.style.fontSize = '';
+    if (el.style.length === 0) el.removeAttribute('style');
+  });
+
+  let p = range.startContainer;
+  while (p && p !== editor && p.tagName === 'SPAN' && !p.textContent.trim()) {
+    const next = p.parentElement;
+    p.remove();
+    p = next;
+  }
+
+  const span = document.createElement('span');
+  span.style.fontSize = px + 'px';
+  span.appendChild(fragment);
+  range.insertNode(span);
+  markDirty();
+}
+
+const HEADING_CMDS = ['heading1', 'heading2', 'heading3', 'heading4', 'paragraph'];
+const FORMAT_CMDS = ['bold', 'italic', 'underline', 'strikeThrough'];
+
+function syncToolbarState() {
+  if (NB._fontSizeApplied) { NB._fontSizeApplied = false; return; }
+
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  if (!NB.editor?.contains(sel.anchorNode)) return;
+
+  const node = sel.anchorNode;
+  const el = node.nodeType === 3 ? node.parentElement : node;
+
+  FORMAT_CMDS.forEach(cmd => {
+    const btn = document.querySelector(`.nb-tb-btn[data-cmd="${cmd}"]`);
+    if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
+  });
+
+  const block = el.closest('h1, h2, h3, h4, p');
+  HEADING_CMDS.forEach(cmd => {
+    const btn = document.querySelector(`.nb-tb-btn[data-cmd="${cmd}"]`);
+    if (btn) btn.classList.toggle('active', block?.tagName?.toLowerCase() === cmd.replace('heading', 'h'));
+  });
+
+  const range = sel.getRangeAt(0);
+  const sNode = range.startContainer;
+  const eNode = range.endContainer;
+  const sParent = sNode.nodeType === 3 ? sNode.parentElement : sNode;
+  const eParent = eNode.nodeType === 3 ? eNode.parentElement : eNode;
+  const sSize = sParent?.closest?.('[style*="font-size"]');
+  const eSize = eParent?.closest?.('[style*="font-size"]');
+
+  const select = document.getElementById('nbFontSize');
+  if (!select) return;
+
+  if (sSize !== eSize) { select.selectedIndex = 0; return; }
+
+  if (sSize) {
+    const px = parseFloat(sSize.style.fontSize);
+    if (!isNaN(px)) {
+      const opts = [...select.options].map(o => parseInt(o.value, 10)).filter(v => !isNaN(v));
+      const closest = opts.reduce((a, b) => Math.abs(a - px) < Math.abs(b - px) ? a : b);
+      select.value = String(closest);
+      return;
+    }
+  }
+
+  select.selectedIndex = 0;
+}
 
 async function handleToolbarCommand(cmd) {
   const editor = NB.editor;
