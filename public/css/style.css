@@ -1942,6 +1942,10 @@ img {
   width: 100%;
 }
 
+.page-content.notebook-active ~ .app-footer {
+  display: none;
+}
+
 /* ── Sidebar ─────────────────────────────────────────────── */
 .nb-sidebar {
   width: 280px;
@@ -2249,7 +2253,7 @@ img {
 /* ── Main editor area ────────────────────────────────────── */
 .nb-main {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
