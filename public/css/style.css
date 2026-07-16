@@ -1934,6 +1934,7 @@ img {
    ═══════════════════════════════════════════════════════════ */
 
 .notebook-layout {
+  position: relative;
   display: flex;
   height: calc(100vh - var(--nav-h));
   gap: 0;
@@ -1975,28 +1976,34 @@ img {
 }
 
 .nb-sidebar-reopen {
-  position: fixed;
-  bottom: 16px;
-  left: 8px;
+  position: absolute;
+  left: 0;
+  top: 50%;
   z-index: 20;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 20px;
+  height: 52px;
+  border-radius: 0 6px 6px 0;
   background: var(--surface-2);
   border: 2px solid var(--border);
+  border-left: none;
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: .85rem;
+  font-size: .7rem;
+  transform: translateY(-50%);
   transition: color var(--transition), background var(--transition), border-color var(--transition);
-  box-shadow: var(--shadow);
+  box-shadow: 2px 0 6px rgba(0,0,0,.06);
 }
 .nb-sidebar-reopen:hover {
   color: var(--text);
   background: var(--border);
   border-color: var(--text-muted);
+}
+
+[data-theme="dark"] .nb-sidebar-reopen {
+  box-shadow: 2px 0 8px rgba(0,0,0,.25);
 }
 
 .nb-sidebar-collapsed .nb-sidebar {
@@ -2602,7 +2609,6 @@ img {
 .nb-editor-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 8px 24px;
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -2613,6 +2619,7 @@ img {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-right: auto;
 }
 
 .nb-editor-footer-right {

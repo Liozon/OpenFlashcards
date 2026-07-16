@@ -43,7 +43,7 @@ function getNotebookHTML() {
           <div id="nbSearchResults" class="nb-search-results"></div>
         </div>
         <div class="nb-section-list" id="nbSectionList"></div>
-        <button class="nb-sidebar-toggle" id="nbSidebarToggle" title="Collapse sidebar">◀</button>
+        <button class="nb-sidebar-toggle hidden" id="nbSidebarToggle" title="Collapse sidebar">◀</button>
       </div>
       <button class="nb-sidebar-reopen hidden" id="nbSidebarReopen" title="Expand sidebar">▶</button>
       <div class="nb-main" id="nbMain">
@@ -777,6 +777,7 @@ function openPage(sectionId, pageId) {
   const el = NB.el;
   el.querySelector('#nbWelcome').classList.add('hidden');
   el.querySelector('#nbEditorArea').classList.remove('hidden');
+  el.querySelector('#nbSidebarToggle').classList.remove('hidden');
   el.querySelector('#nbPageTitle').value = page.name;
   el.querySelector('#nbEditor').innerHTML = page.content || '';
   restoreTaskListBehaviour();
@@ -827,6 +828,7 @@ function showWelcome() {
   const el = NB.el;
   el.querySelector('#nbWelcome').classList.remove('hidden');
   el.querySelector('#nbEditorArea').classList.add('hidden');
+  el.querySelector('#nbSidebarToggle').classList.add('hidden');
   // Update URL hash
   const hash = '#/notebook?lang=' + NB.lang;
   history.pushState({ page: 'notebook', params: { lang: NB.lang } }, '', hash);
