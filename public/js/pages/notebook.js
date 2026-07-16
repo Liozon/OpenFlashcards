@@ -223,16 +223,16 @@ function bindNotebookEvents() {
   });
 
   let _fontSelectOpened = false;
-  el.querySelector('#nbFontSize').addEventListener('mousedown', function() {
+  el.querySelector('#nbFontSize').addEventListener('mousedown', function () {
     _fontSelectOpened = true;
   });
-  el.querySelector('#nbFontSize').addEventListener('change', function(e) {
+  el.querySelector('#nbFontSize').addEventListener('change', function (e) {
     _fontSelectOpened = false;
     if (!e.target.value) return;
     NB._fontSizeApplied = true;
     applyFontSize(e.target.value);
   });
-  el.querySelector('#nbFontSize').addEventListener('blur', function() {
+  el.querySelector('#nbFontSize').addEventListener('blur', function () {
     if (_fontSelectOpened && this.value) {
       _fontSelectOpened = false;
       applyFontSize(this.value, true);
@@ -516,7 +516,8 @@ async function addSectionPrompt() {
   const name = await window.promptModal(window.t('notebook_add_section_prompt'), { required: true });
   if (!name) return;
   try {
-    const data = await window.api('POST', `/api/notebook/${NB.lang}/sections`, { name: name.trim() });
+    const color = NB_COLORS[Math.floor(Math.random() * NB_COLORS.length)];
+    const data = await window.api('POST', `/api/notebook/${NB.lang}/sections`, { name: name.trim(), color });
     NB.sections.push(data.section);
     renderSidebar();
     nbToast(window.t('notebook_section_added'));
@@ -591,8 +592,10 @@ async function addPagePrompt(sectionId) {
   const name = await window.promptModal(window.t('notebook_add_page_prompt'), { required: true });
   if (!name) return;
   try {
-    const data = await window.api('POST', `/api/notebook/${NB.lang}/sections/${sectionId}/pages`, { name: name.trim() });
     const section = NB.sections.find(s => s.id === sectionId);
+    const body = { name: name.trim() };
+    if (section && section.color) body.color = section.color;
+    const data = await window.api('POST', `/api/notebook/${NB.lang}/sections/${sectionId}/pages`, body);
     if (section) section.pages.push(data.page);
     renderSidebar();
     openPage(sectionId, data.page.id);
@@ -1699,7 +1702,7 @@ async function performSearch() {
 
 // ── Color customization ─────────────────────────────────────
 
-const NB_COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c', '#3498db', '#9b59b6', '#e84393', '#00b894', '#6c5ce7', '#fd79a8', '#00cec9', '#636e72', '#2d3436'];
+const NB_COLORS = ['#D7263D', '#F46036', '#F6AE2D', '#C5D86D', '#2E933C', '#1B998B', '#2D7DD2', '#3B60E4', '#6A4C93', '#9D4EDD', '#C77DFF', '#F15BB5', '#FF006E', '#00BBF9', '#00F5D4', '#8D99AE', '#6D597A', '#A44A3F'];
 
 let NB_colorTarget = null; // { type: 'section', id } or { type: 'page', id }
 let NB_colorResolve = null;
