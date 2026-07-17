@@ -35,7 +35,7 @@ function normConj(entry) {
 }
 
 const router = require('express').Router();
-const { randomUUID } = require('crypto');
+const { randomUUID, createHash } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
@@ -1643,16 +1643,20 @@ router.post('/notebook/:code/images', async (req, res) => {
     ext = srcExt === 'gif' ? 'gif' : srcExt;
   }
 
-  const filename = randomUUID() + '.' + ext;
+  const hash = createHash('sha256').update(buffer).digest('hex');
+  const filename = hash + '.' + ext;
   const filepath = path.join(imagesDir(uid, lang), filename);
 
-  fs.writeFileSync(filepath, buffer);
+  if (!fs.existsSync(filepath)) {
+    fs.writeFileSync(filepath, buffer);
+  }
 
   const url = `/api/notebook/${lang}/images/${filename}`;
   res.json({ url, filename });
 });
 
 // DELETE /api/notebook/:code/images/:filename – delete a notebook image file
+// Only actually deletes the file when the image is no longer referenced in any page
 router.delete('/notebook/:code/images/:filename', (req, res) => {
   const uid = userId(req);
   const lang = req.params.code;
@@ -1662,8 +1666,29 @@ router.delete('/notebook/:code/images/:filename', (req, res) => {
   }
   const filepath = path.join(imagesDir(uid, lang), filename);
   if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Image not found' });
+
+  // Count how many pages still reference this image
+  const notebook = getNotebook(uid, lang);
+  let refCount = 0;
+  for (const section of (notebook.sections || [])) {
+    for (const page of (section.pages || [])) {
+      const content = page.content || '';
+      // Count occurrences of the filename in the page HTML
+      let idx = 0;
+      while ((idx = content.indexOf(filename, idx)) !== -1) {
+        refCount++;
+        idx += filename.length;
+      }
+    }
+  }
+
+  // Only delete the file when this is the last reference
+  if (refCount > 1) {
+    return res.json({ ok: true, deleted: false, refs: refCount });
+  }
+
   fs.unlinkSync(filepath);
-  res.json({ ok: true });
+  res.json({ ok: true, deleted: true });
 });
 
 // GET /api/notebook/:code/images/:filename – serve a notebook image
