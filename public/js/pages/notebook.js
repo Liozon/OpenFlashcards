@@ -472,7 +472,7 @@ function handleSidebarClick(e) {
   }
 
   const header = e.target.closest('.nb-section-header');
-  if (header && !e.target.closest('.nb-section-actions')) {
+  if (header && !e.target.closest('.nb-section-actions') && !e.target.closest('[data-action]')) {
     const sectionId = header.closest('.nb-section').dataset.sectionId;
     NB.currentSectionId = sectionId;
     NB.currentPageId = null;
