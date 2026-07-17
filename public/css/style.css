@@ -2093,6 +2093,7 @@ img {
   font-weight: 700;
   font-size: .88rem;
   transition: background var(--transition);
+  position: relative;
 }
 
 .nb-section-header:hover {
@@ -2120,7 +2121,12 @@ img {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition), transform var(--transition);
-  transform: translateX(16px);
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%) translateX(16px);
+  padding-left: 28px;
+  background: linear-gradient(to left, color-mix(in srgb, var(--surface-2) 97%, transparent), color-mix(in srgb, var(--surface-2) 60%, transparent), transparent);
 }
 
 .nb-section-add-btn {
@@ -2131,9 +2137,10 @@ img {
   padding: 2px 4px;
   border-radius: 4px;
   opacity: .6;
-  transition: opacity var(--transition), background var(--transition);
+  transition: opacity var(--transition), transform var(--transition), background var(--transition);
   line-height: 1;
   flex-shrink: 0;
+  transform: translateX(0);
 }
 .nb-section-add-btn:hover {
   opacity: 1;
@@ -2219,6 +2226,16 @@ img {
 .nb-actions-open .nb-section-actions {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
+}
+
+.nb-actions-open .nb-section-add-btn {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  min-width: 0;
+  padding: 2px 0;
+  overflow: hidden;
   transform: translateX(0);
 }
 

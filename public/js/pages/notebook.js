@@ -308,7 +308,7 @@ function bindNotebookEvents() {
       if (navigator.clipboard && navigator.clipboard.write) {
         navigator.clipboard.write([
           new ClipboardItem({ 'text/html': blob, 'text/plain': plainBlob })
-        ]).catch(() => {});
+        ]).catch(() => { });
       }
     }
   });
@@ -464,12 +464,12 @@ function renderSidebar() {
             ${p.color ? `<span class="nb-page-color-dot" style="background:${p.color}"></span>` : ''}
             <span class="nb-page-name">${escapeHtml(p.name)}</span>
             <div class="nb-page-actions">
+            <button class="nb-context-btn" data-action="duplicate-page" title="${window.t('notebook_duplicate')}">📋</button>
+              <button class="nb-context-btn" data-action="move-page" title="${window.t('notebook_move')}">📤</button>
               ${pi > 0 ? `<button class="nb-context-btn" data-action="page-up" title="${window.t('notebook_move_up')}">⬆️</button>` : ''}
               ${pi < totalPages - 1 ? `<button class="nb-context-btn" data-action="page-down" title="${window.t('notebook_move_down')}">⬇️</button>` : ''}
               <button class="nb-context-btn" data-action="rename-page" title="${window.t('notebook_rename')}">✏️</button>
-              <button class="nb-context-btn" data-action="page-color" title="${window.t('notebook_color')}">🎨</button>
-              <button class="nb-context-btn" data-action="duplicate-page" title="${window.t('notebook_duplicate')}">📋</button>
-              <button class="nb-context-btn" data-action="move-page" title="${window.t('notebook_move')}">📤</button>
+              <button class="nb-context-btn" data-action="page-color" title="${window.t('notebook_color')}">🎨</button>              
               <button class="nb-context-btn" data-action="delete-page" title="${window.t('common_delete')}">🗑️</button>
             </div>
           </div>`;
