@@ -13,7 +13,7 @@ function renderNotebook(el, params) {
 
   // Clean up any previous notebook instance
   if (NB.autoSaveInterval) clearInterval(NB.autoSaveInterval);
-  NB = { el, lang, notebook: null, sections: [], currentSectionId: null, currentPageId: null, searchQuery: '', dirty: false, editMode: false };
+  NB = { el, lang, notebook: null, sections: [], currentSectionId: null, currentPageId: null, searchQuery: '', dirty: false, editMode: false, stickyEditMode: false };
 
   el.innerHTML = getNotebookHTML();
 
@@ -787,6 +787,7 @@ function rebindTableToolbars() {
 
 function switchToReadMode() {
   NB.editMode = false;
+  NB.stickyEditMode = false;
   deselectImage();
   const el = NB.el;
   el.querySelector('#nbReadHeader').classList.remove('hidden');
@@ -805,6 +806,7 @@ function switchToReadMode() {
 
 function switchToEditMode() {
   NB.editMode = true;
+  NB.stickyEditMode = true;
   const el = NB.el;
   el.querySelector('#nbReadHeader').classList.add('hidden');
   el.querySelector('#nbToolbar').classList.remove('hidden');
@@ -849,9 +851,12 @@ function openPage(sectionId, pageId) {
   renderSidebar();
   renderVocabLinksList();
 
-  // Set mode: pages with content open in read mode, empty/new pages in edit mode
+  // Set mode: sticky edit mode keeps edit active across pages;
+  // empty/new pages always enter edit mode; content pages open in read mode when not sticky.
   const hasContent = page.content && page.content.trim().length > 0 && page.content !== '<br>';
-  if (hasContent) {
+  if (NB.stickyEditMode) {
+    switchToEditMode();
+  } else if (hasContent) {
     switchToReadMode();
   } else {
     switchToEditMode();
