@@ -271,6 +271,14 @@ function bindNotebookEvents() {
   initImageResize();
   editor.addEventListener('input', markDirty);
   editor.addEventListener('paste', handleEditorPaste);
+  editor.addEventListener('copy', (e) => {
+    if (NB_selectedImg) {
+      e.preventDefault();
+      const html = NB_selectedImg.outerHTML;
+      e.clipboardData.setData('text/html', html);
+      e.clipboardData.setData('text/plain', NB_selectedImg.alt || '');
+    }
+  });
   editor.addEventListener('click', (e) => {
     const wrapper = e.target.closest('.nb-table-wrapper');
     hideAllTableToolbars();
@@ -291,6 +299,17 @@ function bindNotebookEvents() {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       saveCurrentPage();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && NB_selectedImg) {
+      e.preventDefault();
+      const html = NB_selectedImg.outerHTML;
+      const blob = new Blob([html], { type: 'text/html' });
+      const plainBlob = new Blob([NB_selectedImg.alt || ''], { type: 'text/plain' });
+      if (navigator.clipboard && navigator.clipboard.write) {
+        navigator.clipboard.write([
+          new ClipboardItem({ 'text/html': blob, 'text/plain': plainBlob })
+        ]).catch(() => {});
+      }
     }
   });
 
@@ -1770,15 +1789,21 @@ async function applyColor(color) {
 // ── Paste handling for tabular data ─────────────────────────
 
 function handleEditorPaste(e) {
-  // Handle image paste from clipboard
+  const html = e.clipboardData.getData('text/html');
+
+  // If pasting HTML that contains notebook images (copied from within the editor),
+  // let the browser handle it natively to preserve existing URLs without re-upload
+  if (html && /<img[^>]+src="\/api\/notebook\//i.test(html)) {
+    return;
+  }
+
+  // Handle image paste from clipboard (external images)
   const imageFiles = Array.from(e.clipboardData.files || []).filter(f => f.type.startsWith('image/'));
   if (imageFiles.length) {
     e.preventDefault();
     pasteImageFromClipboard(imageFiles[0]);
     return;
   }
-
-  const html = e.clipboardData.getData('text/html');
   if (html && (html.includes('<table') || html.includes('<tr') || html.includes('<td') || html.includes('<th'))) {
     e.preventDefault();
     const wrapper = document.createElement('div');
