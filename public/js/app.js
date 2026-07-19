@@ -624,7 +624,7 @@ function applyNavLabels() {
 
   // Language tools: hidden for admin users (admins only manage users)
   const isAdmin = App.user && App.user.role === 'admin';
-  ['navHome', 'navVocab', 'navAdd', 'navTrain'].forEach(id => {
+  ['navHome', 'navVocab', 'navAdd', 'navTrain', 'navNotebook'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? 'none' : '';
   });
