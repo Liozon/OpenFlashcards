@@ -672,9 +672,10 @@ async function bootApp() {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     updateNavLangBadge();
     const hashPage = getPageFromHash();
+    const hashParams = getParamsFromHash();
     const targetPage = hashPage || 'home';
-    history.replaceState({ page: targetPage }, '', '#/' + targetPage);
-    navigate(targetPage, {}, true);
+    history.replaceState({ page: targetPage, params: hashParams }, '', window.location.hash || '#/' + targetPage);
+    navigate(targetPage, hashParams, true);
   }
 }
 
