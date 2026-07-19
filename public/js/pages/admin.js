@@ -74,6 +74,7 @@ async function loadUserTable() {
                 <td><span class="role-badge role-${u.role}">${u.role}</span></td>
                 <td style="color:var(--text-faint);font-size:.82rem">${new Date(u.createdAt).toLocaleDateString()}</td>
                 <td>
+                  ${u.role !== 'admin' ? `
                   <label class="admin-toggle" title="${t('admin_tts_cache_default_hint')}">
                     <div class="toggle-switch ${u.ttsCacheDefault ? 'active' : ''}"
                          id="ttsDef-${u.id}"
@@ -86,12 +87,12 @@ async function loadUserTable() {
                                   width:16px;height:16px;border-radius:50%;background:#fff;
                                   transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
                     </div>
-                  </label>
+                  </label>` : ''}
                 </td>
                 <td>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">🔑 ${t('admin_reset_pw')}</button>
-                    <button class="btn btn-sm btn-secondary" onclick="adminTtsCache('${u.id}','${esc(u.username)}')">🗄️ ${t('admin_tts_cache_btn')}</button>
+                    ${u.role !== 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="adminTtsCache('${u.id}','${esc(u.username)}')">🗄️ ${t('admin_tts_cache_btn')}</button>` : ''}
                     ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">🗑️</button>` : ''}
                   </div>
                 </td>
