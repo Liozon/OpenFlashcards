@@ -230,7 +230,10 @@ window.navigate = function (page, params, _fromPopState) {
 
   // Push page to browser history so back/forward buttons work
   if (!_fromPopState) {
-    const hash = '#/' + page;
+    let hash = '#/' + page;
+    if (params && Object.keys(params).length) {
+      hash += '?' + Object.entries(params).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+    }
     if (window.location.hash !== hash) {
       history.pushState({ page, params }, '', hash);
     }
@@ -245,7 +248,8 @@ window.navigate = function (page, params, _fromPopState) {
     add: renderAdd,
     train: renderTrain,
     settings: renderSettings,
-    admin: renderAdmin
+    admin: renderAdmin,
+    notebook: renderNotebook
   };
 
   (renderers[page] || renderHome)(content, params || {});
@@ -256,28 +260,42 @@ window.addEventListener('popstate', function (e) {
   if (!App.user) return;
   const page = (e.state && e.state.page) || getPageFromHash();
   if (page) {
-    navigate(page, (e.state && e.state.params) || {}, true);
+    navigate(page, (e.state && e.state.params) || getParamsFromHash(), true);
   }
 });
 
 window.addEventListener('hashchange', function () {
   if (!App.user) return;
   const page = getPageFromHash();
+  const params = getParamsFromHash();
   if (page && page !== App.currentPage) {
-    navigate(page, {}, true);
+    navigate(page, params, true);
   }
 });
 
 function getPageFromHash() {
   const hash = window.location.hash;
   if (hash && hash.startsWith('#/')) {
-    const path = hash.slice(2).split('?')[0];
-    const page = path.split('/')[0];
-    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin'].includes(page)) {
+    const [pathPart, queryPart] = hash.slice(2).split('?');
+    const page = pathPart.split('/')[0];
+    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin', 'notebook'].includes(page)) {
       return page;
     }
   }
   return null;
+}
+
+function getParamsFromHash() {
+  const hash = window.location.hash;
+  const params = {};
+  if (hash && hash.includes('?')) {
+    const qs = hash.split('?')[1];
+    qs.split('&').forEach(pair => {
+      const [k, v] = pair.split('=').map(s => decodeURIComponent(s));
+      if (k) params[k] = v;
+    });
+  }
+  return params;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -344,6 +362,76 @@ window.confirmModal = function (message, opts = {}) {
       if (modal.classList.contains('hidden')) {
         observer.disconnect();
         finish(false);
+      }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+};
+
+window.promptModal = function (message, opts = {}) {
+  return new Promise(resolve => {
+    const inputId = 'pmInput';
+    const okId = 'pmOk';
+    const cancelId = 'pmCancel';
+    const modal = document.getElementById('modal');
+    const wasHidden = modal.classList.contains('hidden');
+    const prevTitle = document.getElementById('modalTitle').textContent;
+    const prevBody = document.getElementById('modalBody').innerHTML;
+    const prevFooter = document.getElementById('modalFooter').innerHTML;
+
+    function finish(val) {
+      if (wasHidden) {
+        closeModal();
+      } else {
+        openModal(prevTitle, prevBody, prevFooter);
+      }
+      resolve(val);
+    }
+
+    const defaultValue = opts.default || '';
+    const placeholder = opts.placeholder || '';
+
+    openModal(
+      opts.title || message,
+      `<input type="text" id="${inputId}" class="search-input" style="width:100%;box-sizing:border-box" value="${defaultValue.replace(/"/g, '&quot;')}" placeholder="${placeholder.replace(/"/g, '&quot;')}" autofocus>
+       <p id="pmError" class="alert alert-danger hidden" style="margin-top:8px"></p>`,
+      `<button class="btn btn-secondary" id="${cancelId}">${opts.cancelLabel || t('common_cancel')}</button>
+       <button class="btn btn-primary" id="${okId}">${opts.confirmLabel || t('common_confirm') || 'OK'}</button>`
+    );
+
+    const input = document.getElementById(inputId);
+    input.focus();
+    input.select();
+
+    function getValue() {
+      const val = input.value.trim();
+      if (opts.required && !val) {
+        const err = document.getElementById('pmError');
+        err.textContent = opts.requiredMessage || 'This field is required';
+        err.classList.remove('hidden');
+        return null;
+      }
+      return val;
+    }
+
+    document.getElementById(okId).addEventListener('click', () => {
+      const val = getValue();
+      if (val !== null) finish(val);
+    });
+    document.getElementById(cancelId).addEventListener('click', () => finish(null));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = getValue();
+        if (val !== null) finish(val);
+      }
+      if (e.key === 'Escape') finish(null);
+    });
+
+    const observer = new MutationObserver(() => {
+      if (modal.classList.contains('hidden')) {
+        observer.disconnect();
+        finish(null);
       }
     });
     observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
@@ -505,6 +593,7 @@ function applyNavLabels() {
     navVocab: 'nav_vocabulary',
     navTrain: 'nav_train',
     navAdd: 'nav_add',
+    navNotebook: 'nav_notebook',
     navSettings: 'nav_settings',
     adminLink: 'nav_admin'
   };
@@ -514,6 +603,7 @@ function applyNavLabels() {
     navVocab: '📚',
     navTrain: '🎯',
     navAdd: '➕',
+    navNotebook: '📓',
     navSettings: '⚙️',
     adminLink: '🔑'
   };
@@ -582,9 +672,10 @@ async function bootApp() {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     updateNavLangBadge();
     const hashPage = getPageFromHash();
+    const hashParams = getParamsFromHash();
     const targetPage = hashPage || 'home';
-    history.replaceState({ page: targetPage }, '', '#/' + targetPage);
-    navigate(targetPage, {}, true);
+    history.replaceState({ page: targetPage, params: hashParams }, '', window.location.hash || '#/' + targetPage);
+    navigate(targetPage, hashParams, true);
   }
 }
 

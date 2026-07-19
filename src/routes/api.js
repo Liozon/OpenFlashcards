@@ -35,11 +35,15 @@ function normConj(entry) {
 }
 
 const router = require('express').Router();
-const { randomUUID } = require('crypto');
+const { randomUUID, createHash } = require('crypto');
+const path = require('path');
+const fs = require('fs');
+const sharp = require('sharp');
 const {
   getWords, saveWords,
   getPhrases, savePhrases,
-  getUserConfig, saveUserConfig
+  getUserConfig, saveUserConfig,
+  getNotebook, saveNotebook, imagesDir
 } = require('../utils/storage');
 const {
   getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
@@ -654,11 +658,29 @@ router.put('/words/:id', (req, res) => {
 router.delete('/words/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
-  let words = getWords(userId(req), lang);
-  const before = words.length;
-  words = words.filter(w => w.id !== req.params.id);
-  if (words.length === before) return res.status(404).json({ error: 'Word not found.' });
-  saveWords(userId(req), lang, words);
+  const uid = userId(req);
+  let words = getWords(uid, lang);
+  const idx = words.findIndex(w => w.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Word not found.' });
+
+  // Clean up notebook links pointing to this word
+  const deletedWord = words[idx];
+  if (deletedWord.notebookLinks && deletedWord.notebookLinks.length) {
+    const notebook = getNotebook(uid, lang);
+    for (const link of deletedWord.notebookLinks) {
+      for (const s of notebook.sections) {
+        const pg = s.pages.find(p => p.id === link.pageId);
+        if (pg && pg.vocabLinks) {
+          pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== req.params.id);
+        }
+      }
+    }
+    saveNotebook(uid, lang, notebook);
+  }
+
+  words.splice(idx, 1);
+  saveWords(uid, lang, words);
+  deleteItemAllSpeeds(uid, lang, req.params.id);
   res.json({ ok: true });
 });
 
@@ -745,11 +767,29 @@ router.put('/phrases/:id', (req, res) => {
 router.delete('/phrases/:id', (req, res) => {
   const { lang } = req.query;
   if (!lang) return res.status(400).json({ error: 'lang required' });
-  let phrases = getPhrases(userId(req), lang);
-  const before = phrases.length;
-  phrases = phrases.filter(p => p.id !== req.params.id);
-  if (phrases.length === before) return res.status(404).json({ error: 'Phrase not found.' });
-  savePhrases(userId(req), lang, phrases);
+  const uid = userId(req);
+  let phrases = getPhrases(uid, lang);
+  const idx = phrases.findIndex(p => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Phrase not found.' });
+
+  // Clean up notebook links pointing to this phrase
+  const deletedPhrase = phrases[idx];
+  if (deletedPhrase.notebookLinks && deletedPhrase.notebookLinks.length) {
+    const notebook = getNotebook(uid, lang);
+    for (const link of deletedPhrase.notebookLinks) {
+      for (const s of notebook.sections) {
+        const pg = s.pages.find(p => p.id === link.pageId);
+        if (pg && pg.vocabLinks) {
+          pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== req.params.id);
+        }
+      }
+    }
+    saveNotebook(uid, lang, notebook);
+  }
+
+  phrases.splice(idx, 1);
+  savePhrases(uid, lang, phrases);
+  deleteItemAllSpeeds(uid, lang, req.params.id);
   res.json({ ok: true });
 });
 
@@ -1218,6 +1258,7 @@ router.get('/offline/bundle', async (req, res) => {
       bundle.langs[lang] = {
         words: getWords(uid, lang),
         phrases: getPhrases(uid, lang),
+        notebook: getNotebook(uid, lang),
       };
     }
 
@@ -1311,6 +1352,470 @@ router.put('/offline/settings', (req, res) => {
   if (req.body.offlineMode !== undefined) cfg.offlineMode = req.body.offlineMode === true;
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTEBOOK
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/notebook/:code – get the full notebook for a language
+router.get('/notebook/:code', (req, res) => {
+  const uid = userId(req);
+  const notebook = getNotebook(uid, req.params.code);
+  res.json(notebook);
+});
+
+// PUT /api/notebook/:code – save the full notebook for a language
+router.put('/notebook/:code', (req, res) => {
+  const uid = userId(req);
+  const { sections } = req.body;
+  if (!Array.isArray(sections)) return res.status(400).json({ error: 'sections array required' });
+  saveNotebook(uid, req.params.code, { sections });
+  res.json({ ok: true });
+});
+
+// POST /api/notebook/:code/sections – create a section
+router.post('/notebook/:code/sections', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const { name, color } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
+  const section = {
+    id: randomUUID(),
+    name: name.trim(),
+    order: notebook.sections.length,
+    color: color || null,
+    pages: []
+  };
+  notebook.sections.push(section);
+  saveNotebook(uid, lang, notebook);
+  res.status(201).json({ ok: true, section });
+});
+
+// PUT /api/notebook/:code/sections/:sectionId – rename or reorder a section
+router.put('/notebook/:code/sections/:sectionId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const section = notebook.sections.find(s => s.id === req.params.sectionId);
+  if (!section) return res.status(404).json({ error: 'Section not found' });
+  if (req.body.name !== undefined) section.name = req.body.name.trim();
+  if (req.body.order !== undefined) section.order = req.body.order;
+  if (req.body.color !== undefined) section.color = req.body.color;
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true, section });
+});
+
+// DELETE /api/notebook/:code/sections/:sectionId – delete a section and all its pages
+router.delete('/notebook/:code/sections/:sectionId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const before = notebook.sections.length;
+  notebook.sections = notebook.sections.filter(s => s.id !== req.params.sectionId);
+  if (notebook.sections.length === before) return res.status(404).json({ error: 'Section not found' });
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true });
+});
+
+// POST /api/notebook/:code/sections/:sectionId/pages – create a page
+router.post('/notebook/:code/sections/:sectionId/pages', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  const section = notebook.sections.find(s => s.id === req.params.sectionId);
+  if (!section) return res.status(404).json({ error: 'Section not found' });
+  const { name, content, color } = req.body;
+  const page = {
+    id: randomUUID(),
+    name: name ? name.trim() : 'Untitled',
+    content: content || '',
+    color: color || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    order: section.pages.length
+  };
+  section.pages.push(page);
+  saveNotebook(uid, lang, notebook);
+  res.status(201).json({ ok: true, page });
+});
+
+// PUT /api/notebook/:code/pages/:pageId – update a page (name, content, order, move to section)
+router.put('/notebook/:code/pages/:pageId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+
+  // Find the page in any section
+  let foundSection = null;
+  let foundPage = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === req.params.pageId);
+    if (p) { foundSection = s; foundPage = p; break; }
+  }
+  if (!foundPage) return res.status(404).json({ error: 'Page not found' });
+
+  // Handle move to another section
+  if (req.body.targetSectionId && req.body.targetSectionId !== foundSection.id) {
+    const targetSection = notebook.sections.find(s => s.id === req.body.targetSectionId);
+    if (!targetSection) return res.status(404).json({ error: 'Target section not found' });
+    foundSection.pages = foundSection.pages.filter(p => p.id !== req.params.pageId);
+    foundPage.order = targetSection.pages.length;
+    targetSection.pages.push(foundPage);
+    foundSection = targetSection;
+  }
+
+  if (req.body.name !== undefined) foundPage.name = req.body.name.trim();
+  if (req.body.content !== undefined) foundPage.content = req.body.content;
+  if (req.body.order !== undefined) foundPage.order = req.body.order;
+  if (req.body.color !== undefined) foundPage.color = req.body.color;
+  foundPage.updatedAt = new Date().toISOString();
+
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true, page: foundPage });
+});
+
+// POST /api/notebook/:code/pages/:pageId/duplicate – duplicate a page
+router.post('/notebook/:code/pages/:pageId/duplicate', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+  for (const s of notebook.sections) {
+    const idx = s.pages.findIndex(p => p.id === req.params.pageId);
+    if (idx !== -1) {
+      const original = s.pages[idx];
+      const dup = JSON.parse(JSON.stringify(original));
+      dup.id = randomUUID();
+      dup.name = original.name + ' (copy)';
+      dup.createdAt = new Date().toISOString();
+      dup.updatedAt = new Date().toISOString();
+      dup.order = s.pages.length;
+      dup.vocabLinks = []; // don't copy vocab links to duplicate
+      s.pages.push(dup);
+      saveNotebook(uid, lang, notebook);
+      return res.status(201).json({ ok: true, page: dup });
+    }
+  }
+  res.status(404).json({ error: 'Page not found' });
+});
+
+// DELETE /api/notebook/:code/pages/:pageId – delete a page
+router.delete('/notebook/:code/pages/:pageId', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const notebook = getNotebook(uid, lang);
+
+  // Find the page and its vocab links before deleting
+  let deletedPageLinks = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === req.params.pageId);
+    if (p) { deletedPageLinks = p.vocabLinks || []; break; }
+  }
+
+  let found = false;
+  for (const s of notebook.sections) {
+    const before = s.pages.length;
+    s.pages = s.pages.filter(p => p.id !== req.params.pageId);
+    if (s.pages.length !== before) { found = true; break; }
+  }
+  if (!found) return res.status(404).json({ error: 'Page not found' });
+
+  // Clean up vocabulary links pointing to this page
+  if (deletedPageLinks && deletedPageLinks.length) {
+    const words = getWords(uid, lang);
+    for (const vl of deletedPageLinks) {
+      if (vl.vocabType === 'word') {
+        const w = words.find(w => w.id === vl.vocabId);
+        if (w && w.notebookLinks) {
+          w.notebookLinks = w.notebookLinks.filter(l => l.pageId !== req.params.pageId);
+        }
+      }
+    }
+    saveWords(uid, lang, words);
+
+    const phrases = getPhrases(uid, lang);
+    for (const vl of deletedPageLinks) {
+      if (vl.vocabType === 'phrase') {
+        const p = phrases.find(ph => ph.id === vl.vocabId);
+        if (p && p.notebookLinks) {
+          p.notebookLinks = p.notebookLinks.filter(l => l.pageId !== req.params.pageId);
+        }
+      }
+    }
+    savePhrases(uid, lang, phrases);
+  }
+
+  saveNotebook(uid, lang, notebook);
+  res.json({ ok: true });
+});
+
+// GET /api/notebook/:code/search?q=... – search notebook pages
+router.get('/notebook/:code/search', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const q = (req.query.q || '').toLowerCase().trim();
+  if (!q) return res.json({ results: [] });
+  const notebook = getNotebook(uid, lang);
+  const results = [];
+  for (const s of notebook.sections) {
+    for (const p of s.pages) {
+      let score = 0;
+      if (p.name.toLowerCase().includes(q)) score += 10;
+      if ((p.content || '').toLowerCase().includes(q)) score += 1;
+      if (score > 0) {
+        results.push({
+          sectionId: s.id,
+          sectionName: s.name,
+          pageId: p.id,
+          pageName: p.name,
+          score,
+          snippet: snippetFromContent(p.content || '', q)
+        });
+      }
+    }
+  }
+  results.sort((a, b) => b.score - a.score);
+  res.json({ results: results.slice(0, 50) });
+});
+
+function snippetFromContent(content, query) {
+  const plain = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const idx = plain.toLowerCase().indexOf(query);
+  if (idx === -1) return plain.substring(0, 120);
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(plain.length, idx + query.length + 80);
+  return (start > 0 ? '…' : '') + plain.substring(start, end) + (end < plain.length ? '…' : '');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTEBOOK IMAGES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/notebook/:code/images – upload an image (base64 JSON body)
+router.post('/notebook/:code/images', async (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const { image } = req.body;
+  if (!image) return res.status(400).json({ error: 'image data required' });
+
+  const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!matches) return res.status(400).json({ error: 'Invalid image data' });
+
+  const srcExt = matches[1].toLowerCase();
+  let buffer = Buffer.from(matches[2], 'base64');
+
+  // Optimize: resize oversized images, convert to WebP, compress
+  let ext = 'webp';
+  try {
+    const img = sharp(buffer, { unlimited: true });
+    const metadata = await img.metadata();
+
+    // Skip animated GIFs (keep original format)
+    if (srcExt === 'gif' && (metadata.pages && metadata.pages > 1)) {
+      ext = 'gif';
+    } else {
+      let pipeline = img;
+
+      // Resize if longest edge > 1920px (maintain aspect ratio)
+      if (metadata.width > 1920 || metadata.height > 1920) {
+        pipeline = pipeline.resize({
+          width: metadata.width > metadata.height ? 1920 : undefined,
+          height: metadata.height >= metadata.width ? 1920 : undefined,
+          fit: 'inside',
+          withoutEnlargement: true
+        });
+      }
+
+      // Re-encode with compression
+      if (srcExt === 'gif') {
+        ext = 'gif';
+        pipeline = pipeline.gif();
+      } else {
+        pipeline = pipeline.webp({ quality: 80, effort: 4 });
+      }
+
+      buffer = await pipeline.toBuffer();
+    }
+  } catch (err) {
+    console.error('[notebook] image optimization error (' + srcExt + '):', err.message);
+    // Fall through: save original buffer with original extension
+    // HEIC/HEIF images that fail optimization are kept as-is; they may not render
+    // in all browsers. The unlimited flag above should prevent most libheif errors.
+    ext = srcExt === 'gif' ? 'gif' : srcExt;
+  }
+
+  const hash = createHash('sha256').update(buffer).digest('hex');
+  const filename = hash + '.' + ext;
+  const filepath = path.join(imagesDir(uid, lang), filename);
+
+  if (!fs.existsSync(filepath)) {
+    fs.writeFileSync(filepath, buffer);
+  }
+
+  const url = `/api/notebook/${lang}/images/${filename}`;
+  res.json({ url, filename });
+});
+
+// DELETE /api/notebook/:code/images/:filename – delete a notebook image file
+// Only actually deletes the file when the image is no longer referenced in any page
+router.delete('/notebook/:code/images/:filename', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filepath = path.join(imagesDir(uid, lang), filename);
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Image not found' });
+
+  // Count how many pages still reference this image
+  const notebook = getNotebook(uid, lang);
+  let refCount = 0;
+  for (const section of (notebook.sections || [])) {
+    for (const page of (section.pages || [])) {
+      const content = page.content || '';
+      // Count occurrences of the filename in the page HTML
+      let idx = 0;
+      while ((idx = content.indexOf(filename, idx)) !== -1) {
+        refCount++;
+        idx += filename.length;
+      }
+    }
+  }
+
+  // Only delete the file when this is the last reference
+  if (refCount > 1) {
+    return res.json({ ok: true, deleted: false, refs: refCount });
+  }
+
+  fs.unlinkSync(filepath);
+  res.json({ ok: true, deleted: true });
+});
+
+// GET /api/notebook/:code/images/:filename – serve a notebook image
+router.get('/notebook/:code/images/:filename', (req, res) => {
+  const uid = userId(req);
+  const lang = req.params.code;
+  const filename = req.params.filename;
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filepath = path.join(imagesDir(uid, lang), filename);
+  if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Image not found' });
+  res.sendFile(filepath);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VOCAB LINKS (Vocabulary ↔ Notebook linking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/vocab-link – link a vocabulary item to a notebook page
+router.post('/vocab-link', (req, res) => {
+  const { lang, vocabId, vocabType, pageId } = req.body;
+  if (!lang || !vocabId || !vocabType || !pageId)
+    return res.status(400).json({ error: 'lang, vocabId, vocabType, pageId required' });
+  if (!['word', 'phrase'].includes(vocabType))
+    return res.status(400).json({ error: 'vocabType must be "word" or "phrase"' });
+
+  const uid = userId(req);
+
+  // Get vocabulary item
+  let vocabItem = null;
+  let words, phrases;
+  if (vocabType === 'word') {
+    words = getWords(uid, lang);
+    vocabItem = words.find(w => w.id === vocabId);
+  } else {
+    phrases = getPhrases(uid, lang);
+    vocabItem = phrases.find(p => p.id === vocabId);
+  }
+  if (!vocabItem) return res.status(404).json({ error: 'Vocabulary item not found' });
+
+  // Get notebook page
+  const notebook = getNotebook(uid, lang);
+  let foundSection = null;
+  let foundPage = null;
+  for (const s of notebook.sections) {
+    const p = s.pages.find(pg => pg.id === pageId);
+    if (p) { foundSection = s; foundPage = p; break; }
+  }
+  if (!foundPage) return res.status(404).json({ error: 'Notebook page not found' });
+
+  // Add link to vocabulary item
+  if (!vocabItem.notebookLinks) vocabItem.notebookLinks = [];
+  if (!vocabItem.notebookLinks.find(l => l.pageId === pageId)) {
+    vocabItem.notebookLinks.push({
+      pageId: foundPage.id,
+      sectionId: foundSection.id,
+      pageName: foundPage.name,
+      sectionName: foundSection.name
+    });
+  }
+
+  // Add link to notebook page
+  if (!foundPage.vocabLinks) foundPage.vocabLinks = [];
+  if (!foundPage.vocabLinks.find(l => l.vocabId === vocabId)) {
+    const displayText = vocabType === 'phrase'
+      ? (vocabItem.text || vocabItem.literal || '')
+      : (vocabItem.literal || vocabItem.text || '');
+    foundPage.vocabLinks.push({
+      vocabId: vocabItem.id,
+      vocabType: vocabType,
+      text: displayText,
+      translation: vocabItem.translation || ''
+    });
+  }
+
+  // Save files
+  if (vocabType === 'word') {
+    saveWords(uid, lang, words);
+  } else {
+    savePhrases(uid, lang, phrases);
+  }
+  saveNotebook(uid, lang, notebook);
+
+  res.json({ ok: true });
+});
+
+// DELETE /api/vocab-link – remove a link between vocabulary and notebook
+router.delete('/vocab-link', (req, res) => {
+  const { lang, vocabId, vocabType, pageId } = req.body;
+  if (!lang || !vocabId || !vocabType || !pageId)
+    return res.status(400).json({ error: 'lang, vocabId, vocabType, pageId required' });
+  if (!['word', 'phrase'].includes(vocabType))
+    return res.status(400).json({ error: 'vocabType must be "word" or "phrase"' });
+
+  const uid = userId(req);
+
+  // Remove from vocabulary item
+  if (vocabType === 'word') {
+    const words = getWords(uid, lang);
+    const w = words.find(w => w.id === vocabId);
+    if (w && w.notebookLinks) {
+      w.notebookLinks = w.notebookLinks.filter(l => l.pageId !== pageId);
+    }
+    saveWords(uid, lang, words);
+  } else {
+    const phrases = getPhrases(uid, lang);
+    const p = phrases.find(ph => ph.id === vocabId);
+    if (p && p.notebookLinks) {
+      p.notebookLinks = p.notebookLinks.filter(l => l.pageId !== pageId);
+    }
+    savePhrases(uid, lang, phrases);
+  }
+
+  // Remove from notebook page
+  const notebook = getNotebook(uid, lang);
+  for (const s of notebook.sections) {
+    const pg = s.pages.find(p => p.id === pageId);
+    if (pg && pg.vocabLinks) {
+      pg.vocabLinks = pg.vocabLinks.filter(l => l.vocabId !== vocabId);
+    }
+  }
+  saveNotebook(uid, lang, notebook);
+
+  res.json({ ok: true });
 });
 
 // Export helpers for admin route re-use
