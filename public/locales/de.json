@@ -383,6 +383,8 @@
   "notebook_add_col": "+ Spalte",
   "notebook_del_row": "- Zeile",
   "notebook_del_col": "- Spalte",
+  "notebook_del_cell": "- Zelle",
+  "notebook_add_cell": "+ Zelle",
   "notebook_del_table": "Tabelle löschen",
   "notebook_del_row_confirm": "Diese Zeile enthält Inhalt. Löschen?",
   "notebook_del_col_confirm": "Diese Spalte enthält Inhalt. Löschen?",

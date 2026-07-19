@@ -383,6 +383,8 @@
   "notebook_add_col": "+ عمود",
   "notebook_del_row": "- صف",
   "notebook_del_col": "- عمود",
+  "notebook_del_cell": "- خلية",
+  "notebook_add_cell": "+ خلية",
   "notebook_del_table": "حذف الجدول",
   "notebook_del_row_confirm": "هذا الصف يحتوي على محتوى. حذف؟",
   "notebook_del_col_confirm": "هذا العمود يحتوي على محتوى. حذف؟",

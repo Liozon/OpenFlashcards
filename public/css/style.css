@@ -2646,6 +2646,11 @@ img {
   background: var(--surface);
 }
 
+.nb-editor .nb-editor-table .nb-cell-deleted {
+  border: none !important;
+  background: transparent !important;
+}
+
 .nb-table-wrapper {
   margin: 12px 0;
   position: relative;

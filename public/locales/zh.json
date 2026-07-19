@@ -383,6 +383,8 @@
   "notebook_add_col": "+ 列",
   "notebook_del_row": "- 行",
   "notebook_del_col": "- 列",
+  "notebook_del_cell": "- 单元格",
+  "notebook_add_cell": "+ 单元格",
   "notebook_del_table": "删除表格",
   "notebook_del_row_confirm": "此行包含内容。删除？",
   "notebook_del_col_confirm": "此列包含内容。删除？",

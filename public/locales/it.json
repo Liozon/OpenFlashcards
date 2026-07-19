@@ -383,6 +383,8 @@
   "notebook_add_col": "+ Col.",
   "notebook_del_row": "- Riga",
   "notebook_del_col": "- Col.",
+  "notebook_del_cell": "- Cella",
+  "notebook_add_cell": "+ Cella",
   "notebook_del_table": "Elimina tabella",
   "notebook_del_row_confirm": "Questa riga contiene contenuto. Eliminare?",
   "notebook_del_col_confirm": "Questa colonna contiene contenuto. Eliminare?",

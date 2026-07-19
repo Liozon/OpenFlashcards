@@ -1319,6 +1319,10 @@ function insertTable() {
     <span class="nb-tb-sep"></span>
     <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
     <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+    <span class="nb-tb-sep"></span>
+    <button class="nb-tb-btn btn-sm" data-table-action="add-cell" title="${window.t('notebook_add_cell')}">${window.t('notebook_add_cell')}</button>
+    <button class="nb-tb-btn btn-sm" data-table-action="del-cell" title="${window.t('notebook_del_cell')}">${window.t('notebook_del_cell')}</button>
+    <span class="nb-tb-sep"></span>
     <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
   `;
   wrapper.appendChild(tblToolbar);
@@ -1482,6 +1486,20 @@ async function tableAction(table, action) {
         const td = tr.children[colIndex];
         if (td) td.remove();
       });
+      break;
+    }
+    case 'del-cell': {
+      const cursorCell = getCursorCell(table);
+      if (!cursorCell) return;
+      cursorCell.innerHTML = '&nbsp;';
+      cursorCell.classList.add('nb-cell-deleted');
+      break;
+    }
+    case 'add-cell': {
+      const cursorCell = getCursorCell(table);
+      if (!cursorCell) return;
+      cursorCell.classList.remove('nb-cell-deleted');
+      cursorCell.innerHTML = '&nbsp;';
       break;
     }
     case 'del-table': {

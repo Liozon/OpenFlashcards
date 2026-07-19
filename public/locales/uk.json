@@ -383,6 +383,8 @@
   "notebook_add_col": "+ Стовпець",
   "notebook_del_row": "- Рядок",
   "notebook_del_col": "- Стовпець",
+  "notebook_del_cell": "- Комірка",
+  "notebook_add_cell": "+ Комірка",
   "notebook_del_table": "Видалити таблицю",
   "notebook_del_row_confirm": "Цей рядок містить вміст. Видалити?",
   "notebook_del_col_confirm": "Цей стовпець містить вміст. Видалити?",
