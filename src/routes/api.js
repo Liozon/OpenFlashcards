@@ -1608,7 +1608,7 @@ router.post('/notebook/:code/images', async (req, res) => {
   // Optimize: resize oversized images, convert to WebP, compress
   let ext = 'webp';
   try {
-    const img = sharp(buffer);
+    const img = sharp(buffer, { unlimited: true });
     const metadata = await img.metadata();
 
     // Skip animated GIFs (keep original format)
@@ -1638,8 +1638,10 @@ router.post('/notebook/:code/images', async (req, res) => {
       buffer = await pipeline.toBuffer();
     }
   } catch (err) {
-    console.error('[notebook] image optimization error:', err);
+    console.error('[notebook] image optimization error (' + srcExt + '):', err.message);
     // Fall through: save original buffer with original extension
+    // HEIC/HEIF images that fail optimization are kept as-is; they may not render
+    // in all browsers. The unlimited flag above should prevent most libheif errors.
     ext = srcExt === 'gif' ? 'gif' : srcExt;
   }
 
