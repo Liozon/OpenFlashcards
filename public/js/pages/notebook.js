@@ -269,6 +269,17 @@ function bindNotebookEvents() {
   const editor = el.querySelector('#nbEditor');
   NB.editor = editor;
   initImageResize();
+  // Use mousedown instead of click for image selection (Safari fix)
+  editor.addEventListener('mousedown', (e) => {
+    const img = e.target.closest('.nb-editor-image');
+    if (img && NB.editMode) {
+      selectImage(img);
+      e.preventDefault();
+      e.stopPropagation();
+    } else if (!e.target.closest('.nb-image-resize-handle')) {
+      deselectImage();
+    }
+  });
   editor.addEventListener('input', markDirty);
   editor.addEventListener('paste', handleEditorPaste);
   editor.addEventListener('copy', (e) => {
@@ -1446,16 +1457,6 @@ function initImageResize() {
     NB_resizeOverlay.appendChild(h);
   });
   editor.parentNode.appendChild(NB_resizeOverlay);
-
-  editor.addEventListener('click', (e) => {
-    const img = e.target.closest('.nb-editor-image');
-    if (img && NB.editMode) {
-      selectImage(img);
-      e.stopPropagation();
-    } else if (!e.target.closest('.nb-image-resize-handle')) {
-      deselectImage();
-    }
-  });
 
   editor.addEventListener('scroll', repositionOverlay);
   window.addEventListener('resize', repositionOverlay);

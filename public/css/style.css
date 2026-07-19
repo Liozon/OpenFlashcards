@@ -2580,6 +2580,8 @@ img {
   margin: 12px 0;
   display: block;
   cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .nb-editor[contenteditable="true"] .nb-editor-image:hover {
