@@ -853,6 +853,7 @@ function openPage(sectionId, pageId) {
   el.querySelector('#nbWelcome').classList.add('hidden');
   el.querySelector('#nbEditorArea').classList.remove('hidden');
   el.querySelector('#nbSidebarToggle').classList.remove('hidden');
+  el.querySelector('#nbSidebarToggle').textContent = window.innerWidth <= 768 ? '▲' : '◀';
   el.querySelector('#nbPageTitle').value = page.name;
   el.querySelector('#nbEditor').innerHTML = page.content || '';
   restoreTaskListBehaviour();
@@ -2027,11 +2028,12 @@ function toggleSidebar() {
   const layout = el.querySelector('.notebook-layout');
   const toggleBtn = el.querySelector('#nbSidebarToggle');
   const reopenBtn = el.querySelector('#nbSidebarReopen');
+  const isMobile = window.innerWidth <= 768;
   layout.classList.toggle('nb-sidebar-collapsed');
   const collapsed = layout.classList.contains('nb-sidebar-collapsed');
-  toggleBtn.textContent = collapsed ? '▶' : '◀';
+  toggleBtn.textContent = collapsed ? (isMobile ? '▼' : '▶') : (isMobile ? '▲' : '◀');
   toggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-  reopenBtn.classList.toggle('hidden', !collapsed);
+  reopenBtn.classList.toggle('hidden', !collapsed || isMobile);
 }
 
 async function performSearch() {

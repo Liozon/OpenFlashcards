@@ -1955,7 +1955,7 @@ img {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: width .25s ease, min-width .25s ease, opacity .25s ease;
+  transition: width .25s ease, min-width .25s ease, max-height .25s ease, opacity .25s ease;
 }
 
 /* ── Sidebar collapse toggle ─────────────────────────────── */
@@ -3305,8 +3305,7 @@ img {
 @media (max-width: 768px) {
   .notebook-layout {
     flex-direction: column;
-    height: auto;
-    min-height: calc(100vh - var(--nav-h) - 60px);
+    min-height: calc(100dvh - var(--nav-h) - 60px);
   }
 
   .nb-sidebar {
@@ -3317,12 +3316,42 @@ img {
     border-bottom: 2px solid var(--border);
   }
 
+  .nb-sidebar-toggle {
+    order: -1;
+    border-top: none;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .nb-sidebar-collapsed .nb-sidebar {
+    max-height: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+    opacity: 1;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .nb-sidebar-collapsed .nb-sidebar-header,
+  .nb-sidebar-collapsed .nb-search-box,
+  .nb-sidebar-collapsed .nb-section-list {
+    display: none;
+  }
+
   .nb-main {
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .nb-editor-area {
+    flex: 1;
+    min-height: 0;
   }
 
   .nb-editor {
     padding: 16px;
+    min-height: 0;
   }
 
   .nb-editor-toolbar {
