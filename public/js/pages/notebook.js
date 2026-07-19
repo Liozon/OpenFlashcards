@@ -787,13 +787,14 @@ function rebindTableToolbars() {
     toolbar.contentEditable = 'false';
     toolbar.querySelectorAll('button').forEach(b => b.contentEditable = 'false');
     toolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        tableAction(table, btn.dataset.tableAction);
+        await tableAction(table, btn.dataset.tableAction);
       });
     });
   });
+  initTableResize();
 }
 
 function switchToReadMode() {
@@ -856,6 +857,7 @@ function openPage(sectionId, pageId) {
   el.querySelector('#nbEditor').innerHTML = page.content || '';
   restoreTaskListBehaviour();
   rebindTableToolbars();
+  initTableResize();
   el.querySelector('#nbPageMeta').textContent = window.t('notebook_last_updated') + ': ' + formatDate(page.updatedAt);
   NB.dirty = false;
   updateEditorStatus();
@@ -1268,6 +1270,8 @@ function initTableGridPicker() {
 }
 
 function showTablePicker() {
+  const sel = window.getSelection();
+  NB._savedRange = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
   NB.el.querySelector('#nbTableModal').classList.remove('hidden');
 }
 
@@ -1276,6 +1280,12 @@ function insertTable() {
   el.querySelector('#nbTableModal').classList.add('hidden');
   const editor = NB.editor;
   if (!editor) return;
+  if (NB._savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(NB._savedRange);
+    NB._savedRange = null;
+  }
   editor.focus();
 
   const table = document.createElement('table');
@@ -1297,10 +1307,19 @@ function insertTable() {
   tblToolbar.className = 'nb-table-toolbar';
   tblToolbar.contentEditable = 'false';
   tblToolbar.innerHTML = `
-    <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
+    <span class="nb-tb-sep"></span>
+    <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
+    <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
+    <span class="nb-tb-sep"></span>
+    <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
+    <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
+    <span class="nb-tb-sep"></span>
+    <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
+    <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
+    <span class="nb-tb-sep"></span>
     <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
     <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+    <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
   `;
   wrapper.appendChild(tblToolbar);
   wrapper.appendChild(table);
@@ -1309,50 +1328,356 @@ function insertTable() {
 
   // Bind table toolbar
   tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      tableAction(wrapper.querySelector('table'), btn.dataset.tableAction);
+      await tableAction(wrapper.querySelector('table'), btn.dataset.tableAction);
     });
   });
 
+  initTableResize();
   markDirty();
 }
 
-function tableAction(table, action) {
+function cellHasContent(cell) {
+  const text = cell.textContent.replace(/\u00A0/g, '').trim();
+  if (text.length > 0) return true;
+  return cell.querySelector('img, video, audio, iframe, canvas, object, embed, svg, input, textarea, select') !== null;
+}
+
+function checkRowContent(tr) {
+  return Array.from(tr.children).some(cellHasContent);
+}
+
+function checkColContent(table, colIndex) {
+  return Array.from(table.querySelectorAll('tr')).some(tr => {
+    const cell = tr.children[colIndex];
+    return cell && cellHasContent(cell);
+  });
+}
+
+function checkTableContent(table) {
+  return Array.from(table.querySelectorAll('tr')).some(checkRowContent);
+}
+
+function getCursorCell(table) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return null;
+  let node = sel.getRangeAt(0).startContainer;
+  while (node && node !== table && node !== document) {
+    if (node.tagName === 'TD' || node.tagName === 'TH') return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+async function tableAction(table, action) {
   const rows = table.querySelectorAll('tr');
   if (!rows.length) return;
   const cellCount = rows[0].children.length;
 
+  const hasHeaderRow = rows.length > 0 && rows[0].children[0].tagName === 'TH';
+  const hasHeaderCol = rows.length > 1 && rows[1] && rows[1].children[0] && rows[1].children[0].tagName === 'TH';
+
+  const makeRow = () => {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < cellCount; c++) {
+      const tag = c === 0 && hasHeaderCol ? 'TH' : 'TD';
+      const td = document.createElement(tag);
+      td.innerHTML = '&nbsp;';
+      td.contentEditable = 'true';
+      tr.appendChild(td);
+    }
+    return tr;
+  };
+  const makeCell = (ri) => {
+    const tag = ri === 0 && hasHeaderRow ? 'TH' : 'TD';
+    const td = document.createElement(tag);
+    td.innerHTML = '&nbsp;';
+    td.contentEditable = 'true';
+    return td;
+  };
+
   switch (action) {
-    case 'add-row': {
-      const tr = document.createElement('tr');
-      const isHeader = rows[0].children[0].tagName === 'TH';
-      for (let c = 0; c < cellCount; c++) {
-        const td = document.createElement(isHeader && rows.length === 1 ? 'th' : 'td');
-        td.innerHTML = '&nbsp;';
-        td.contentEditable = 'true';
-        tr.appendChild(td);
+    case 'add-row-above': {
+      const cursorCell = getCursorCell(table);
+      let refRow = cursorCell ? cursorCell.parentElement : rows[0];
+      if (refRow === rows[0] && rows[0].children[0].tagName === 'TH') {
+        refRow = rows[1];
+        if (!refRow) return;
       }
-      table.appendChild(tr);
+      table.insertBefore(makeRow(), refRow);
       break;
     }
-    case 'add-col':
+    case 'add-row-below': {
+      const cursorCell = getCursorCell(table);
+      const refRow = cursorCell ? cursorCell.parentElement : rows[rows.length - 1];
+      refRow.insertAdjacentElement('afterend', makeRow());
+      break;
+    }
+    case 'add-col-left': {
+      const cursorCell = getCursorCell(table);
+      const colIndex = cursorCell ? cursorCell.cellIndex : 0;
+      rows.forEach((tr, ri) => tr.insertBefore(makeCell(ri), tr.children[colIndex]));
+      break;
+    }
+    case 'add-col-right': {
+      const cursorCell = getCursorCell(table);
+      const colIndex = cursorCell ? cursorCell.cellIndex + 1 : cellCount;
       rows.forEach((tr, ri) => {
-        const td = document.createElement(ri === 0 ? 'th' : 'td');
-        td.innerHTML = '&nbsp;';
-        td.contentEditable = 'true';
-        tr.appendChild(td);
+        const ref = tr.children[colIndex];
+        if (ref) tr.insertBefore(makeCell(ri), ref);
+        else tr.appendChild(makeCell(ri));
       });
       break;
-    case 'del-row':
-      if (rows.length > 1) rows[rows.length - 1].remove();
+    }
+    case 'toggle-row-header': {
+      const firstRow = rows[0];
+      if (!firstRow) return;
+      const isHeader = firstRow.children[0].tagName === 'TH';
+      Array.from(firstRow.children).forEach(cell => {
+        const tag = isHeader ? 'TD' : 'TH';
+        const newCell = document.createElement(tag);
+        newCell.innerHTML = cell.innerHTML;
+        newCell.contentEditable = 'true';
+        if (cell.style.cssText) newCell.style.cssText = cell.style.cssText;
+        cell.replaceWith(newCell);
+      });
       break;
-    case 'del-col':
-      if (cellCount > 1) rows.forEach(tr => tr.lastElementChild.remove());
+    }
+    case 'toggle-col-header': {
+      rows.forEach(tr => {
+        const cell = tr.children[0];
+        if (!cell) return;
+        const isHeader = cell.tagName === 'TH';
+        const tag = isHeader ? 'TD' : 'TH';
+        const newCell = document.createElement(tag);
+        newCell.innerHTML = cell.innerHTML;
+        newCell.contentEditable = 'true';
+        if (cell.style.cssText) newCell.style.cssText = cell.style.cssText;
+        cell.replaceWith(newCell);
+      });
       break;
+    }
+    case 'del-row': {
+      if (rows.length <= 1) return;
+      const cursorCell = getCursorCell(table);
+      const tr = cursorCell ? cursorCell.parentElement : rows[rows.length - 1];
+      if (checkRowContent(tr)) {
+        const ok = await window.confirmModal(window.t('notebook_del_row_confirm'), { confirmLabel: window.t('common_delete') });
+        if (!ok) return;
+      }
+      tr.remove();
+      break;
+    }
+    case 'del-col': {
+      if (cellCount <= 1) return;
+      const cursorCell = getCursorCell(table);
+      const colIndex = cursorCell ? cursorCell.cellIndex : cellCount - 1;
+      if (checkColContent(table, colIndex)) {
+        const ok = await window.confirmModal(window.t('notebook_del_col_confirm'), { confirmLabel: window.t('common_delete') });
+        if (!ok) return;
+      }
+      rows.forEach(tr => {
+        const td = tr.children[colIndex];
+        if (td) td.remove();
+      });
+      break;
+    }
+    case 'del-table': {
+      if (checkTableContent(table)) {
+        const ok = await window.confirmModal(window.t('notebook_del_table_confirm'), { confirmLabel: window.t('common_delete') });
+        if (!ok) return;
+      }
+      const wrapper = table.closest('.nb-table-wrapper');
+      if (wrapper) wrapper.remove();
+      else table.remove();
+      return; // no reinit needed
+    }
   }
+  reinitTableResize(table);
   markDirty();
+}
+
+// ── Table column & row resize ─────────────────────────────
+
+let NB_colResizeState = null;
+let NB_rowResizeState = null;
+
+function initTableResize() {
+  const editor = NB.editor;
+  if (!editor) return;
+  editor.querySelectorAll('.nb-editor-table').forEach(table => {
+    if (table._resizeInit) return;
+    table._resizeInit = true;
+    setupTableResize(table);
+  });
+}
+
+function reinitTableResize(table) {
+  table.querySelectorAll('.nb-col-resize-handle, .nb-row-resize-handle').forEach(h => h.remove());
+  table._resizeInit = true;
+  setupTableResize(table);
+}
+
+function setupTableResize(table) {
+  const rows = table.querySelectorAll('tr');
+  if (!rows.length) return;
+
+  for (let r = 0; r < rows.length; r++) {
+    const cells = rows[r].children;
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      cell.style.position = 'relative';
+
+      const colHandle = document.createElement('div');
+      colHandle.className = 'nb-col-resize-handle';
+      colHandle.dataset.col = i;
+      colHandle.dataset.row = r;
+      colHandle.addEventListener('mousedown', onColResizeStart);
+      colHandle.addEventListener('touchstart', onResizeTouchStart, { passive: false });
+      colHandle.addEventListener('mouseenter', () => highlightCol(table, i, true));
+      colHandle.addEventListener('mouseleave', () => highlightCol(table, i, false));
+      cell.appendChild(colHandle);
+
+      if (r < rows.length - 1) {
+        const rowHandle = document.createElement('div');
+        rowHandle.className = 'nb-row-resize-handle';
+        rowHandle.dataset.row = r;
+        rowHandle.dataset.col = i;
+        rowHandle.addEventListener('mousedown', onRowResizeStart);
+        rowHandle.addEventListener('touchstart', onResizeTouchStart, { passive: false });
+        rowHandle.addEventListener('mouseenter', () => highlightRow(table, r, true));
+        rowHandle.addEventListener('mouseleave', () => highlightRow(table, r, false));
+        cell.appendChild(rowHandle);
+      }
+    }
+  }
+}
+
+function highlightCol(table, col, show) {
+  table.querySelectorAll(`.nb-col-resize-handle[data-col="${col}"]`).forEach(h => h.classList.toggle('col-hover', show));
+}
+
+function highlightRow(table, row, show) {
+  table.querySelectorAll(`.nb-row-resize-handle[data-row="${row}"]`).forEach(h => h.classList.toggle('row-hover', show));
+}
+
+function onColResizeStart(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  const cell = handle.parentElement;
+  const table = cell.closest('.nb-editor-table');
+  // Free table from width:100% so it can shrink when columns are narrowed
+  if (!table._widthFreed) {
+    table._widthFreed = true;
+    table.style.width = 'auto';
+  }
+  const colIndex = parseInt(handle.dataset.col);
+  const rows = table.querySelectorAll('tr');
+
+  NB_colResizeState = {
+    table, colIndex, rows,
+    startX: e.clientX,
+    startWidths: []
+  };
+
+  rows.forEach(tr => {
+    const td = tr.children[colIndex];
+    NB_colResizeState.startWidths.push(td ? td.getBoundingClientRect().width : 0);
+  });
+
+  document.addEventListener('mousemove', onColResizeMove);
+  document.addEventListener('mouseup', onColResizeEnd);
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  document.body.style.pointerEvents = 'none';
+  handle.classList.add('active');
+}
+
+function onColResizeMove(e) {
+  if (!NB_colResizeState) return;
+  const { rows, colIndex, startX, startWidths } = NB_colResizeState;
+  const dx = e.clientX - startX;
+
+  rows.forEach((tr, ri) => {
+    const td = tr.children[colIndex];
+    if (td) {
+      const w = Math.max(30, startWidths[ri] + dx);
+      td.style.width = w + 'px';
+    }
+  });
+}
+
+function onColResizeEnd() {
+  if (NB_colResizeState) markDirty();
+  NB_colResizeState = null;
+  document.removeEventListener('mousemove', onColResizeMove);
+  document.removeEventListener('mouseup', onColResizeEnd);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  document.body.style.pointerEvents = '';
+  document.querySelectorAll('.nb-col-resize-handle.active').forEach(h => h.classList.remove('active'));
+}
+
+function onRowResizeStart(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  const cell = handle.parentElement;
+  const tr = cell.parentElement;
+  const table = tr.closest('.nb-editor-table');
+  const rowIndex = parseInt(handle.dataset.row);
+  const rows = table.querySelectorAll('tr');
+  const targetRow = rows[rowIndex];
+  if (!targetRow) return;
+
+  NB_rowResizeState = {
+    table, rowIndex,
+    startY: e.clientY,
+    startHeight: targetRow.getBoundingClientRect().height
+  };
+
+  document.addEventListener('mousemove', onRowResizeMove);
+  document.addEventListener('mouseup', onRowResizeEnd);
+  document.body.style.cursor = 'row-resize';
+  document.body.style.userSelect = 'none';
+  document.body.style.pointerEvents = 'none';
+  handle.classList.add('active');
+}
+
+function onRowResizeMove(e) {
+  if (!NB_rowResizeState) return;
+  const dy = e.clientY - NB_rowResizeState.startY;
+  const newH = Math.max(20, NB_rowResizeState.startHeight + dy);
+  const rows = NB_rowResizeState.table.querySelectorAll('tr');
+  const targetRow = rows[NB_rowResizeState.rowIndex];
+  targetRow.style.height = newH + 'px';
+  targetRow.querySelectorAll('td, th').forEach(cell => {
+    cell.style.height = newH + 'px';
+  });
+}
+
+function onRowResizeEnd() {
+  if (NB_rowResizeState) markDirty();
+  NB_rowResizeState = null;
+  document.removeEventListener('mousemove', onRowResizeMove);
+  document.removeEventListener('mouseup', onRowResizeEnd);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  document.body.style.pointerEvents = '';
+  document.querySelectorAll('.nb-row-resize-handle.active').forEach(h => h.classList.remove('active'));
+}
+
+function onResizeTouchStart(e) {
+  const touch = e.touches[0];
+  const me = new MouseEvent('mousedown', {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    button: 0
+  });
+  e.currentTarget.dispatchEvent(me);
 }
 
 // ── Code block ─────────────────────────────────────────────
@@ -1826,20 +2151,30 @@ function handleEditorPaste(e) {
       const tblToolbar = document.createElement('div');
       tblToolbar.className = 'nb-table-toolbar';
       tblToolbar.innerHTML = `
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
+        <span class="nb-tb-sep"></span>
         <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
         <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
       `;
       tblWrapper.appendChild(tblToolbar);
       tblWrapper.appendChild(table);
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-        btn.addEventListener('click', (ev) => {
+        btn.addEventListener('click', async (ev) => {
           ev.preventDefault();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
+          await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
         });
       });
       insertNodeAtCursor(tblWrapper);
+      initTableResize();
       markDirty();
       return;
     }
@@ -1883,21 +2218,31 @@ function handleEditorPaste(e) {
         tblToolbar.className = 'nb-table-toolbar';
         tblToolbar.contentEditable = 'false';
         tblToolbar.innerHTML = `
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
+        <span class="nb-tb-sep"></span>
         <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
         <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
       `;
         tblWrapper.appendChild(tblToolbar);
         tblWrapper.appendChild(table);
         tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-          btn.addEventListener('click', (ev) => {
+          btn.addEventListener('click', async (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
-            tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
+            await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
           });
         });
         insertNodeAtCursor(tblWrapper);
+        initTableResize();
         markDirty();
         return;
       }
@@ -1928,21 +2273,31 @@ function handleEditorPaste(e) {
       tblToolbar.className = 'nb-table-toolbar';
       tblToolbar.contentEditable = 'false';
       tblToolbar.innerHTML = `
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row">${window.t('notebook_add_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col">${window.t('notebook_add_col')}</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
+        <span class="nb-tb-sep"></span>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
+        <span class="nb-tb-sep"></span>
         <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
         <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
       `;
       tblWrapper.appendChild(tblToolbar);
       tblWrapper.appendChild(table);
       tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-        btn.addEventListener('click', (ev) => {
+        btn.addEventListener('click', async (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
-          tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
+          await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
         });
       });
       insertNodeAtCursor(tblWrapper);
+      initTableResize();
       markDirty();
     }
   }
