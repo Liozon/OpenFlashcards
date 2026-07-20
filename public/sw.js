@@ -32,7 +32,15 @@ const STATIC_ASSETS = [
   '/img/icons/favicon-32x32.png',
   '/img/icons/icon-192x192.png',
   '/img/icons/icon-512x512.png',
+  '/img/icons/icon-192-maskable.png',
+  '/img/icons/icon-512-maskable.png',
   '/img/icons/apple-touch-icon.png',
+  '/img/icons/apple-touch-icon-120x120.png',
+  '/img/icons/apple-touch-icon-152x152.png',
+  '/img/icons/apple-touch-icon-167x167.png',
+  '/img/icons/mstile-150x150.png',
+  '/img/OpenFlashcards%20icon.png',
+  '/img/OpenFlashcards%20icon%20-%20Light.png',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

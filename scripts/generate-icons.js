@@ -25,7 +25,7 @@ const SIZES = [
   { name: 'apple-touch-icon.png', size: 180, src: SRC_LIGHT },
   { name: 'apple-touch-icon-167x167.png', size: 167, src: SRC_LIGHT },
   // Windows tile (dark)
-  { name: 'mstile-150x150.png', size: 150, src: SRC_DARK },
+  { name: 'mstile-150x150.png', size: 150, src: SRC_DARK }
 ];
 
 if (!fs.existsSync(OUT)) {
@@ -33,11 +33,12 @@ if (!fs.existsSync(OUT)) {
 }
 
 (async () => {
-  for (const { name, size, maskable, src } of SIZES) {
+  for (const entry of SIZES) {
+    const { name, size, maskable, src } = entry;
     const outPath = path.join(OUT, name);
     const img = sharp(src);
+
     if (maskable) {
-      // shrink to 75% and center on transparent canvas for adaptive icon safe zone
       const inner = Math.round(size * 0.75);
       const pad = Math.round((size - inner) / 2);
       const buffer = await img.resize(inner, inner, { fit: 'cover', position: 'center' }).png().toBuffer();
@@ -47,10 +48,11 @@ if (!fs.existsSync(OUT)) {
         .composite([{ input: buffer, top: pad, left: pad }])
         .png()
         .toFile(outPath);
+      console.log(`✓ ${name} (${size}×${size}) maskable`);
     } else {
       await img.resize(size, size, { fit: 'cover', position: 'center' }).png().toFile(outPath);
+      console.log(`✓ ${name} (${size}×${size})`);
     }
-    console.log(`✓ ${name} (${size}×${size})${maskable ? ' maskable' : ''}`);
   }
   console.log('\nDone — all icons generated in public/img/icons/');
 })();

@@ -8,7 +8,8 @@
  *
  * Files updated:
  *   - Dockerfile          → LABEL org.opencontainers.image.version
- *   - public/sw.js        → const CACHE_VERSION (format: ofc-v<version>)
+ *   - public/sw.js            → const CACHE_VERSION (format: ofc-v<version>)
+ *   - public/service-worker.js → const SW_VERSION (format: ofc-v<version>)
  *   - build-and-export.sh → ARCHIVE filename
  *   - public/index.html   → version placeholder in footer
  *
@@ -57,6 +58,14 @@ updateFile('Dockerfile', src =>
 updateFile('public/sw.js', src =>
     src.replace(
         /^(const CACHE_VERSION\s*=\s*)'[^']*'/m,
+        `$1'${swCache}'`
+    )
+);
+
+// ── public/service-worker.js ─────────────────────────────────────────────────
+updateFile('public/service-worker.js', src =>
+    src.replace(
+        /^(const SW_VERSION\s*=\s*)'[^']*'/m,
         `$1'${swCache}'`
     )
 );
