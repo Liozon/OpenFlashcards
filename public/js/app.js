@@ -62,6 +62,7 @@ async function doLogout() {
   App.user = null;
   App.config = null;
   if (window.OfflineSession) OfflineSession.clear();
+  history.replaceState(null, '', '#');
   showLoginScreen();
 }
 
@@ -489,7 +490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loginBtn.textContent = t('app_signing_in');
     try {
       await doLogin(loginUser.value.trim(), loginPass.value);
-      await bootApp();
+      await bootApp(true);
     } catch (e) {
       var errorLabel
       if (e.error === "Invalid credentials.") {
@@ -644,7 +645,7 @@ function applyLoginLabels() {
   if (btn) btn.textContent = t('login_btn') + " →";
 }
 
-async function bootApp() {
+async function bootApp(fromLogin) {
   await loadConfig();
   // Apply the user's preferred UI language (uiLang takes precedence over nativeLang)
   const preferredUiLang = (App.config && App.config.uiLang) || (App.config && App.config.nativeLang);
@@ -657,10 +658,8 @@ async function bootApp() {
   // Admin → direct to admin panel, no language tools
   if (App.user.role === 'admin') {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
-    const hashPage = getPageFromHash();
-    const targetPage = hashPage || 'admin';
-    history.replaceState({ page: targetPage }, '', '#/' + targetPage);
-    navigate(targetPage, {}, true);
+    history.replaceState({ page: 'admin' }, '', '#/admin');
+    navigate('admin', {}, true);
     return;
   }
 
@@ -671,10 +670,9 @@ async function bootApp() {
   } else {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     updateNavLangBadge();
-    const hashPage = getPageFromHash();
-    const hashParams = getParamsFromHash();
-    const targetPage = hashPage || 'home';
-    history.replaceState({ page: targetPage, params: hashParams }, '', window.location.hash || '#/' + targetPage);
+    const targetPage = fromLogin ? 'home' : (getPageFromHash() || 'home');
+    const hashParams = fromLogin ? {} : getParamsFromHash();
+    history.replaceState({ page: targetPage, params: hashParams }, '', fromLogin ? '#/home' : window.location.hash || '#/' + targetPage);
     navigate(targetPage, hashParams, true);
   }
 }
