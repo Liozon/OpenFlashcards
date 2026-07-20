@@ -18,6 +18,11 @@ const PRECACHE_URLS = [
   '/js/pages/train.js',
   '/js/pages/settings.js',
   '/js/pages/admin.js',
+  '/img/icons/favicon-16x16.png',
+  '/img/icons/favicon-32x32.png',
+  '/img/icons/icon-192x192.png',
+  '/img/icons/icon-512x512.png',
+  '/img/icons/apple-touch-icon.png',
 ];
 
 // ── Install: cache all static assets ────────────────────────────────────────

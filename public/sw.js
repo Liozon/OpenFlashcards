@@ -28,6 +28,11 @@ const STATIC_ASSETS = [
   '/js/pages/settings.js',
   '/js/pages/admin.js',
   '/js/offline-db.js',
+  '/img/icons/favicon-16x16.png',
+  '/img/icons/favicon-32x32.png',
+  '/img/icons/icon-192x192.png',
+  '/img/icons/icon-512x512.png',
+  '/img/icons/apple-touch-icon.png',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
