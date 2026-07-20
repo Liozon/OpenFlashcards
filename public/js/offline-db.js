@@ -189,23 +189,36 @@
   }
 
   function _buildQuizWord(words, lang, direction, types, labels) {
+    const pool = _filterWordPool(words, types, labels);
+    if (pool.length < 2) return null;
+
+    const active = _sortWordPool(pool);
+    const topN = Math.max(2, Math.ceil(active.length * 0.6));
+    const question = active.slice(0, topN)[Math.floor(Math.random() * topN)];
+
+    return _buildWordQuestion(question, pool, direction, lang);
+  }
+
+  function _filterWordPool(words, types, labels) {
     const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other'];
     let pool = words.filter(w => (types && types.length ? types.includes(w.type) : TYPES.includes(w.type)));
     if (labels && labels.length) pool = pool.filter(w => labels.some(lid => (w.labels || []).includes(lid)));
-    if (pool.length < 2) return null;
+    return pool;
+  }
 
+  function _sortWordPool(pool) {
     const getMax = w => w.maxProgress || _wordMax(w);
     const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
     const active = unmastered.length >= 2 ? unmastered : pool;
     active.sort((a, b) => (a.progress || 0) / getMax(a) - (b.progress || 0) / getMax(b));
-    const topN = Math.max(2, Math.ceil(active.length * 0.6));
-    const question = active.slice(0, topN)[Math.floor(Math.random() * topN)];
+    return active;
+  }
 
+  function _buildWordQuestion(question, pool, direction, lang) {
     const showNative = direction === 'native' ? true : direction === 'target' ? false : Math.random() < 0.5;
     const display = (question.article ? question.article + ' ' : '') +
       (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
-    // Flatten conjugation: support both tense-keyed and flat formats
     function _flatConj(conj) {
       if (!conj) return {};
       const vals = Object.values(conj);
@@ -238,7 +251,6 @@
       answerText = showNative ? display : question.translation;
     }
 
-    // Decoys
     const others = _shuffle(pool.filter(w => w.id !== question.id)).slice(0, 3).map(w => {
       const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
       const wd = (w.article ? w.article + sep : '') + (w.type === 'verb' && w.infinitive ? w.infinitive : w.literal);
@@ -257,16 +269,52 @@
     };
   }
 
+  function _buildQuizWordBatch(words, lang, direction, types, labels, count) {
+    const pool = _filterWordPool(words, types, labels);
+    if (pool.length < 2) return { questions: [] };
+
+    const active = _sortWordPool(pool);
+    const topN = Math.max(2, Math.ceil(active.length * 0.6));
+    const topPool = active.slice(0, topN);
+
+    _shuffle(topPool);
+    const batchSize = Math.min(parseInt(count, 10) || 30, topPool.length);
+    const questions = topPool.slice(0, batchSize).map(q => _buildWordQuestion(q, pool, direction, lang));
+
+    return { questions };
+  }
+
   function _buildQuizPhrase(phrases, lang, labels) {
+    const pool = _filterPhrasePool(phrases, labels);
+    if (!pool.length) return null;
+    const active = _sortPhrasePool(pool);
+    const topN = Math.max(1, Math.ceil(active.length * 0.6));
+    return active[Math.floor(Math.random() * topN)];
+  }
+
+  function _buildQuizPhraseBatch(phrases, lang, labels, count) {
+    const pool = _filterPhrasePool(phrases, labels);
+    if (!pool.length) return { questions: [] };
+    const active = _sortPhrasePool(pool);
+    const topN = Math.max(1, Math.ceil(active.length * 0.6));
+    const topPool = active.slice(0, topN);
+    _shuffle(topPool);
+    const batchSize = Math.min(parseInt(count, 10) || 20, topPool.length);
+    return { questions: topPool.slice(0, batchSize) };
+  }
+
+  function _filterPhrasePool(phrases, labels) {
     let pool = phrases;
     if (labels && labels.length) pool = pool.filter(p => labels.some(lid => (p.labels || []).includes(lid)));
-    if (!pool.length) return null;
+    return pool;
+  }
+
+  function _sortPhrasePool(pool) {
     const getMax = p => p.maxProgress || _phraseMax(p);
     const unmastered = pool.filter(p => (p.progress || 0) < getMax(p));
     const active = unmastered.length ? unmastered : pool;
     active.sort((a, b) => (a.progress || 0) / getMax(a) - (b.progress || 0) / getMax(b));
-    const topN = Math.max(1, Math.ceil(active.length * 0.6));
-    return active[Math.floor(Math.random() * topN)];
+    return active;
   }
 
   // ── _serveFromBundle: route offline API calls to IDB data ───────────────────
@@ -320,6 +368,16 @@
       return result;
     }
 
+    // ── /api/quiz/batch ──────────────────────────────────────────────────────
+    if (p === '/api/quiz/batch') {
+      const words = langData.words || [];
+      const types = qs.get('types') ? qs.get('types').split(',') : null;
+      const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
+      const dir = qs.get('direction') || 'random';
+      const count = parseInt(qs.get('count'), 10) || 30;
+      return _buildQuizWordBatch(words, lang, dir, types, labels, count);
+    }
+
     // ── /api/quiz/answer (POST) ──────────────────────────────────────────────
     // body is passed as the third argument to _serveFromBundle (see interceptor)
     if (p === '/api/quiz/answer') {
@@ -361,6 +419,16 @@
       const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
       const result = _buildQuizPhrase(phrases, lang, labels);
       if (!result) throw { error: 'No phrases yet.' };
+      return result;
+    }
+
+    // ── /api/quiz/phrase/batch ───────────────────────────────────────────────
+    if (p === '/api/quiz/phrase/batch') {
+      const phrases = langData.phrases || [];
+      const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
+      const count = parseInt(qs.get('count'), 10) || 20;
+      const result = _buildQuizPhraseBatch(phrases, lang, labels, count);
+      if (!result || !result.questions.length) throw { error: 'No phrases yet.' };
       return result;
     }
 

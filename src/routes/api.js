@@ -52,6 +52,87 @@ const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices, wordDisplay
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
+
+function buildQuizQuestion(question, pool, direction, lang) {
+  const showNative = direction === 'native' ? true
+    : direction === 'target' ? false
+      : Math.random() < 0.5;
+
+  let display = wordDisplay(question);
+  let promptText, answerText;
+  let quizPronoun = null;
+
+  function flattenConjugation(conj) {
+    if (!conj) return {};
+    const values = Object.values(conj);
+    if (values.length && values.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'))) {
+      const tenseKeys = Object.keys(conj);
+      const validTenses = tenseKeys.filter(k => {
+        const tense = conj[k];
+        return tense && typeof tense === 'object' && Object.values(tense).some(e => normConj(e).form);
+      });
+      if (validTenses.length) {
+        const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
+        return conj[pick];
+      }
+      return {};
+    }
+    return conj;
+  }
+
+  const flatConj = flattenConjugation(question.conjugation || {});
+  const conjEntries = question.type === 'verb'
+    ? Object.entries(flatConj).filter(([, e]) => normConj(e).form)
+    : [];
+
+  const conjWithTranslation = conjEntries.filter(([, e]) => normConj(e).translation);
+  const useConjForm = conjWithTranslation.length > 0 && Math.random() < 0.30;
+
+  if (useConjForm) {
+    const [pronoun, entry] = conjWithTranslation[Math.floor(Math.random() * conjWithTranslation.length)];
+    const e = normConj(entry);
+    quizPronoun = pronoun;
+    if (showNative) {
+      promptText = e.translation;
+      answerText = `${pronoun} ${e.form}`;
+    } else {
+      promptText = `${pronoun} ${e.form}`;
+      answerText = e.translation;
+    }
+  } else {
+    promptText = showNative ? question.translation : display;
+    answerText = showNative ? display : question.translation;
+  }
+
+  const others = pool.filter(w => w.id !== question.id);
+  shuffle(others);
+  const decoys = others.slice(0, 3).map(w => {
+    const wDisplay = wordDisplay(w);
+    return showNative ? wDisplay : w.translation;
+  });
+
+  const choices = shuffle([answerText, ...decoys]);
+
+  return {
+    id: question.id,
+    type: question.type,
+    quizPronoun,
+    literal: question.literal,
+    definition: question.definition || '',
+    article: question.article || '',
+    infinitive: question.infinitive || '',
+    verbGroup: question.verbGroup || '',
+    conjugation: question.conjugation || {},
+    verbConjugationTranslation: question.verbConjugationTranslation || '',
+    declensions: question.declensions || {},
+    langCode: question.langCode,
+    promptText,
+    answerText,
+    choices,
+    showNative,
+    helpNote: question.helpNote || ''
+  };
+}
 // ─────────────────────────────────────────────────────────────────────────────
 const uid = () => req => req.user.id;
 const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'other', 'phrase'];
@@ -824,93 +905,38 @@ router.get('/quiz', (req, res) => {
   const topPool = activePool.slice(0, topN);
   const question = topPool[Math.floor(Math.random() * topPool.length)];
 
-  const showNative = direction === 'native' ? true
-    : direction === 'target' ? false
-      : Math.random() < 0.5;
+  res.json(buildQuizQuestion(question, pool, direction, lang));
+});
 
-  // For verbs with conjugation: randomly decide to quiz on a specific conjugated form
-  let display = wordDisplay(question);
+// GET /api/quiz/batch?lang=fr&count=30&direction=random&types=noun,verb&labels=id1&dateFrom=...&dateTo=...
+router.get('/quiz/batch', (req, res) => {
+  const { lang, direction = 'random', count = 30, dateFrom, dateTo } = req.query;
+  const types = req.query.types ? req.query.types.split(',') : TYPES;
+  const labels = req.query.labels ? req.query.labels.split(',') : [];
+  if (!lang) return res.status(400).json({ error: 'lang required' });
 
-  let promptText, answerText;
-  let quizPronoun = null;  // set if quizzing on a specific conjugated form
+  let pool = getWords(userId(req), lang).filter(w => types.includes(w.type));
+  if (labels.length) pool = pool.filter(w => labels.some(lid => (w.labels || []).includes(lid)));
+  if (dateFrom) pool = pool.filter(w => w.createdAt >= dateFrom);
+  if (dateTo) pool = pool.filter(w => w.createdAt <= dateTo + 'T23:59:59.999Z');
+  if (pool.length < 2) return res.status(400).json({ error: 'Add at least 2 words to start!' });
 
-  // Normalize conjugation: support both flat (old) and tense-keyed (new) formats
-  function flattenConjugation(conj) {
-    if (!conj) return {};
-    // Check if this is tense-keyed (any value is an object with pronoun keys)
-    const values = Object.values(conj);
-    if (values.length && values.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'))) {
-      // Tense-keyed: pick a random tense that has entries
-      const tenseKeys = Object.keys(conj);
-      const validTenses = tenseKeys.filter(k => {
-        const tense = conj[k];
-        return tense && typeof tense === 'object' && Object.values(tense).some(e => normConj(e).form);
-      });
-      if (validTenses.length) {
-        const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
-        return conj[pick];
-      }
-      return {};
-    }
-    // Flat format
-    return conj;
-  }
-
-  const flatConj = flattenConjugation(question.conjugation || {});
-  const conjEntries = question.type === 'verb'
-    ? Object.entries(flatConj).filter(([, e]) => normConj(e).form)
-    : [];
-
-  // 30% chance to quiz on a conjugated form (when verb has conjugations AND translations)
-  const conjWithTranslation = conjEntries.filter(([, e]) => normConj(e).translation);
-  const useConjForm = conjWithTranslation.length > 0 && Math.random() < 0.30;
-
-  if (useConjForm) {
-    const [pronoun, entry] = conjWithTranslation[Math.floor(Math.random() * conjWithTranslation.length)];
-    const e = normConj(entry);
-    quizPronoun = pronoun;
-    // Show: native translation → target conjugated form, or vice versa
-    if (showNative) {
-      promptText = e.translation;
-      answerText = `${pronoun} ${e.form}`;
-    } else {
-      promptText = `${pronoun} ${e.form}`;
-      answerText = e.translation;
-    }
-  } else {
-    promptText = showNative ? question.translation : display;
-    answerText = showNative ? display : question.translation;
-  }
-
-  // Build 3 decoys
-  const others = pool.filter(w => w.id !== question.id);
-  shuffle(others);
-  const decoys = others.slice(0, 3).map(w => {
-    const wDisplay = wordDisplay(w);
-    return showNative ? wDisplay : w.translation;
+  const getMax = w => w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+  const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
+  const activePool = unmastered.length >= 2 ? unmastered : pool;
+  activePool.sort((a, b) => {
+    const ra = (a.progress || 0) / getMax(a);
+    const rb = (b.progress || 0) / getMax(b);
+    return ra - rb;
   });
+  const topN = Math.max(2, Math.ceil(activePool.length * 0.6));
+  const topPool = activePool.slice(0, topN);
 
-  const choices = shuffle([answerText, ...decoys]);
+  shuffle(topPool);
+  const batchSize = Math.min(parseInt(count, 10) || 30, topPool.length);
+  const questions = topPool.slice(0, batchSize).map(q => buildQuizQuestion(q, pool, direction, lang));
 
-  res.json({
-    id: question.id,
-    type: question.type,
-    quizPronoun: quizPronoun,
-    literal: question.literal,
-    definition: question.definition || '',
-    article: question.article || '',
-    infinitive: question.infinitive || '',
-    verbGroup: question.verbGroup || '',
-    conjugation: question.conjugation || {},
-    verbConjugationTranslation: question.verbConjugationTranslation || '',
-    declensions: question.declensions || {},
-    langCode: question.langCode,
-    promptText,
-    answerText,
-    choices,
-    showNative,
-    helpNote: question.helpNote || ''
-  });
+  res.json({ questions });
 });
 
 // POST /api/quiz/answer
@@ -962,6 +988,21 @@ router.get('/quiz/phrase', (req, res) => {
   if (!phrases.length) return res.status(404).json({ error: 'No phrases yet.' });
   const phrase = phrases[Math.floor(Math.random() * phrases.length)];
   res.json(phrase);
+});
+
+// GET /api/quiz/phrase/batch?lang=fr&count=20&labels=id1&dateFrom=...&dateTo=...
+router.get('/quiz/phrase/batch', (req, res) => {
+  const { lang, count = 20, dateFrom, dateTo } = req.query;
+  const labels = req.query.labels ? req.query.labels.split(',') : [];
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  let phrases = getPhrases(userId(req), lang);
+  if (labels.length) phrases = phrases.filter(p => labels.some(lid => (p.labels || []).includes(lid)));
+  if (dateFrom) phrases = phrases.filter(p => p.createdAt >= dateFrom);
+  if (dateTo) phrases = phrases.filter(p => p.createdAt <= dateTo + 'T23:59:59.999Z');
+  if (!phrases.length) return res.status(404).json({ error: 'No phrases yet.' });
+  shuffle(phrases);
+  const batchSize = Math.min(parseInt(count, 10) || 20, phrases.length);
+  res.json({ questions: phrases.slice(0, batchSize) });
 });
 
 // POST /api/quiz/phrase/answer

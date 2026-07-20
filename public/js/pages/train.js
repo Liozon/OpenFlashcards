@@ -26,6 +26,66 @@ let _trainSessionStarted = false;
 let _trainDateFrom = '';
 let _trainDateTo = '';
 
+// ── Question queues (batch-fetch to avoid duplicates in a session) ──
+let _trainWordQueue = [];
+let _trainPhraseQueue = [];
+let _trainAutoQueue = [];
+
+// Fisher-Yates shuffle for client-side arrays
+function _shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function _refillWordQueue(dir) {
+  const lang = currentLang();
+  const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
+  const apiDir = dir ? 'native' : (dirMap[_trainDirection] || 'random');
+  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+  const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=' + apiDir + typesParam + labelsParam + _dateParams());
+  _trainWordQueue = result.questions || [];
+}
+
+async function _refillPhraseQueue() {
+  const lang = currentLang();
+  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+  const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams());
+  _trainPhraseQueue = result.questions || [];
+}
+
+async function _refillAutoQueue() {
+  const lang = currentLang();
+  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
+  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+  if (_trainAutoContent === 'phrases') {
+    const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams());
+    _trainAutoQueue = (result.questions || []).map(q => ({ ...q, _type: 'phrase' }));
+  } else if (_trainAutoContent === 'words') {
+    const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=random' + typesParam + labelsParam + _dateParams());
+    _trainAutoQueue = (result.questions || []).map(q => ({ ...q, _type: 'word' }));
+  } else {
+    const [wordRes, phraseRes] = await Promise.all([
+      api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=random' + typesParam + labelsParam + _dateParams()).catch(() => ({ questions: [] })),
+      api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams()).catch(() => ({ questions: [] }))
+    ]);
+    const words = (wordRes.questions || []).map(q => ({ ...q, _type: 'word' }));
+    const phrases = (phraseRes.questions || []).map(q => ({ ...q, _type: 'phrase' }));
+    const merged = [...words, ...phrases];
+    if (!merged.length) throw { error: 'No words or phrases available.' };
+    _trainAutoQueue = _shuffle(merged);
+  }
+}
+
+function _resetQueues() {
+  _trainWordQueue = [];
+  _trainPhraseQueue = [];
+  _trainAutoQueue = [];
+}
+
 // ── Date format helpers ───────────────────────────────────────────────────────
 const _DATE_FORMATS = [
   'DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','DD.MM.YYYY','D.M.YYYY',
@@ -317,6 +377,7 @@ window.startTraining = function () {
     }
   }
   if (_trainMode === 'flashcards') _trainAutoStarted = true;
+  _resetQueues();
   loadQuestion();
 };
 
@@ -351,6 +412,7 @@ window.setTrainMode = function (mode, btn) {
     if (autoRanges[0]) autoRanges[0].value = _trainAutoTime;
     if (autoRanges[1]) autoRanges[1].value = _trainAutoTtsDelay;
   }
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -371,6 +433,7 @@ window.toggleLabelFilter = function (labelId, btn) {
     }
   }
   _refreshLabelStyles();
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -390,6 +453,7 @@ window.toggleTypeFilter = function (type, btn) {
       document.querySelector('#typeFilters .type-btn[data-type=""]').classList.add('active');
     }
   }
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -403,6 +467,7 @@ window.onDatePick = function (input, which) {
     _trainDateTo = iso;
   }
   if (displayEl) displayEl.value = iso ? _fmtDateStr(iso, _getDateFormat()) : '';
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -413,6 +478,7 @@ window.clearDateFilter = function () {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -420,6 +486,7 @@ window.setTrainDir = function (dir, btn) {
   _trainDirection = dir;
   document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -427,6 +494,7 @@ window.setWritingDifficulty = function (easy, btn) {
   _writingEasyMode = easy;
   document.querySelectorAll('#writingDiffFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -437,6 +505,7 @@ window.setAutoContent = function (content, btn) {
   btn.classList.add('active');
   document.getElementById('typeFilters').style.display = (content !== 'phrases') ? '' : 'none';
   stopAutoTimer();
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -445,6 +514,7 @@ window.setAutoSideFirst = function (side, btn) {
   document.querySelectorAll('#autoDirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   stopAutoTimer();
+  _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
 
@@ -527,13 +597,10 @@ async function loadWordQuestion() {
   const area = document.getElementById('quizArea');
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
-  const dirMap = { 'random': 'random', 'native→target': 'native', 'target→native': 'target' };
-  const apiDir = dirMap[_trainDirection] || 'random';
-  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
-  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-
   try {
-    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=' + apiDir + typesParam + labelsParam + _dateParams());
+    if (!_trainWordQueue.length) await _refillWordQueue();
+    const q = _trainWordQueue.shift();
+    if (!q) throw { error: 'No words available.' };
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
@@ -732,8 +799,9 @@ async function loadPhraseQuestion() {
   _curPhrase = null;
 
   try {
-    const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-    _curPhrase = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam + _dateParams());
+    if (!_trainPhraseQueue.length) await _refillPhraseQueue();
+    _curPhrase = _trainPhraseQueue.shift();
+    if (!_curPhrase) throw { error: 'No phrases available.' };
     renderPhraseQuiz(_curPhrase);
   } catch (e) {
     area.innerHTML =
@@ -953,10 +1021,9 @@ async function loadWritingQuestion() {
   _writingSegments = [];
 
   try {
-    const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
-    const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-    // Always native→target direction for writing mode
-    const q = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=native' + typesParam + labelsParam + _dateParams());
+    if (!_trainWordQueue.length) await _refillWordQueue(true);
+    const q = _trainWordQueue.shift();
+    if (!q) throw { error: 'No words available.' };
     _curWritingWord = q;
     renderWritingQuiz(q);
   } catch (e) {
@@ -1279,7 +1346,6 @@ window.toggleAutoPause = function () {
 };
 
 async function loadAutoQuestion() {
-  const lang = currentLang();
   const area = document.getElementById('quizArea');
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
@@ -1288,21 +1354,10 @@ async function loadAutoQuestion() {
   _trainAutoTtsPlayed = false;
   stopAutoTimer();
 
-  const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
-  const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-
   try {
-    let card;
-    const pickPhrase = _trainAutoContent === 'phrases' ||
-      (_trainAutoContent === 'everything' && Math.random() < 0.5);
-
-    if (pickPhrase) {
-      card = await api('GET', '/api/quiz/phrase?lang=' + encodeURIComponent(lang) + labelsParam + _dateParams());
-      card._type = 'phrase';
-    } else {
-      card = await api('GET', '/api/quiz?lang=' + encodeURIComponent(lang) + '&direction=random' + typesParam + labelsParam + _dateParams());
-      card._type = 'word';
-    }
+    if (!_trainAutoQueue.length) await _refillAutoQueue();
+    const card = _trainAutoQueue.shift();
+    if (!card) throw { error: 'No content available.' };
     _trainAutoCard = card;
     renderAutoCard(card);
   } catch (e) {
