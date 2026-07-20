@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loginBtn.textContent = t('app_signing_in');
     try {
       await doLogin(loginUser.value.trim(), loginPass.value);
-      await bootApp();
+      await bootApp(true);
     } catch (e) {
       var errorLabel
       if (e.error === "Invalid credentials.") {
@@ -645,7 +645,7 @@ function applyLoginLabels() {
   if (btn) btn.textContent = t('login_btn') + " →";
 }
 
-async function bootApp() {
+async function bootApp(fromLogin) {
   await loadConfig();
   // Apply the user's preferred UI language (uiLang takes precedence over nativeLang)
   const preferredUiLang = (App.config && App.config.uiLang) || (App.config && App.config.nativeLang);
@@ -670,8 +670,10 @@ async function bootApp() {
   } else {
     document.getElementById('appShell').querySelector('.navbar').style.display = '';
     updateNavLangBadge();
-    history.replaceState({ page: 'home', params: {} }, '', '#/home');
-    navigate('home', {}, true);
+    const targetPage = fromLogin ? 'home' : (getPageFromHash() || 'home');
+    const hashParams = fromLogin ? {} : getParamsFromHash();
+    history.replaceState({ page: targetPage, params: hashParams }, '', fromLogin ? '#/home' : window.location.hash || '#/' + targetPage);
+    navigate(targetPage, hashParams, true);
   }
 }
 
