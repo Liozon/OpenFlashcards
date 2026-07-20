@@ -330,6 +330,7 @@ img {
 .field-group textarea {
   resize: vertical;
   min-height: 70px;
+  font-family: inherit;
 }
 
 .required {
