@@ -13,13 +13,13 @@ const SIZES = [
   // favicon (dark)
   { name: 'favicon-16x16.png', size: 16, src: SRC_DARK },
   { name: 'favicon-32x32.png', size: 32, src: SRC_DARK },
-  // PWA / Android — any (light)
-  { name: 'icon-192x192.png', size: 192, src: SRC_LIGHT },
-  { name: 'icon-512x512.png', size: 512, src: SRC_LIGHT },
-  // PWA / Android — maskable (light)
+  // PWA — any (dark) — used by Windows/macOS taskbar & shelf
+  { name: 'icon-192x192.png', size: 192, src: SRC_DARK },
+  { name: 'icon-512x512.png', size: 512, src: SRC_DARK },
+  // PWA — maskable (light) — used by Android adaptive icons
   { name: 'icon-192-maskable.png', size: 192, maskable: true, src: SRC_LIGHT },
   { name: 'icon-512-maskable.png', size: 512, maskable: true, src: SRC_LIGHT },
-  // iOS / macOS (light)
+  // Apple touch icons (light) — used by iOS & macOS Safari home screen
   { name: 'apple-touch-icon-120x120.png', size: 120, src: SRC_LIGHT },
   { name: 'apple-touch-icon-152x152.png', size: 152, src: SRC_LIGHT },
   { name: 'apple-touch-icon.png', size: 180, src: SRC_LIGHT },
