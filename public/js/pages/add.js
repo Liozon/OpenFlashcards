@@ -296,12 +296,38 @@ async function _translateGoogle(text, src, tgt) {
   return { main, alternatives };
 }
 
-function _fetchSuggestions(text) {
+function _langToCountry(lang) {
+  const map = {
+    af:'za', sq:'al', am:'et', ar:'sa', hy:'am', az:'az', eu:'es',
+    be:'by', bn:'bd', bs:'ba', bg:'bg', ca:'es', ceb:'ph',
+    zh:'cn', 'zh-tw':'tw', co:'fr', hr:'hr', cs:'cz', da:'dk',
+    nl:'nl', en:'gb', eo:'eo', et:'ee', fi:'fi', fr:'fr',
+    fy:'nl', gl:'es', ka:'ge', de:'de', el:'gr', gu:'in',
+    ht:'ht', ha:'ng', haw:'us', he:'il', hi:'in', hmn:'la',
+    hu:'hu', is:'is', ig:'ng', id:'id', ga:'ie', it:'it',
+    ja:'jp', jv:'id', kn:'in', kk:'kz', km:'kh', rw:'rw',
+    ko:'kr', ku:'iq', ky:'kg', lo:'la', la:'va', lv:'lv',
+    lt:'lt', lb:'lu', mk:'mk', mg:'mg', ms:'my', ml:'in',
+    mt:'mt', mi:'nz', mr:'in', mn:'mn', my:'mm', ne:'np',
+    no:'no', ny:'mw', or:'in', ps:'af', fa:'ir', pl:'pl',
+    pt:'pt', pa:'in', ro:'ro', ru:'ru', sm:'ws', gd:'gb',
+    sr:'rs', st:'ls', sn:'zw', sd:'pk', si:'lk', sk:'sk',
+    sl:'si', so:'so', es:'es', su:'id', sw:'tz', sv:'se',
+    tl:'ph', tg:'tj', ta:'in', tt:'ru', te:'in', th:'th',
+    tr:'tr', tk:'tm', uk:'ua', ur:'pk', ug:'cn', uz:'uz',
+    vi:'vn', cy:'gb', xh:'za', yi:'il', yo:'ng', zu:'za'
+  };
+  return map[lang] || lang;
+}
+
+function _fetchSuggestions(text, lang) {
   if (!text.trim() || text.split(/\s+/).length < 2) return Promise.resolve([]);
+  const country = _langToCountry(lang);
   return new Promise(resolve => {
     const callbackName = '_atsCb' + Date.now();
     const script = document.createElement('script');
-    script.src = 'https://suggestqueries.google.com/complete/search?client=firefox&q=' +
+    script.src = 'https://suggestqueries.google.com/complete/search?client=firefox&hl=' +
+      encodeURIComponent(lang || 'en') + '&gl=' + encodeURIComponent(country) + '&q=' +
       encodeURIComponent(text) + '&callback=' + callbackName;
     const timeout = setTimeout(() => {
       cleanup();
@@ -315,13 +341,21 @@ function _fetchSuggestions(text) {
     window[callbackName] = function (data) {
       cleanup();
       if (Array.isArray(data) && data.length >= 2 && Array.isArray(data[1])) {
-        resolve(data[1].filter(s => typeof s === 'string' && s.length > text.length).slice(0, 6));
+        const filtered = data[1].filter(s => typeof s === 'string' && s.length > text.length && _sameLanguage(s, text)).slice(0, 6);
+        resolve(filtered);
       } else {
         resolve([]);
       }
     };
     document.head.appendChild(script);
   });
+}
+
+function _sameLanguage(suggestion, source) {
+  const srcNonAscii = [...source].filter(c => c > '\x7f').length;
+  if (srcNonAscii === 0) return true;
+  const sugNonAscii = [...suggestion].filter(c => c > '\x7f').length;
+  return sugNonAscii > 0;
 }
 
 function _extractAltsGoogle(data, main) {
@@ -377,7 +411,7 @@ function _scheduleWordTranslate() {
     _clearOverlays(targetId);
     _clearOverlays(_lastEditedField);
     const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
-    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText) : Promise.resolve([]);
+    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
     const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
     if (ver !== window._autoTranslateVersions[id]) return;
     if (result && result.main) {
@@ -414,7 +448,7 @@ function _schedulePhraseTranslate() {
     _clearOverlays(targetId);
     _clearOverlays(_lastEditedField);
     const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
-    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText) : Promise.resolve([]);
+    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
     const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
     if (ver !== window._autoTranslateVersions[id]) return;
     if (result && result.main) {
