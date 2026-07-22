@@ -1336,6 +1336,19 @@ img {
   margin-top:16px;gap:10px;
 }
 
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .toggle-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .toggle-switch {
   position: relative;
   width: 44px;

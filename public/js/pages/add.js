@@ -129,17 +129,21 @@ function renderAdd(el) {
 
 
     <div class="toggle-row" id="autoTranslateRow">
-      <label class="toggle-switch">
-        <input type="checkbox" id="autoTranslateToggle">
-        <span class="toggle-slider"></span>
-      </label>
-      <span>${t('add_auto_translate')}</span>
+      <div class="toggle-group">
+        <label class="toggle-switch">
+          <input type="checkbox" id="autoTranslateToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span>${t('add_auto_translate')}</span>
+      </div>
       
-      <label class="toggle-switch">
-        <input type="checkbox" id="suggestionsToggle">
-        <span class="toggle-slider"></span>
-      </label>
-      <span>${t('add_suggestions')}</span>
+      <div class="toggle-group">
+        <label class="toggle-switch">
+          <input type="checkbox" id="suggestionsToggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span>${t('add_suggestions')}</span>
+      </div>
     </div>`;
 
   // ── Label pickers ──────────────────────────────────────────────────────────
