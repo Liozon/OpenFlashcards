@@ -40,14 +40,6 @@ function renderAdd(el) {
       <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">💬 ${t('add_tab_phrase')}</button>
     </div>
 
-    <div class="toggle-row" style="margin-bottom:16px;gap:10px" id="autoTranslateRow">
-      <label class="toggle-switch">
-        <input type="checkbox" id="autoTranslateToggle">
-        <span class="toggle-slider"></span>
-      </label>
-      <span>${t('add_auto_translate')}</span>
-    </div>
-
     <!-- WORD FORM -->
     <div id="tabWord">
       <div class="type-selector" id="wordTypeSelector">
@@ -133,6 +125,21 @@ function renderAdd(el) {
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">➕ ${t('add_btn_phrase')}</button>
       </div>
+    </div>
+
+
+    <div class="toggle-row" id="autoTranslateRow">
+      <label class="toggle-switch">
+        <input type="checkbox" id="autoTranslateToggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span>${t('add_auto_translate')}</span>
+      
+      <label class="toggle-switch">
+        <input type="checkbox" id="suggestionsToggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span>${t('add_suggestions')}</span>
     </div>`;
 
   // ── Label pickers ──────────────────────────────────────────────────────────
@@ -203,16 +210,41 @@ function renderAdd(el) {
   // ── Auto-translate toggle ──────────────────────────────────────────────────
   const autoToggle = document.getElementById('autoTranslateToggle');
   if (autoToggle) {
-    const saved = localStorage.getItem('add_auto_translate') === 'true';
+    const saved = App.config && App.config.autoTranslate !== undefined
+      ? App.config.autoTranslate
+      : localStorage.getItem('add_auto_translate') === 'true';
     autoToggle.checked = saved;
     window._addAutoTranslate = saved;
     autoToggle.addEventListener('change', () => {
       window._addAutoTranslate = autoToggle.checked;
       localStorage.setItem('add_auto_translate', autoToggle.checked);
+      if (App.config) App.config.autoTranslate = autoToggle.checked;
+      try { saveConfig({ autoTranslate: autoToggle.checked }); } catch {}
       if (autoToggle.checked) {
         _triggerAutoTranslate();
       } else {
         _purgeAutoOverlays();
+      }
+    });
+  }
+
+  // ── Suggestions toggle ─────────────────────────────────────────────────────
+  const sugToggle = document.getElementById('suggestionsToggle');
+  if (sugToggle) {
+    const saved = App.config && App.config.suggestions !== undefined
+      ? App.config.suggestions
+      : localStorage.getItem('add_suggestions') === 'true';
+    sugToggle.checked = saved;
+    window._addSuggestions = saved;
+    sugToggle.addEventListener('change', () => {
+      window._addSuggestions = sugToggle.checked;
+      localStorage.setItem('add_suggestions', sugToggle.checked);
+      if (App.config) App.config.suggestions = sugToggle.checked;
+      try { saveConfig({ suggestions: sugToggle.checked }); } catch {}
+      if (sugToggle.checked) {
+        _triggerAutoTranslate();
+      } else {
+        _purgeSuggestionOverlays();
       }
     });
   }
@@ -317,7 +349,7 @@ function _extractAltsGoogle(data, main) {
 }
 
 function _scheduleWordTranslate() {
-  if (!window._addAutoTranslate) return;
+  if (!window._addAutoTranslate && !window._addSuggestions) return;
   const id = 'word';
   if (window._autoTranslateTimers[id]) clearTimeout(window._autoTranslateTimers[id]);
   if (!window._autoTranslateVersions[id]) window._autoTranslateVersions[id] = 0;
@@ -340,14 +372,13 @@ function _scheduleWordTranslate() {
 
     _clearOverlays(targetId);
     _clearOverlays(_lastEditedField);
-    const [result, suggestions] = await Promise.all([
-      _translateGoogle(sourceText, srcLang, tgtLang),
-      _fetchSuggestions(sourceText),
-    ]);
+    const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
+    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText) : Promise.resolve([]);
+    const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
     if (ver !== window._autoTranslateVersions[id]) return;
-    if (!result.main) return;
-
-    _applyTranslation(targetId, result.main, result.alternatives);
+    if (result && result.main) {
+      _applyTranslation(targetId, result.main, result.alternatives);
+    }
     if (suggestions.length) {
       _showSuggestions(_lastEditedField, suggestions, sourceText);
     }
@@ -355,7 +386,7 @@ function _scheduleWordTranslate() {
 }
 
 function _schedulePhraseTranslate() {
-  if (!window._addAutoTranslate) return;
+  if (!window._addAutoTranslate && !window._addSuggestions) return;
   const id = 'phrase';
   if (window._autoTranslateTimers[id]) clearTimeout(window._autoTranslateTimers[id]);
   if (!window._autoTranslateVersions[id]) window._autoTranslateVersions[id] = 0;
@@ -378,14 +409,13 @@ function _schedulePhraseTranslate() {
 
     _clearOverlays(targetId);
     _clearOverlays(_lastEditedField);
-    const [result, suggestions] = await Promise.all([
-      _translateGoogle(sourceText, srcLang, tgtLang),
-      _fetchSuggestions(sourceText),
-    ]);
+    const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
+    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText) : Promise.resolve([]);
+    const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
     if (ver !== window._autoTranslateVersions[id]) return;
-    if (!result.main) return;
-
-    _applyPhraseTranslation(targetId, result.main, result.alternatives);
+    if (result && result.main) {
+      _applyPhraseTranslation(targetId, result.main, result.alternatives);
+    }
     if (suggestions.length) {
       _showSuggestions(_lastEditedField, suggestions, sourceText);
     }
@@ -402,6 +432,13 @@ function _clearOverlays(fieldId) {
 
 function _purgeAutoOverlays() {
   ['wLiteral', 'wTranslation', 'pText', 'pTranslation'].forEach(_clearOverlays);
+}
+
+function _purgeSuggestionOverlays() {
+  ['wLiteral', 'wTranslation', 'pText', 'pTranslation'].forEach(id => {
+    const el = document.getElementById(id + '_suggestions');
+    if (el) el.remove();
+  });
 }
 
 function _triggerAutoTranslate() {
