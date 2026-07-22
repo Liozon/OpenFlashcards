@@ -104,6 +104,7 @@
   "add_ok_phrase": "Frase aggiunta!",
   "add_verb_group": "Gruppo verbale",
   "add_declensions": "Declinazioni",
+  "add_auto_translate": "Traduzione automatica",
   "train_title": "Pratica",
   "train_words": "Parole",
   "train_phrases": "Frasi",
@@ -423,3 +424,4 @@
   "notebook_image_too_large": "Immagine troppo grande (max 10 MB)",
   "notebook_paragraph": "Paragrafo"
 }
+

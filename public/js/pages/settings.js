@@ -32,11 +32,11 @@ async function renderSettings(el) {
     <div class="card settings-section">
       <h2>🎨 ${t('settings_appearance')}</h2>
       <div class="toggle-row">
-        <span>${t('settings_dark')}</span>
-        <label class="toggle-switch">
+      <label class="toggle-switch">
           <input type="checkbox" id="darkModeToggle" ${cfg.darkMode ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
+        <span>${t('settings_dark')}</span>
       </div>
     </div>
 
@@ -62,13 +62,12 @@ async function renderSettings(el) {
     <div class="card settings-section" id="offlineSection">
       <h2>📴 ${t('offline_title')}</h2>
       <p style="color:var(--text-muted);margin-bottom:12px;font-size:.9rem">${t('offline_desc')}</p>
-
-      <div class="toggle-row" style="margin-bottom:16px">
-        <span>${t('offline_enable')}</span>
+      <div class="toggle-row" style="margin-bottom:16px">        
         <label class="toggle-switch">
           <input type="checkbox" id="offlineModeToggle" ${cfg.offlineMode ? 'checked' : ''}>
           <span class="toggle-slider"></span>
         </label>
+        <span>${t('offline_enable')}</span>
       </div>
 
       <div id="offlineControls" style="display:${cfg.offlineMode ? '' : 'none'}">

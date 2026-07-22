@@ -1229,6 +1229,61 @@ img {
   margin-bottom: 0 !important;
 }
 
+/* ── AUTO-TRANSLATE VARIANTS ────────────────────────────────── */
+.auto-translate-variants {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: .82rem;
+  line-height: 1.6;
+  cursor: default;
+  user-select: none;
+}
+.atv-word {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 3px;
+  transition: background .15s;
+}
+.atv-word:hover {
+  background: var(--primary);
+  color: #fff;
+}
+.atv-sep {
+  color: var(--text-faint);
+  font-weight: 300;
+}
+
+/* ── AUTO-TRANSLATE SUGGESTIONS ─────────────────────────────── */
+.auto-translate-suggestions {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ats-word {
+  cursor: pointer;
+  padding: 4px 10px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  font-size: .82rem;
+  color: var(--text);
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
+}
+.ats-word:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.ats-word strong {
+  font-weight: 700;
+}
+
 /* ── SETTINGS ───────────────────────────────────────────────── */
 .settings-section {
   margin-bottom: 32px;
@@ -1275,7 +1330,7 @@ img {
 .toggle-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
 }

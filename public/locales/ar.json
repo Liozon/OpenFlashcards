@@ -104,6 +104,7 @@
   "add_ok_phrase": "تمت إضافة العبارة!",
   "add_verb_group": "مجموعة الفعل",
   "add_declensions": "الإعراب",
+  "add_auto_translate": "ترجمة تلقائية",
   "train_title": "تدريب",
   "train_words": "الكلمات",
   "train_phrases": "العبارات",
@@ -423,3 +424,4 @@
   "notebook_image_too_large": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت)",
   "notebook_paragraph": "فقرة"
 }
+

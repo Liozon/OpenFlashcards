@@ -40,6 +40,14 @@ function renderAdd(el) {
       <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">💬 ${t('add_tab_phrase')}</button>
     </div>
 
+    <div class="toggle-row" style="margin-bottom:16px;gap:10px" id="autoTranslateRow">
+      <label class="toggle-switch">
+        <input type="checkbox" id="autoTranslateToggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span>${t('add_auto_translate')}</span>
+    </div>
+
     <!-- WORD FORM -->
     <div id="tabWord">
       <div class="type-selector" id="wordTypeSelector">
@@ -190,6 +198,338 @@ function renderAdd(el) {
   ['pTranslation', 'pNote'].forEach(id => {
     const el2 = document.getElementById(id);
     if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitPhrase(); });
+  });
+
+  // ── Auto-translate toggle ──────────────────────────────────────────────────
+  const autoToggle = document.getElementById('autoTranslateToggle');
+  if (autoToggle) {
+    const saved = localStorage.getItem('add_auto_translate') === 'true';
+    autoToggle.checked = saved;
+    window._addAutoTranslate = saved;
+    autoToggle.addEventListener('change', () => {
+      window._addAutoTranslate = autoToggle.checked;
+      localStorage.setItem('add_auto_translate', autoToggle.checked);
+      if (autoToggle.checked) {
+        _triggerAutoTranslate();
+      } else {
+        _purgeAutoOverlays();
+      }
+    });
+  }
+
+  // ── Auto-translate input handlers (word fields) ────────────────────────────
+  ['wLiteral', 'wTranslation'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.addEventListener('input', () => {
+      _lastEditedField = id;
+      _scheduleWordTranslate();
+    });
+  });
+
+  // ── Auto-translate input handlers (phrase fields) ──────────────────────────
+  ['pText', 'pTranslation'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.addEventListener('input', () => {
+      _lastEditedField = id;
+      _schedulePhraseTranslate();
+    });
+  });
+}
+
+// ── Auto-translate helpers ────────────────────────────────────────────────────
+if (!window._autoTranslateTimers) window._autoTranslateTimers = {};
+if (!window._autoTranslateVersions) window._autoTranslateVersions = {};
+let _lastEditedField = null;
+
+function _getTranslateLangs() {
+  const uiLang = (App.config && App.config.uiLang) || 'en';
+  const targetLang = currentLang();
+  return { uiLang, targetLang };
+}
+
+async function _translateGoogle(text, src, tgt) {
+  if (!text.trim()) return { main: '', alternatives: [] };
+  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+    encodeURIComponent(src) + '&tl=' + encodeURIComponent(tgt) +
+    '&dt=t&dt=at&q=' + encodeURIComponent(text);
+  const res = await fetch(url);
+  const data = await res.json();
+  const segs = data[0];
+  const main = segs ? segs.map(s => s[0]).join('') : '';
+  const alternatives = _extractAltsGoogle(data, main);
+  return { main, alternatives };
+}
+
+function _fetchSuggestions(text) {
+  if (!text.trim() || text.split(/\s+/).length < 2) return Promise.resolve([]);
+  return new Promise(resolve => {
+    const callbackName = '_atsCb' + Date.now();
+    const script = document.createElement('script');
+    script.src = 'https://suggestqueries.google.com/complete/search?client=firefox&q=' +
+      encodeURIComponent(text) + '&callback=' + callbackName;
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve([]);
+    }, 4000);
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[callbackName] = function (data) {
+      cleanup();
+      if (Array.isArray(data) && data.length >= 2 && Array.isArray(data[1])) {
+        resolve(data[1].filter(s => typeof s === 'string' && s.length > text.length).slice(0, 6));
+      } else {
+        resolve([]);
+      }
+    };
+    document.head.appendChild(script);
+  });
+}
+
+function _extractAltsGoogle(data, main) {
+  const seen = new Set();
+  function _validAlt(v) {
+    if (!v || v === main || v.length <= 1 || v.length > 40) return false;
+    if (/[#_/\\[\]{}()<>|]/.test(v)) return false;
+    return true;
+  }
+  try {
+    const d5 = data[5];
+    if (Array.isArray(d5)) {
+      for (const entry of d5) {
+        if (Array.isArray(entry) && Array.isArray(entry[2])) {
+          for (const variant of entry[2]) {
+            if (Array.isArray(variant) && typeof variant[0] === 'string') seen.add(variant[0]);
+          }
+        }
+      }
+    }
+  } catch (e) { }
+  try {
+    const f7 = data[7];
+    if (Array.isArray(f7) && typeof f7[0] === 'string' && f7.length <= 15) {
+      f7.forEach(v => seen.add(v));
+    }
+  } catch (e) { }
+  return [...seen].filter(v => _validAlt(v)).slice(0, 10);
+}
+
+function _scheduleWordTranslate() {
+  if (!window._addAutoTranslate) return;
+  const id = 'word';
+  if (window._autoTranslateTimers[id]) clearTimeout(window._autoTranslateTimers[id]);
+  if (!window._autoTranslateVersions[id]) window._autoTranslateVersions[id] = 0;
+  window._autoTranslateVersions[id]++;
+  const ver = window._autoTranslateVersions[id];
+
+  window._autoTranslateTimers[id] = setTimeout(async () => {
+    const { uiLang, targetLang } = _getTranslateLangs();
+    let sourceText, srcLang, tgtLang, targetId;
+    if (_lastEditedField === 'wTranslation') {
+      sourceText = document.getElementById('wTranslation')?.value.trim();
+      srcLang = uiLang; tgtLang = targetLang; targetId = 'wLiteral';
+    } else if (_lastEditedField === 'wLiteral') {
+      sourceText = document.getElementById('wLiteral')?.value.trim();
+      srcLang = targetLang; tgtLang = uiLang; targetId = 'wTranslation';
+    } else {
+      return;
+    }
+    if (!sourceText) return;
+
+    _clearOverlays(targetId);
+    _clearOverlays(_lastEditedField);
+    const [result, suggestions] = await Promise.all([
+      _translateGoogle(sourceText, srcLang, tgtLang),
+      _fetchSuggestions(sourceText),
+    ]);
+    if (ver !== window._autoTranslateVersions[id]) return;
+    if (!result.main) return;
+
+    _applyTranslation(targetId, result.main, result.alternatives);
+    if (suggestions.length) {
+      _showSuggestions(_lastEditedField, suggestions, sourceText);
+    }
+  }, 500);
+}
+
+function _schedulePhraseTranslate() {
+  if (!window._addAutoTranslate) return;
+  const id = 'phrase';
+  if (window._autoTranslateTimers[id]) clearTimeout(window._autoTranslateTimers[id]);
+  if (!window._autoTranslateVersions[id]) window._autoTranslateVersions[id] = 0;
+  window._autoTranslateVersions[id]++;
+  const ver = window._autoTranslateVersions[id];
+
+  window._autoTranslateTimers[id] = setTimeout(async () => {
+    const { uiLang, targetLang } = _getTranslateLangs();
+    let sourceText, srcLang, tgtLang, targetId;
+    if (_lastEditedField === 'pTranslation') {
+      sourceText = document.getElementById('pTranslation')?.value.trim();
+      srcLang = uiLang; tgtLang = targetLang; targetId = 'pText';
+    } else if (_lastEditedField === 'pText') {
+      sourceText = document.getElementById('pText')?.value.trim();
+      srcLang = targetLang; tgtLang = uiLang; targetId = 'pTranslation';
+    } else {
+      return;
+    }
+    if (!sourceText) return;
+
+    _clearOverlays(targetId);
+    _clearOverlays(_lastEditedField);
+    const [result, suggestions] = await Promise.all([
+      _translateGoogle(sourceText, srcLang, tgtLang),
+      _fetchSuggestions(sourceText),
+    ]);
+    if (ver !== window._autoTranslateVersions[id]) return;
+    if (!result.main) return;
+
+    _applyPhraseTranslation(targetId, result.main, result.alternatives);
+    if (suggestions.length) {
+      _showSuggestions(_lastEditedField, suggestions, sourceText);
+    }
+  }, 500);
+}
+
+function _clearOverlays(fieldId) {
+  if (!fieldId) return;
+  const old = document.getElementById(fieldId + '_variants');
+  if (old) old.remove();
+  const oldSug = document.getElementById(fieldId + '_suggestions');
+  if (oldSug) oldSug.remove();
+}
+
+function _purgeAutoOverlays() {
+  ['wLiteral', 'wTranslation', 'pText', 'pTranslation'].forEach(_clearOverlays);
+}
+
+function _triggerAutoTranslate() {
+  const wordTab = document.getElementById('tabWord');
+  const phraseTab = document.getElementById('tabPhrase');
+  if (wordTab && !wordTab.classList.contains('hidden')) {
+    const lit = document.getElementById('wLiteral');
+    const tran = document.getElementById('wTranslation');
+    if (lit && lit.value.trim()) {
+      _lastEditedField = 'wLiteral';
+      _scheduleWordTranslate();
+    } else if (tran && tran.value.trim()) {
+      _lastEditedField = 'wTranslation';
+      _scheduleWordTranslate();
+    }
+  }
+  if (phraseTab && !phraseTab.classList.contains('hidden')) {
+    const txt = document.getElementById('pText');
+    const tran = document.getElementById('pTranslation');
+    if (txt && txt.value.trim()) {
+      _lastEditedField = 'pText';
+      _schedulePhraseTranslate();
+    } else if (tran && tran.value.trim()) {
+      _lastEditedField = 'pTranslation';
+      _schedulePhraseTranslate();
+    }
+  }
+}
+
+function _showSuggestions(fieldId, suggestions, srcText) {
+  const el = document.getElementById(fieldId);
+  if (!el || !suggestions.length) return;
+
+  const old = document.getElementById(fieldId + '_suggestions');
+  if (old) old.remove();
+
+  const container = document.createElement('div');
+  container.id = fieldId + '_suggestions';
+  container.className = 'auto-translate-suggestions';
+  container.innerHTML = suggestions.map(s => {
+    const attr = s.replace(/"/g, '&quot;');
+    return '<span class="ats-word" data-word="' + attr + '" data-field="' + fieldId + '">' + _highlightMatch(s, srcText) + '</span>';
+  }).join('');
+
+  el.parentNode.insertBefore(container, el.nextSibling);
+
+  container.querySelectorAll('.ats-word').forEach(span => {
+    span.addEventListener('click', function () {
+      const field = document.getElementById(this.dataset.field);
+      if (!field) return;
+      field.value = this.dataset.word;
+      _clearOverlays(this.dataset.field);
+      field.focus();
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+}
+
+function _highlightMatch(text, query) {
+  if (!query) return esc(text);
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return esc(text);
+  return esc(text.slice(0, idx)) + '<strong>' + esc(text.slice(idx, idx + query.length)) + '</strong>' + esc(text.slice(idx + query.length));
+}
+
+function _applyTranslation(targetId, main, alternatives) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.value = main;
+
+  // Remove old variant container
+  const old = document.getElementById(targetId + '_variants');
+  if (old) old.remove();
+
+  if (!alternatives.length) return;
+
+  const container = document.createElement('div');
+  container.id = targetId + '_variants';
+  container.className = 'auto-translate-variants';
+  container.innerHTML = alternatives.map((w, i) => {
+    const attr = w.replace(/"/g, '&quot;');
+    return (i === 0 ? '' : '<span class="atv-sep"> | </span>') +
+      '<span class="atv-word" data-word="' + attr + '" data-target="' + targetId + '">' + w + '</span>';
+  }).join('');
+
+  el.parentNode.insertBefore(container, el.nextSibling);
+
+  container.querySelectorAll('.atv-word').forEach(span => {
+    span.addEventListener('click', function () {
+      const target = document.getElementById(this.dataset.target);
+      if (target) {
+        target.value = this.dataset.word;
+      }
+      this.closest('.auto-translate-variants')?.remove();
+    });
+  });
+}
+
+function _applyPhraseTranslation(targetId, main, alternatives) {
+  // Same as _applyTranslation but for textarea
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.value = main;
+
+  const old = document.getElementById(targetId + '_variants');
+  if (old) old.remove();
+
+  if (!alternatives.length) return;
+
+  const container = document.createElement('div');
+  container.id = targetId + '_variants';
+  container.className = 'auto-translate-variants';
+  container.innerHTML = alternatives.map((w, i) => {
+    const attr = w.replace(/"/g, '&quot;');
+    return (i === 0 ? '' : '<span class="atv-sep"> | </span>') +
+      '<span class="atv-word" data-word="' + attr + '" data-target="' + targetId + '">' + w + '</span>';
+  }).join('');
+
+  el.parentNode.insertBefore(container, el.nextSibling);
+
+  container.querySelectorAll('.atv-word').forEach(span => {
+    span.addEventListener('click', function () {
+      const target = document.getElementById(this.dataset.target);
+      if (target) {
+        target.value = this.dataset.word;
+      }
+      this.closest('.auto-translate-variants')?.remove();
+    });
   });
 }
 
