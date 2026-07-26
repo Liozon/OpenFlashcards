@@ -1,5 +1,5 @@
 
-<h1>🃏 OpenFlashcards</h1>
+<h1><img src="images/OpenFlashcards icon.png" alt="OpenFlashcards icon" height="32" style="vertical-align: middle"> OpenFlashcards</h1>
 
 ![OpenFlashcards logo](<images/OpenFlashcards logo.png>)
 
@@ -35,6 +35,21 @@ OpenFlashcards helps you learn languages effectively with a clean interface and 
 - [Quick start (local)](#quick-start-local)
 - [Quick start (build for docker)](#quick-start-build-for-docker)
 - [API Reference](#api-reference)
+  - [Authentication](#authentication)
+  - [Internationalization (public)](#internationalization-public)
+  - [User Config \& Languages](#user-config--languages)
+  - [Text-to-Speech (TTS)](#text-to-speech-tts)
+  - [Words](#words)
+  - [Phrases](#phrases)
+  - [Quiz — Words](#quiz--words)
+  - [Quiz — Phrases](#quiz--phrases)
+  - [Stats](#stats)
+  - [Duplicates](#duplicates)
+  - [Labels](#labels)
+  - [Offline](#offline)
+  - [Notebook](#notebook)
+  - [Vocabulary ↔ Notebook Linking](#vocabulary--notebook-linking)
+  - [Admin (requires admin role)](#admin-requires-admin-role)
 - [Acknowledgments](#acknowledgments)
 
 
@@ -172,19 +187,19 @@ All API routes require authentication (cookie or `Authorization: Bearer <token>`
 
 ### Authentication
 
-| Method | Path                      | Auth | Description          |
-| ------ | ------------------------- | ---- | -------------------- |
-| POST   | `/auth/login`             | No   | Login                |
-| POST   | `/auth/logout`            | No   | Logout               |
-| GET    | `/auth/me`                | Yes  | Current user         |
-| POST   | `/auth/change-password`   | Yes  | Change own password  |
+| Method | Path                    | Auth | Description         |
+| ------ | ----------------------- | ---- | ------------------- |
+| POST   | `/auth/login`           | No   | Login               |
+| POST   | `/auth/logout`          | No   | Logout              |
+| GET    | `/auth/me`              | Yes  | Current user        |
+| POST   | `/auth/change-password` | Yes  | Change own password |
 
 ### Internationalization (public)
 
-| Method | Path             | Description                      |
-| ------ | ---------------- | -------------------------------- |
-| GET    | `/i18n/`         | List available locales           |
-| GET    | `/i18n/:lang`    | Get locale JSON (falls back to en) |
+| Method | Path          | Description                        |
+| ------ | ------------- | ---------------------------------- |
+| GET    | `/i18n/`      | List available locales             |
+| GET    | `/i18n/:lang` | Get locale JSON (falls back to en) |
 
 ### User Config & Languages
 
@@ -198,119 +213,119 @@ All API routes require authentication (cookie or `Authorization: Bearer <token>`
 
 ### Text-to-Speech (TTS)
 
-| Method | Path                                  | Description                    |
-| ------ | ------------------------------------- | ------------------------------ |
-| GET    | `/api/tts?lang=&q=&speed=&id=`       | Stream TTS audio (cached/live) |
-| GET    | `/api/tts/cache?lang=`               | Get TTS cache stats            |
-| DELETE | `/api/tts/cache/item?lang=&id=&speed=` | Delete cached TTS file       |
-| DELETE | `/api/tts/cache?lang=&speed=`        | Purge TTS cache                |
-| POST   | `/api/tts/generate`                  | Batch generate TTS (SSE)       |
+| Method | Path                                   | Description                    |
+| ------ | -------------------------------------- | ------------------------------ |
+| GET    | `/api/tts?lang=&q=&speed=&id=`         | Stream TTS audio (cached/live) |
+| GET    | `/api/tts/cache?lang=`                 | Get TTS cache stats            |
+| DELETE | `/api/tts/cache/item?lang=&id=&speed=` | Delete cached TTS file         |
+| DELETE | `/api/tts/cache?lang=&speed=`          | Purge TTS cache                |
+| POST   | `/api/tts/generate`                    | Batch generate TTS (SSE)       |
 
 ### Words
 
-| Method | Path                     | Description  |
-| ------ | ------------------------ | ------------ |
-| GET    | `/api/words?lang=&type=` | List words   |
-| POST   | `/api/words`             | Add word     |
-| PUT    | `/api/words/:id?lang=`   | Update word  |
-| DELETE | `/api/words/:id?lang=`   | Delete word  |
+| Method | Path                     | Description |
+| ------ | ------------------------ | ----------- |
+| GET    | `/api/words?lang=&type=` | List words  |
+| POST   | `/api/words`             | Add word    |
+| PUT    | `/api/words/:id?lang=`   | Update word |
+| DELETE | `/api/words/:id?lang=`   | Delete word |
 
 ### Phrases
 
-| Method | Path                       | Description           |
-| ------ | -------------------------- | --------------------- |
-| GET    | `/api/phrases?lang=`       | List phrases          |
-| GET    | `/api/phrases/random?lang=`| Get random phrase     |
-| POST   | `/api/phrases`             | Add phrase            |
-| PUT    | `/api/phrases/:id?lang=`   | Update phrase         |
-| DELETE | `/api/phrases/:id?lang=`   | Delete phrase         |
+| Method | Path                        | Description       |
+| ------ | --------------------------- | ----------------- |
+| GET    | `/api/phrases?lang=`        | List phrases      |
+| GET    | `/api/phrases/random?lang=` | Get random phrase |
+| POST   | `/api/phrases`              | Add phrase        |
+| PUT    | `/api/phrases/:id?lang=`    | Update phrase     |
+| DELETE | `/api/phrases/:id?lang=`    | Delete phrase     |
 
 ### Quiz — Words
 
-| Method | Path                                | Description            |
-| ------ | ----------------------------------- | ---------------------- |
-| GET    | `/api/quiz?lang=&types=&labels=`    | Get quiz question      |
-| POST   | `/api/quiz/answer`                  | Submit quiz answer     |
+| Method | Path                             | Description        |
+| ------ | -------------------------------- | ------------------ |
+| GET    | `/api/quiz?lang=&types=&labels=` | Get quiz question  |
+| POST   | `/api/quiz/answer`               | Submit quiz answer |
 
 ### Quiz — Phrases
 
-| Method | Path                           | Description                |
-| ------ | ------------------------------ | -------------------------- |
+| Method | Path                             | Description               |
+| ------ | -------------------------------- | ------------------------- |
 | GET    | `/api/quiz/phrase?lang=&labels=` | Get phrase quiz question  |
-| POST   | `/api/quiz/phrase/answer`      | Submit phrase quiz answer  |
+| POST   | `/api/quiz/phrase/answer`        | Submit phrase quiz answer |
 
 ### Stats
 
-| Method | Path               | Description         |
-| ------ | ------------------ | ------------------- |
+| Method | Path               | Description          |
+| ------ | ------------------ | -------------------- |
 | GET    | `/api/stats?lang=` | Get vocabulary stats |
 
 ### Duplicates
 
-| Method | Path                    | Description                   |
-| ------ | ----------------------- | ----------------------------- |
-| POST   | `/api/duplicates`       | Find duplicate words/phrases  |
-| POST   | `/api/duplicates/merge` | Merge duplicate groups        |
+| Method | Path                    | Description                  |
+| ------ | ----------------------- | ---------------------------- |
+| POST   | `/api/duplicates`       | Find duplicate words/phrases |
+| POST   | `/api/duplicates/merge` | Merge duplicate groups       |
 
 ### Labels
 
-| Method | Path                    | Description                       |
-| ------ | ----------------------- | --------------------------------- |
-| GET    | `/api/labels?lang=`     | List labels for a language        |
-| POST   | `/api/labels`           | Create a label                    |
-| PUT    | `/api/labels/:id?lang=` | Rename / recolor a label          |
-| DELETE | `/api/labels/:id?lang=` | Delete a label                    |
+| Method | Path                    | Description                |
+| ------ | ----------------------- | -------------------------- |
+| GET    | `/api/labels?lang=`     | List labels for a language |
+| POST   | `/api/labels`           | Create a label             |
+| PUT    | `/api/labels/:id?lang=` | Rename / recolor a label   |
+| DELETE | `/api/labels/:id?lang=` | Delete a label             |
 
 ### Offline
 
-| Method | Path                                          | Description                     |
-| ------ | --------------------------------------------- | ------------------------------- |
-| GET    | `/api/offline/bundle?langs=`                  | Get offline data bundle         |
-| POST   | `/api/offline/sync`                           | Sync queued offline writes      |
-| POST   | `/api/progress/sync`                          | Sync offline quiz progress      |
-| PUT    | `/api/offline/settings`                       | Toggle offline mode             |
-| GET    | `/api/offline/tts-manifest?lang=`             | List cached TTS files           |
-| GET    | `/api/offline/tts/:lang/:speedKey/:itemId`    | Serve cached TTS MP3            |
-| GET    | `/api/offline/tts-status?lang=`               | TTS cache status                |
+| Method | Path                                       | Description                |
+| ------ | ------------------------------------------ | -------------------------- |
+| GET    | `/api/offline/bundle?langs=`               | Get offline data bundle    |
+| POST   | `/api/offline/sync`                        | Sync queued offline writes |
+| POST   | `/api/progress/sync`                       | Sync offline quiz progress |
+| PUT    | `/api/offline/settings`                    | Toggle offline mode        |
+| GET    | `/api/offline/tts-manifest?lang=`          | List cached TTS files      |
+| GET    | `/api/offline/tts/:lang/:speedKey/:itemId` | Serve cached TTS MP3       |
+| GET    | `/api/offline/tts-status?lang=`            | TTS cache status           |
 
 ### Notebook
 
-| Method | Path                                                  | Description              |
-| ------ | ----------------------------------------------------- | ------------------------ |
-| GET    | `/api/notebook/:code`                                 | Get full notebook        |
-| PUT    | `/api/notebook/:code`                                 | Save full notebook       |
-| POST   | `/api/notebook/:code/sections`                        | Create section           |
-| PUT    | `/api/notebook/:code/sections/:sectionId`             | Rename / reorder section |
-| DELETE | `/api/notebook/:code/sections/:sectionId`             | Delete section           |
-| POST   | `/api/notebook/:code/sections/:sectionId/pages`       | Create page              |
-| PUT    | `/api/notebook/:code/pages/:pageId`                   | Update page              |
-| POST   | `/api/notebook/:code/pages/:pageId/duplicate`         | Duplicate page           |
-| DELETE | `/api/notebook/:code/pages/:pageId`                   | Delete page              |
-| GET    | `/api/notebook/:code/search?q=`                       | Search notebook pages    |
-| POST   | `/api/notebook/:code/images`                          | Upload notebook image    |
-| DELETE | `/api/notebook/:code/images/:filename`                | Delete notebook image    |
-| GET    | `/api/notebook/:code/images/:filename`                | Serve notebook image     |
+| Method | Path                                            | Description              |
+| ------ | ----------------------------------------------- | ------------------------ |
+| GET    | `/api/notebook/:code`                           | Get full notebook        |
+| PUT    | `/api/notebook/:code`                           | Save full notebook       |
+| POST   | `/api/notebook/:code/sections`                  | Create section           |
+| PUT    | `/api/notebook/:code/sections/:sectionId`       | Rename / reorder section |
+| DELETE | `/api/notebook/:code/sections/:sectionId`       | Delete section           |
+| POST   | `/api/notebook/:code/sections/:sectionId/pages` | Create page              |
+| PUT    | `/api/notebook/:code/pages/:pageId`             | Update page              |
+| POST   | `/api/notebook/:code/pages/:pageId/duplicate`   | Duplicate page           |
+| DELETE | `/api/notebook/:code/pages/:pageId`             | Delete page              |
+| GET    | `/api/notebook/:code/search?q=`                 | Search notebook pages    |
+| POST   | `/api/notebook/:code/images`                    | Upload notebook image    |
+| DELETE | `/api/notebook/:code/images/:filename`          | Delete notebook image    |
+| GET    | `/api/notebook/:code/images/:filename`          | Serve notebook image     |
 
 ### Vocabulary ↔ Notebook Linking
 
-| Method | Path              | Description                          |
-| ------ | ----------------- | ------------------------------------ |
+| Method | Path              | Description                           |
+| ------ | ----------------- | ------------------------------------- |
 | POST   | `/api/vocab-link` | Link vocabulary item to notebook page |
 | DELETE | `/api/vocab-link` | Remove vocabulary–notebook link       |
 
 ### Admin (requires admin role)
 
-| Method | Path                                    | Description                     |
-| ------ | --------------------------------------- | ------------------------------- |
-| GET    | `/admin/users`                          | List users                      |
-| POST   | `/admin/users`                          | Create user                     |
-| PUT    | `/admin/users/:id`                      | Update user (password / role)   |
-| DELETE | `/admin/users/:id`                      | Delete user                     |
-| PUT    | `/admin/users/:id/tts-cache-default`    | Toggle TTS cache default        |
-| GET    | `/admin/users/:id/tts-cache/stats`      | TTS cache disk usage            |
-| GET    | `/admin/users/:id/tts-cache/count`      | Count items for TTS generation  |
-| DELETE | `/admin/users/:id/tts-cache`            | Purge TTS cache for user        |
-| POST   | `/admin/users/:id/tts-cache/generate`   | Generate full TTS cache (SSE)   |
+| Method | Path                                  | Description                    |
+| ------ | ------------------------------------- | ------------------------------ |
+| GET    | `/admin/users`                        | List users                     |
+| POST   | `/admin/users`                        | Create user                    |
+| PUT    | `/admin/users/:id`                    | Update user (password / role)  |
+| DELETE | `/admin/users/:id`                    | Delete user                    |
+| PUT    | `/admin/users/:id/tts-cache-default`  | Toggle TTS cache default       |
+| GET    | `/admin/users/:id/tts-cache/stats`    | TTS cache disk usage           |
+| GET    | `/admin/users/:id/tts-cache/count`    | Count items for TTS generation |
+| DELETE | `/admin/users/:id/tts-cache`          | Purge TTS cache for user       |
+| POST   | `/admin/users/:id/tts-cache/generate` | Generate full TTS cache (SSE)  |
 
 ---
 
