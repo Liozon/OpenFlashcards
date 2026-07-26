@@ -204,11 +204,11 @@ function renderAdd(el) {
 
   ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
     const el2 = document.getElementById(id);
-    if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitWord(); });
+    if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitWord(); } });
   });
   ['pTranslation', 'pNote'].forEach(id => {
     const el2 = document.getElementById(id);
-    if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') submitPhrase(); });
+    if (el2) el2.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitPhrase(); } });
   });
 
   // ── Auto-translate toggle ──────────────────────────────────────────────────
@@ -285,15 +285,22 @@ function _getTranslateLangs() {
 
 async function _translateGoogle(text, src, tgt) {
   if (!text.trim()) return { main: '', alternatives: [] };
-  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
-    encodeURIComponent(src) + '&tl=' + encodeURIComponent(tgt) +
-    '&dt=t&dt=at&q=' + encodeURIComponent(text);
-  const res = await fetch(url);
-  const data = await res.json();
-  const segs = data[0];
-  const main = segs ? segs.map(s => s[0]).join('') : '';
-  const alternatives = _extractAltsGoogle(data, main);
-  return { main, alternatives };
+  try {
+    const url = new URL('https://translate.googleapis.com/translate_a/single');
+    url.searchParams.set('client', 'gtx');
+    url.searchParams.set('sl', src);
+    url.searchParams.set('tl', tgt);
+    url.searchParams.append('dt', 't');
+    url.searchParams.append('dt', 'at');
+    url.searchParams.set('q', text);
+    const res = await fetch(url);
+    if (!res.ok) return { main: '', alternatives: [] };
+    const data = await res.json();
+    const segs = data[0];
+    const main = segs ? segs.map(s => s[0]).join('') : '';
+    const alternatives = _extractAltsGoogle(data, main);
+    return { main, alternatives };
+  } catch { return { main: '', alternatives: [] }; }
 }
 
 function _langToCountry(lang) {
@@ -320,25 +327,37 @@ function _langToCountry(lang) {
   return map[lang] || lang;
 }
 
+let _atsCounter = 0;
 function _fetchSuggestions(text, lang) {
   if (!text.trim() || text.split(/\s+/).length < 2) return Promise.resolve([]);
   const country = _langToCountry(lang);
   return new Promise(resolve => {
-    const callbackName = '_atsCb' + Date.now();
+    const callbackName = '_atsCb' + (++_atsCounter) + '_' + Date.now();
     const script = document.createElement('script');
     script.src = 'https://suggestqueries.google.com/complete/search?client=firefox&hl=' +
       encodeURIComponent(lang || 'en') + '&gl=' + encodeURIComponent(country) + '&q=' +
       encodeURIComponent(text) + '&callback=' + callbackName;
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve([]);
-    }, 4000);
+    let settled = false;
     function cleanup() {
       clearTimeout(timeout);
       delete window[callbackName];
       if (script.parentNode) script.parentNode.removeChild(script);
     }
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve([]);
+    }, 4000);
+    script.onerror = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve([]);
+    };
     window[callbackName] = function (data) {
+      if (settled) return;
+      settled = true;
       cleanup();
       if (Array.isArray(data) && data.length >= 2 && Array.isArray(data[1])) {
         const filtered = data[1].filter(s => typeof s === 'string' && s.length > text.length && _sameLanguage(s, text)).slice(0, 6);
@@ -395,31 +414,33 @@ function _scheduleWordTranslate() {
   const ver = window._autoTranslateVersions[id];
 
   window._autoTranslateTimers[id] = setTimeout(async () => {
-    const { uiLang, targetLang } = _getTranslateLangs();
-    let sourceText, srcLang, tgtLang, targetId;
-    if (_lastEditedField === 'wTranslation') {
-      sourceText = document.getElementById('wTranslation')?.value.trim();
-      srcLang = uiLang; tgtLang = targetLang; targetId = 'wLiteral';
-    } else if (_lastEditedField === 'wLiteral') {
-      sourceText = document.getElementById('wLiteral')?.value.trim();
-      srcLang = targetLang; tgtLang = uiLang; targetId = 'wTranslation';
-    } else {
-      return;
-    }
-    if (!sourceText) return;
+    try {
+      const { uiLang, targetLang } = _getTranslateLangs();
+      let sourceText, srcLang, tgtLang, targetId;
+      if (_lastEditedField === 'wTranslation') {
+        sourceText = document.getElementById('wTranslation')?.value.trim();
+        srcLang = uiLang; tgtLang = targetLang; targetId = 'wLiteral';
+      } else if (_lastEditedField === 'wLiteral') {
+        sourceText = document.getElementById('wLiteral')?.value.trim();
+        srcLang = targetLang; tgtLang = uiLang; targetId = 'wTranslation';
+      } else {
+        return;
+      }
+      if (!sourceText) return;
 
-    _clearOverlays(targetId);
-    _clearOverlays(_lastEditedField);
-    const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
-    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
-    const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
-    if (ver !== window._autoTranslateVersions[id]) return;
-    if (result && result.main) {
-      _applyTranslation(targetId, result.main, result.alternatives);
-    }
-    if (suggestions.length) {
-      _showSuggestions(_lastEditedField, suggestions, sourceText);
-    }
+      _clearOverlays(targetId);
+      _clearOverlays(_lastEditedField);
+      const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
+      const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
+      const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
+      if (ver !== window._autoTranslateVersions[id]) return;
+      if (result && result.main) {
+        _applyTranslation(targetId, result.main, result.alternatives);
+      }
+      if (suggestions.length) {
+        _showSuggestions(_lastEditedField, suggestions, sourceText);
+      }
+    } catch {}
   }, 500);
 }
 
@@ -432,31 +453,33 @@ function _schedulePhraseTranslate() {
   const ver = window._autoTranslateVersions[id];
 
   window._autoTranslateTimers[id] = setTimeout(async () => {
-    const { uiLang, targetLang } = _getTranslateLangs();
-    let sourceText, srcLang, tgtLang, targetId;
-    if (_lastEditedField === 'pTranslation') {
-      sourceText = document.getElementById('pTranslation')?.value.trim();
-      srcLang = uiLang; tgtLang = targetLang; targetId = 'pText';
-    } else if (_lastEditedField === 'pText') {
-      sourceText = document.getElementById('pText')?.value.trim();
-      srcLang = targetLang; tgtLang = uiLang; targetId = 'pTranslation';
-    } else {
-      return;
-    }
-    if (!sourceText) return;
+    try {
+      const { uiLang, targetLang } = _getTranslateLangs();
+      let sourceText, srcLang, tgtLang, targetId;
+      if (_lastEditedField === 'pTranslation') {
+        sourceText = document.getElementById('pTranslation')?.value.trim();
+        srcLang = uiLang; tgtLang = targetLang; targetId = 'pText';
+      } else if (_lastEditedField === 'pText') {
+        sourceText = document.getElementById('pText')?.value.trim();
+        srcLang = targetLang; tgtLang = uiLang; targetId = 'pTranslation';
+      } else {
+        return;
+      }
+      if (!sourceText) return;
 
-    _clearOverlays(targetId);
-    _clearOverlays(_lastEditedField);
-    const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
-    const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
-    const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
-    if (ver !== window._autoTranslateVersions[id]) return;
-    if (result && result.main) {
-      _applyPhraseTranslation(targetId, result.main, result.alternatives);
-    }
-    if (suggestions.length) {
-      _showSuggestions(_lastEditedField, suggestions, sourceText);
-    }
+      _clearOverlays(targetId);
+      _clearOverlays(_lastEditedField);
+      const translatePromise = window._addAutoTranslate ? _translateGoogle(sourceText, srcLang, tgtLang) : Promise.resolve(null);
+      const suggestionsPromise = window._addSuggestions ? _fetchSuggestions(sourceText, srcLang) : Promise.resolve([]);
+      const [result, suggestions] = await Promise.all([translatePromise, suggestionsPromise]);
+      if (ver !== window._autoTranslateVersions[id]) return;
+      if (result && result.main) {
+        _applyPhraseTranslation(targetId, result.main, result.alternatives);
+      }
+      if (suggestions.length) {
+        _showSuggestions(_lastEditedField, suggestions, sourceText);
+      }
+    } catch {}
   }, 500);
 }
 
@@ -517,8 +540,7 @@ function _showSuggestions(fieldId, suggestions, srcText) {
   container.id = fieldId + '_suggestions';
   container.className = 'auto-translate-suggestions';
   container.innerHTML = suggestions.map(s => {
-    const attr = s.replace(/"/g, '&quot;');
-    return '<span class="ats-word" data-word="' + attr + '" data-field="' + fieldId + '">' + _highlightMatch(s, srcText) + '</span>';
+    return '<span class="ats-word" data-word="' + esc(s) + '" data-field="' + fieldId + '">' + _highlightMatch(s, srcText) + '</span>';
   }).join('');
 
   el.parentNode.insertBefore(container, el.nextSibling);
@@ -557,9 +579,8 @@ function _applyTranslation(targetId, main, alternatives) {
   container.id = targetId + '_variants';
   container.className = 'auto-translate-variants';
   container.innerHTML = alternatives.map((w, i) => {
-    const attr = w.replace(/"/g, '&quot;');
     return (i === 0 ? '' : '<span class="atv-sep"> | </span>') +
-      '<span class="atv-word" data-word="' + attr + '" data-target="' + targetId + '">' + w + '</span>';
+      '<span class="atv-word" data-word="' + esc(w) + '" data-target="' + targetId + '">' + esc(w) + '</span>';
   }).join('');
 
   el.parentNode.insertBefore(container, el.nextSibling);
@@ -590,9 +611,8 @@ function _applyPhraseTranslation(targetId, main, alternatives) {
   container.id = targetId + '_variants';
   container.className = 'auto-translate-variants';
   container.innerHTML = alternatives.map((w, i) => {
-    const attr = w.replace(/"/g, '&quot;');
     return (i === 0 ? '' : '<span class="atv-sep"> | </span>') +
-      '<span class="atv-word" data-word="' + attr + '" data-target="' + targetId + '">' + w + '</span>';
+      '<span class="atv-word" data-word="' + esc(w) + '" data-target="' + targetId + '">' + esc(w) + '</span>';
   }).join('');
 
   el.parentNode.insertBefore(container, el.nextSibling);
@@ -627,10 +647,12 @@ window.switchAddTab = function (tab, btn) {
   btn.classList.add('active');
   document.getElementById('tabWord').classList.toggle('hidden', tab !== 'word');
   document.getElementById('tabPhrase').classList.toggle('hidden', tab !== 'phrase');
+  _lastEditedField = null;
 };
 
 window.submitWord = async function () {
   const lang = currentLang();
+  const langData = currentLangData();
   const type = window._addWordType;
   const literal = document.getElementById('wLiteral')?.value.trim();
   const translation = document.getElementById('wTranslation')?.value.trim();
@@ -648,7 +670,6 @@ window.submitWord = async function () {
   if (type === 'noun') body.article = document.getElementById('wArticle')?.value.trim() || '';
   if (type === 'verb') {
     body.verbGroup = document.getElementById('wVerbGroup')?.value || '';
-    const langData = currentLangData();
     const tenses = (langData && langData.tenses && langData.tenses.length) ? langData.tenses : [{ nativeName: 'Present', targetName: 'Present' }];
     const pronouns = (langData && langData.pronouns) ? langData.pronouns : ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
     const conj = {};
@@ -664,7 +685,6 @@ window.submitWord = async function () {
     body.conjugation = conj;
   }
 
-  const langData = currentLangData();
   const declensions = (langData && langData.declensions) ? langData.declensions : [];
   if (declensions.length) {
     const declObj = {};
@@ -692,6 +712,8 @@ window.submitWord = async function () {
     const vgEl = document.getElementById('wVerbGroup');
     if (vgEl) vgEl.value = '';
     document.getElementById('wLiteral')?.focus();
+    _purgeAutoOverlays();
+    _lastEditedField = null;
     document.querySelectorAll('#wordLabelPickerContainer-chips .label-pick-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.color = b.dataset.color; });
     setTimeout(() => okEl.classList.add('hidden'), 8000);
   } catch (e) {
