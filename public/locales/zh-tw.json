@@ -104,6 +104,8 @@
   "add_ok_phrase": "片語已新增！",
   "add_verb_group": "動詞組",
   "add_declensions": "格變化",
+  "add_auto_translate": "自動翻譯",
+  "add_suggestions": "建議",
   "train_title": "練習",
   "train_words": "單字",
   "train_phrases": "片語",
@@ -423,3 +425,4 @@
   "notebook_image_too_large": "圖片太大（最大 10 MB）",
   "notebook_paragraph": "段落"
 }
+

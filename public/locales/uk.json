@@ -104,6 +104,8 @@
   "add_ok_phrase": "Фразу додано!",
   "add_verb_group": "Група дієслова",
   "add_declensions": "Відмінювання",
+  "add_auto_translate": "Автоматичний переклад",
+  "add_suggestions": "Пропозиції",
   "train_title": "Тренування",
   "train_words": "Слова",
   "train_phrases": "Фрази",
@@ -423,3 +425,4 @@
   "notebook_image_too_large": "Зображення занадто велике (макс. 10 МБ)",
   "notebook_paragraph": "Абзац"
 }
+

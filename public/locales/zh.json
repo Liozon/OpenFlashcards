@@ -104,6 +104,8 @@
   "add_ok_phrase": "短语已添加！",
   "add_verb_group": "动词组",
   "add_declensions": "格变化",
+  "add_auto_translate": "自动翻译",
+  "add_suggestions": "建议",
   "train_title": "练习",
   "train_words": "单词",
   "train_phrases": "短语",
@@ -423,3 +425,4 @@
   "notebook_image_too_large": "图片太大（最大 10 MB）",
   "notebook_paragraph": "段落"
 }
+
