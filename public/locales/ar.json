@@ -423,6 +423,13 @@
   "notebook_save_close": "حفظ وإغلاق",
   "notebook_image": "إدراج صورة",
   "notebook_image_too_large": "الصورة كبيرة جدًا (الحد الأقصى 10 ميغابايت)",
-  "notebook_paragraph": "فقرة"
+  "notebook_paragraph": "فقرة",
+  "notebook_indent": "Indent",
+  "notebook_outdent": "Outdent",
+  "notebook_select_items": "Select items",
+  "notebook_expand_panel": "Expand panel",
+  "notebook_unlink_confirm": "Remove this vocabulary link?",
+  "notebook_delete_selected": "Delete selected",
+  "notebook_delete_selected_confirm": "You are about to delete {n} vocabulary link(s)"
 }
 

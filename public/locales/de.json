@@ -423,6 +423,13 @@
   "notebook_save_close": "Speichern & schließen",
   "notebook_image": "Bild einfügen",
   "notebook_image_too_large": "Bild zu groß (max. 10 MB)",
-  "notebook_paragraph": "Absatz"
+  "notebook_paragraph": "Absatz",
+  "notebook_indent": "Einrücken",
+  "notebook_outdent": "Ausrücken",
+  "notebook_select_items": "Elemente auswählen",
+  "notebook_expand_panel": "Bedienfeld erweitern",
+  "notebook_unlink_confirm": "Diese Vokabelverknüpfung entfernen?",
+  "notebook_delete_selected": "Ausgewählte löschen",
+  "notebook_delete_selected_confirm": "Sie sind dabei, {n} Vokabelverknüpfung(en) zu löschen"
 }
 
