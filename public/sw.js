@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
   '/js/i18n.js',
   '/js/tts.js',
   '/js/world-languages.js',
+  '/js/pages/notebook.js',
   '/js/pages/home.js',
   '/js/pages/vocabulary.js',
   '/js/pages/add.js',

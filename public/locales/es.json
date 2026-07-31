@@ -423,6 +423,13 @@
   "notebook_save_close": "Guardar & cerrar",
   "notebook_image": "Insertar imagen",
   "notebook_image_too_large": "Imagen demasiado grande (máx. 10 MB)",
-  "notebook_paragraph": "Párrafo"
+  "notebook_paragraph": "Párrafo",
+  "notebook_indent": "Sangría",
+  "notebook_outdent": "Anular sangría",
+  "notebook_select_items": "Seleccionar elementos",
+  "notebook_expand_panel": "Expandir panel",
+  "notebook_unlink_confirm": "¿Eliminar este enlace de vocabulario?",
+  "notebook_delete_selected": "Eliminar seleccionados",
+  "notebook_delete_selected_confirm": "Está a punto de eliminar {n} enlace(s) de vocabulario"
 }
 

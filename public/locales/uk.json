@@ -423,6 +423,13 @@
   "notebook_save_close": "Зберегти & закрити",
   "notebook_image": "Вставити зображення",
   "notebook_image_too_large": "Зображення занадто велике (макс. 10 МБ)",
-  "notebook_paragraph": "Абзац"
+  "notebook_paragraph": "Абзац",
+  "notebook_indent": "Відступ",
+  "notebook_outdent": "Зменшити відступ",
+  "notebook_select_items": "Вибрати елементи",
+  "notebook_expand_panel": "Розгорнути панель",
+  "notebook_unlink_confirm": "Видалити це посилання на словниковий запас?",
+  "notebook_delete_selected": "Видалити вибране",
+  "notebook_delete_selected_confirm": "Ви збираєтеся видалити {n} посилань на словниковий запас"
 }
 

@@ -423,6 +423,13 @@
   "notebook_save_close": "保存並關閉",
   "notebook_image": "插入圖片",
   "notebook_image_too_large": "圖片太大（最大 10 MB）",
-  "notebook_paragraph": "段落"
+  "notebook_paragraph": "段落",
+  "notebook_indent": "縮排",
+  "notebook_outdent": "減少縮排",
+  "notebook_select_items": "選擇項目",
+  "notebook_expand_panel": "展開面板",
+  "notebook_unlink_confirm": "刪除此詞彙連結？",
+  "notebook_delete_selected": "刪除所選",
+  "notebook_delete_selected_confirm": "您將要刪除 {n} 個詞彙連結"
 }
 

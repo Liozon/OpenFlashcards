@@ -423,6 +423,13 @@
   "notebook_save_close": "保存并关闭",
   "notebook_image": "插入图片",
   "notebook_image_too_large": "图片太大（最大 10 MB）",
-  "notebook_paragraph": "段落"
+  "notebook_paragraph": "段落",
+  "notebook_indent": "缩进",
+  "notebook_outdent": "减少缩进",
+  "notebook_select_items": "选择项目",
+  "notebook_expand_panel": "展开面板",
+  "notebook_unlink_confirm": "删除此词汇链接？",
+  "notebook_delete_selected": "删除所选",
+  "notebook_delete_selected_confirm": "您将要删除 {n} 个词汇链接"
 }
 

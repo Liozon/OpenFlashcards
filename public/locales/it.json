@@ -423,6 +423,13 @@
   "notebook_save_close": "Salva & chiudi",
   "notebook_image": "Inserisci immagine",
   "notebook_image_too_large": "Immagine troppo grande (max 10 MB)",
-  "notebook_paragraph": "Paragrafo"
+  "notebook_paragraph": "Paragrafo",
+  "notebook_indent": "Indenta",
+  "notebook_outdent": "Dentra",
+  "notebook_select_items": "Seleziona elementi",
+  "notebook_expand_panel": "Espandi pannello",
+  "notebook_unlink_confirm": "Rimuovere questo collegamento di vocabolario?",
+  "notebook_delete_selected": "Elimina selezionati",
+  "notebook_delete_selected_confirm": "Stai per eliminare {n} collegamento(i) di vocabolario"
 }
 

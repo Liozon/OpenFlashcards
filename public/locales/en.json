@@ -423,5 +423,12 @@
   "notebook_save_close": "Save & close",
   "notebook_image": "Insert image",
   "notebook_image_too_large": "Image too large (max 10 MB)",
-  "notebook_paragraph": "Paragraph"
+  "notebook_paragraph": "Paragraph",
+  "notebook_indent": "Indent",
+  "notebook_outdent": "Outdent",
+  "notebook_select_items": "Select items",
+  "notebook_expand_panel": "Expand panel",
+  "notebook_unlink_confirm": "Remove this vocabulary link?",
+  "notebook_delete_selected": "Delete selected",
+  "notebook_delete_selected_confirm": "You are about to delete {n} vocabulary link(s)"
 }

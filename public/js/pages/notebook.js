@@ -72,6 +72,9 @@ function getNotebookHTML() {
             <button class="nb-tb-btn" data-cmd="heading4" title="H4">H4</button>
             <button class="nb-tb-btn" data-cmd="paragraph" title="${t('notebook_paragraph')}">P</button>
             <span class="nb-tb-sep"></span>
+            <button class="nb-tb-btn" data-cmd="indent" title="${t('notebook_indent') || 'Indent'}">⇥</button>
+            <button class="nb-tb-btn" data-cmd="outdent" title="${t('notebook_outdent') || 'Outdent'}">⇤</button>
+            <span class="nb-tb-sep"></span>
             <input type="color" id="nbTextColor" class="nb-color-picker" value="#439b00" title="${t('notebook_text_color')}">
             <select id="nbFontSize" class="nb-font-size" title="${t('notebook_font_size')}">
               <option value="" disabled hidden>—</option>
@@ -108,13 +111,7 @@ function getNotebookHTML() {
             <input type="text" id="nbPageTitle" class="nb-page-title-input" placeholder="${t('notebook_page_title_placeholder')}">
             <div class="nb-page-meta" id="nbPageMeta"></div>
           </div>
-          <div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_content_placeholder')}"></div>
-          <div class="nb-vocab-links-section hidden" id="nbVocabLinksSection">
-            <div class="nb-vocab-links-header">
-              <span>📝 ${t('notebook_linked_vocab')}</span>
-            </div>
-            <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
-          </div>
+<div class="nb-editor" id="nbEditor" contenteditable="true" data-placeholder="${t('notebook_page_content_placeholder')}"></div>
           <div class="nb-editor-footer">
             <div class="nb-editor-footer-left" id="nbEditorFooterLeft">
               <button class="btn btn-sm btn-primary" id="nbSaveBtn">${t('common_save')}</button>
@@ -128,6 +125,18 @@ function getNotebookHTML() {
           </div>
         </div>
       </div>
+      <div class="nb-vocab-sidebar" id="nbVocabSidebar">
+        <div class="nb-vocab-sidebar-header">
+          <span>📝 <span id="nbVocabSidebarTitle">${t('notebook_linked_vocab')}</span></span>
+          <span class="nb-vocab-sidebar-actions">
+            <button class="nb-tb-btn btn-sm" id="nbVocabSelectToggle" title="${t('notebook_select_items') || 'Select items'}">☑</button>
+            <button class="nb-tb-btn btn-sm hidden" id="nbVocabDeleteSelected" title="${t('common_delete')}">🗑️</button>
+          </span>
+        </div>
+        <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
+        <button class="nb-vocab-sidebar-toggle hidden" id="nbVocabSidebarToggle" title="Collapse panel">▶</button>
+      </div>
+      <button class="nb-vocab-sidebar-reopen hidden" id="nbVocabSidebarReopen" title="${t('notebook_expand_panel') || 'Expand panel'}">◀</button>
     </div>
     <div class="nb-modal-overlay hidden" id="nbTableModal">
       <div class="nb-modal-dialog">
@@ -199,6 +208,10 @@ function bindNotebookEvents() {
   el.querySelector('#nbSidebarToggle').addEventListener('click', toggleSidebar);
   el.querySelector('#nbSidebarReopen').addEventListener('click', toggleSidebar);
   el.querySelector('#nbAddSection').addEventListener('click', addSectionPrompt);
+  el.querySelector('#nbVocabSidebarToggle').addEventListener('click', toggleVocabSidebar);
+  el.querySelector('#nbVocabSidebarReopen').addEventListener('click', toggleVocabSidebar);
+  el.querySelector('#nbVocabSelectToggle').addEventListener('click', toggleVocabSelectMode);
+  el.querySelector('#nbVocabDeleteSelected').addEventListener('click', deleteSelectedVocab);
   el.querySelector('#nbToggleActions').addEventListener('click', () => {
     el.querySelector('#nbSidebar').classList.toggle('nb-actions-open');
   });
@@ -335,6 +348,9 @@ function bindNotebookEvents() {
 
   // Task list keyboard handling: Enter to continue list, Backspace to exit empty item
   editor.addEventListener('keydown', handleTaskListKeydown);
+
+  // Tab key handling for indentation
+  editor.addEventListener('keydown', handleEditorTabKey);
 
   NB.autoSaveInterval = setInterval(() => { if (NB.dirty) saveCurrentPage(); }, 30000);
 
@@ -488,6 +504,138 @@ function renderSidebar() {
       </div>
     </div>`;
   }).join('');
+
+  updateVocabDeleteButton();
+  bindVocabChipEvents();
+}
+
+function bindVocabChipEvents() {
+  const el = NB.el;
+  const list = el.querySelector('#nbVocabLinksList');
+  if (!list) return;
+  el.querySelectorAll('.nb-vocab-link-chip-del').forEach(btn => {
+    btn.removeEventListener('click', onVocabChipDel);
+    btn.addEventListener('click', onVocabChipDel);
+  });
+  el.querySelectorAll('.nb-vocab-chip-cb').forEach(cb => {
+    cb.removeEventListener('click', onVocabChipCb);
+    cb.addEventListener('click', onVocabChipCb);
+  });
+  list.removeEventListener('click', onVocabChipSelectClick);
+  list.addEventListener('click', onVocabChipSelectClick);
+}
+
+function onVocabChipSelectClick(e) {
+  const chip = e.target.closest('.nb-vocab-link-chip.nb-select-mode');
+  if (!chip) return;
+  const cb = chip.querySelector('.nb-vocab-chip-cb');
+  if (!cb) return;
+  if (e.target.closest('.nb-vocab-link-chip-del')) return;
+  cb.click();
+}
+
+function onVocabChipDel(e) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const vocabId = btn.dataset.vocabId;
+  const vocabType = btn.dataset.vocabType;
+  removeVocabLinkFromPage(vocabId, vocabType);
+}
+
+async function removeVocabLinkFromPage(vocabId, vocabType) {
+  if (!NB.currentPageId) return;
+  const confirmed = await window.confirmModal(window.t('notebook_unlink_confirm') || 'Remove this link?', { confirmLabel: window.t('common_delete'), danger: true });
+  if (!confirmed) return;
+  try {
+    await window.api('DELETE', '/api/vocab-link', { lang: NB.lang, vocabId, vocabType, pageId: NB.currentPageId });
+    const notebook = await window.api('GET', '/api/notebook/' + NB.lang);
+    NB.notebook = notebook;
+    NB.sections = notebook.sections || [];
+    NB._vocabCache = null;
+    renderVocabLinksList();
+    window.toast(window.t('vocab_link_removed'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
+}
+
+function onVocabChipCb(e) {
+  e.stopPropagation();
+  const span = e.currentTarget;
+  const chip = span.closest('.nb-vocab-link-chip');
+  const vocabId = span.dataset.vocabId;
+  if (!NB._vocabSelected) NB._vocabSelected = new Set();
+  if (NB._vocabSelected.has(vocabId)) {
+    NB._vocabSelected.delete(vocabId);
+    span.textContent = '☐';
+    span.classList.remove('checked');
+    if (chip) chip.classList.remove('nb-chip-selected');
+  } else {
+    NB._vocabSelected.add(vocabId);
+    span.textContent = '☑';
+    span.classList.add('checked');
+    if (chip) chip.classList.add('nb-chip-selected');
+  }
+  updateVocabDeleteButton();
+}
+
+function updateVocabDeleteButton() {
+  const el = NB.el;
+  const btn = el.querySelector('#nbVocabDeleteSelected');
+  if (!btn) return;
+  const count = NB._vocabSelected?.size || 0;
+  if (NB._vocabSelectMode && count > 0) {
+    btn.classList.remove('hidden');
+    btn.title = (window.t('notebook_delete_selected') || 'Delete selected') + ' (' + count + ')';
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+function toggleVocabSelectMode() {
+  NB._vocabSelectMode = !NB._vocabSelectMode;
+  if (!NB._vocabSelectMode) {
+    NB._vocabSelected = new Set();
+  } else {
+    if (!NB._vocabSelected) NB._vocabSelected = new Set();
+  }
+  const el = NB.el;
+  el.querySelector('#nbVocabSelectToggle').textContent = NB._vocabSelectMode ? '✕' : '☐';
+  el.querySelector('#nbVocabSelectToggle').title = NB._vocabSelectMode ? (window.t('common_cancel') || 'Cancel') : (window.t('notebook_select_items') || 'Select items');
+  updateVocabDeleteButton();
+  renderVocabLinksList();
+}
+
+async function deleteSelectedVocab() {
+  if (!NB._vocabSelected || NB._vocabSelected.size === 0) return;
+  const el = NB.el;
+  const count = NB._vocabSelected.size;
+  const confirmed = await window.confirmModal(
+    (window.t('notebook_delete_selected_confirm') || 'Delete {n} linked item(s)?').replace('{n}', count),
+    { confirmLabel: window.t('common_delete'), danger: true }
+  );
+  if (!confirmed) return;
+  const section = NB.sections.find(s => s.id === NB.currentSectionId);
+  const page = section ? section.pages.find(p => p.id === NB.currentPageId) : null;
+  const links = (page && page.vocabLinks) || [];
+  const toDelete = links.filter(l => NB._vocabSelected.has(l.vocabId));
+  try {
+    await Promise.all(toDelete.map(l =>
+      window.api('DELETE', '/api/vocab-link', { lang: NB.lang, vocabId: l.vocabId, vocabType: l.vocabType, pageId: NB.currentPageId })
+    ));
+    const notebook = await window.api('GET', '/api/notebook/' + NB.lang);
+    NB.notebook = notebook;
+    NB.sections = notebook.sections || [];
+    NB._vocabCache = null;
+    NB._vocabSelectMode = false;
+    NB._vocabSelected = new Set();
+    el.querySelector('#nbVocabSelectToggle').textContent = '☐';
+    el.querySelector('#nbVocabSelectToggle').title = window.t('notebook_select_items') || 'Select items';
+    renderVocabLinksList();
+    window.toast(window.t('vocab_link_removed'));
+  } catch (e) {
+    window.toast(e.error || window.t('common_error'), 'danger');
+  }
 }
 
 function handleSidebarClick(e) {
@@ -780,12 +928,34 @@ function rebindTableToolbars() {
   const editor = NB.el.querySelector('#nbEditor');
   if (!editor) return;
   editor.querySelectorAll('.nb-table-wrapper').forEach(wrapper => {
-    const toolbar = wrapper.querySelector('.nb-table-toolbar');
-    if (!toolbar) return;
     const table = wrapper.querySelector('table');
     if (!table) return;
+    wrapper.querySelectorAll('.nb-table-toolbar').forEach(t => t.remove());
+    table.querySelectorAll('.nb-col-resize-handle, .nb-row-resize-handle').forEach(h => h.remove());
+    table._resizeInit = false;
+    const toolbar = document.createElement('div');
+    toolbar.className = 'nb-table-toolbar';
     toolbar.contentEditable = 'false';
-    toolbar.querySelectorAll('button').forEach(b => b.contentEditable = 'false');
+    toolbar.innerHTML = `
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="add-cell" title="${window.t('notebook_add_cell')}">${window.t('notebook_add_cell')}</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="del-cell" title="${window.t('notebook_del_cell')}">${window.t('notebook_del_cell')}</button>
+      <span class="nb-tb-sep"></span>
+      <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
+    `;
+    wrapper.insertBefore(toolbar, table);
     toolbar.querySelectorAll('[data-table-action]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -854,11 +1024,18 @@ function openPage(sectionId, pageId) {
   el.querySelector('#nbEditorArea').classList.remove('hidden');
   el.querySelector('#nbSidebarToggle').classList.remove('hidden');
   el.querySelector('#nbSidebarToggle').textContent = window.innerWidth <= 768 ? '▲' : '◀';
+  el.querySelector('#nbVocabSidebarToggle').classList.remove('hidden');
+  el.querySelector('#nbVocabSidebarToggle').textContent = window.innerWidth <= 768 ? '▲' : '▶';
   el.querySelector('#nbPageTitle').value = page.name;
   el.querySelector('#nbEditor').innerHTML = page.content || '';
   restoreTaskListBehaviour();
   rebindTableToolbars();
   initTableResize();
+  // One-time migration: strip legacy table toolbar/resize-handle markup persisted
+  // in older content, so it gets cleaned out of the stored JSON.
+  if (page.content && /nb-table-toolbar|nb-(col|row)-resize-handle/.test(page.content)) {
+    saveCurrentPage();
+  }
   el.querySelector('#nbPageMeta').textContent = window.t('notebook_last_updated') + ': ' + formatDate(page.updatedAt);
   NB.dirty = false;
   updateEditorStatus();
@@ -909,6 +1086,8 @@ function showWelcome() {
   el.querySelector('#nbWelcome').classList.remove('hidden');
   el.querySelector('#nbEditorArea').classList.add('hidden');
   el.querySelector('#nbSidebarToggle').classList.add('hidden');
+  el.querySelector('#nbVocabSidebar').classList.add('hidden');
+  el.querySelector('#nbVocabSidebarToggle').classList.add('hidden');
   // Update URL hash
   const hash = '#/notebook?lang=' + NB.lang;
   history.pushState({ page: 'notebook', params: { lang: NB.lang } }, '', hash);
@@ -924,8 +1103,10 @@ async function saveCurrentPage() {
   if (!page) return;
 
   const el = NB.el;
+  const editor = el.querySelector('#nbEditor');
+  editor.querySelectorAll('.nb-table-toolbar, .nb-col-resize-handle, .nb-row-resize-handle').forEach(t => t.remove());
   const name = el.querySelector('#nbPageTitle').value.trim() || 'Untitled';
-  const content = el.querySelector('#nbEditor').innerHTML;
+  const content = editor.innerHTML;
 
   try {
     const data = await window.api('PUT', `/api/notebook/${NB.lang}/pages/${NB.currentPageId}`, { name, content });
@@ -940,6 +1121,7 @@ async function saveCurrentPage() {
     console.error('[notebook] save error:', e);
     nbToast(window.t('common_error'), 'danger');
   }
+  rebindTableToolbars();
 }
 
 async function saveAndCloseEdit() {
@@ -1077,7 +1259,107 @@ async function handleToolbarCommand(cmd) {
     case 'pageLink': showPageLinkPicker(); break;
     case 'vocabLink': showNotebookVocabLinkPicker(); break;
     case 'insertImage': insertImage(); break;
+    case 'indent': indentSelection(); break;
+    case 'outdent': outdentSelection(); break;
   }
+  markDirty();
+}
+
+// ── Indent / Outdent via toolbar or Tab key ────────────────
+
+function handleEditorTabKey(e) {
+  if (e.key !== 'Tab') return;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const editor = NB.editor;
+  if (!editor || !editor.contains(sel.anchorNode)) return;
+  e.preventDefault();
+  if (e.shiftKey) {
+    outdentSelection();
+  } else {
+    indentSelection();
+  }
+}
+
+function indentSelection() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const editor = NB.editor;
+  if (!editor) return;
+  const node = sel.anchorNode;
+  const block = (node.nodeType === 3 ? node.parentElement : node).closest('p, h1, h2, h3, h4, h5, h6, li, div, td, th');
+  if (!block) {
+    insertTabAtCursor();
+    return;
+  }
+  if (block.tagName === 'LI') {
+    const parentList = block.closest('ul, ol');
+    if (!parentList) return;
+    const prevLi = block.previousElementSibling;
+    if (!prevLi) {
+      document.execCommand('insertHTML', false, '\u00A0\u00A0\u00A0\u00A0');
+      markDirty();
+      return;
+    }
+    let targetList = prevLi.querySelector('ul, ol');
+    if (!targetList) {
+      targetList = document.createElement(block.parentElement.tagName);
+      prevLi.appendChild(targetList);
+    }
+    targetList.appendChild(block);
+    markDirty();
+    return;
+  }
+  const ml = parseFloat(block.style.marginLeft) || 0;
+  block.style.marginLeft = (ml + 24) + 'px';
+  markDirty();
+}
+
+function outdentSelection() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const editor = NB.editor;
+  if (!editor) return;
+  const node = sel.anchorNode;
+  const block = (node.nodeType === 3 ? node.parentElement : node).closest('p, h1, h2, h3, h4, h5, h6, li, div, td, th');
+  if (!block) return;
+  if (block.tagName === 'LI') {
+    const parentList = block.closest('ul, ol');
+    const grandparent = parentList?.parentElement?.closest('li');
+    if (grandparent) {
+      const nextSibling = block.nextElementSibling;
+      grandparent.parentElement.insertBefore(block, grandparent.nextElementSibling);
+      if (nextSibling) {
+        const childList = block.querySelector('ul, ol');
+        if (childList) {
+          while (childList.firstChild) {
+            block.parentElement.insertBefore(childList.firstChild, block.nextElementSibling);
+          }
+          childList.remove();
+        }
+      }
+      markDirty();
+    }
+    return;
+  }
+  const ml = parseFloat(block.style.marginLeft) || 0;
+  if (ml > 0) {
+    block.style.marginLeft = Math.max(0, ml - 24) + 'px';
+    markDirty();
+  }
+}
+
+function insertTabAtCursor() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const tabNode = document.createTextNode('\u00A0\u00A0\u00A0\u00A0');
+  range.deleteContents();
+  range.insertNode(tabNode);
+  range.setStartAfter(tabNode);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
   markDirty();
 }
 
@@ -1304,43 +1586,11 @@ function insertTable() {
 
   const wrapper = document.createElement('div');
   wrapper.className = 'nb-table-wrapper';
-  const tblToolbar = document.createElement('div');
-  tblToolbar.className = 'nb-table-toolbar';
-  tblToolbar.contentEditable = 'false';
-  tblToolbar.innerHTML = `
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="add-cell" title="${window.t('notebook_add_cell')}">${window.t('notebook_add_cell')}</button>
-    <button class="nb-tb-btn btn-sm" data-table-action="del-cell" title="${window.t('notebook_del_cell')}">${window.t('notebook_del_cell')}</button>
-    <span class="nb-tb-sep"></span>
-    <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
-  `;
-  wrapper.appendChild(tblToolbar);
   wrapper.appendChild(table);
 
   insertNodeAtCursor(wrapper);
 
-  // Bind table toolbar
-  tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      await tableAction(wrapper.querySelector('table'), btn.dataset.tableAction);
-    });
-  });
-
-  initTableResize();
+  rebindTableToolbars();
   markDirty();
 }
 
@@ -2036,6 +2286,19 @@ function toggleSidebar() {
   reopenBtn.classList.toggle('hidden', !collapsed || isMobile);
 }
 
+function toggleVocabSidebar() {
+  const el = NB.el;
+  const layout = el.querySelector('.notebook-layout');
+  const toggleBtn = el.querySelector('#nbVocabSidebarToggle');
+  const reopenBtn = el.querySelector('#nbVocabSidebarReopen');
+  const isMobile = window.innerWidth <= 768;
+  layout.classList.toggle('nb-vocab-sidebar-collapsed');
+  const collapsed = layout.classList.contains('nb-vocab-sidebar-collapsed');
+  toggleBtn.textContent = collapsed ? (isMobile ? '▼' : '◀') : (isMobile ? '▲' : '▶');
+  toggleBtn.title = collapsed ? 'Expand panel' : 'Collapse panel';
+  reopenBtn.classList.toggle('hidden', !collapsed);
+}
+
 async function performSearch() {
   const el = NB.el;
   const resultsEl = el.querySelector('#nbSearchResults');
@@ -2168,33 +2431,9 @@ function handleEditorPaste(e) {
       });
       const tblWrapper = document.createElement('div');
       tblWrapper.className = 'nb-table-wrapper';
-      const tblToolbar = document.createElement('div');
-      tblToolbar.className = 'nb-table-toolbar';
-      tblToolbar.innerHTML = `
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
-      `;
-      tblWrapper.appendChild(tblToolbar);
       tblWrapper.appendChild(table);
-      tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-        btn.addEventListener('click', async (ev) => {
-          ev.preventDefault();
-          await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
-        });
-      });
       insertNodeAtCursor(tblWrapper);
-      initTableResize();
+      rebindTableToolbars();
       markDirty();
       return;
     }
@@ -2234,35 +2473,9 @@ function handleEditorPaste(e) {
       if (newTable.children.length) {
         const tblWrapper = document.createElement('div');
         tblWrapper.className = 'nb-table-wrapper';
-        const tblToolbar = document.createElement('div');
-        tblToolbar.className = 'nb-table-toolbar';
-        tblToolbar.contentEditable = 'false';
-        tblToolbar.innerHTML = `
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
-      `;
-        tblWrapper.appendChild(tblToolbar);
-        tblWrapper.appendChild(table);
-        tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-          btn.addEventListener('click', async (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
-          });
-        });
+        tblWrapper.appendChild(newTable);
         insertNodeAtCursor(tblWrapper);
-        initTableResize();
+        rebindTableToolbars();
         markDirty();
         return;
       }
@@ -2289,35 +2502,9 @@ function handleEditorPaste(e) {
     if (table.children.length) {
       const tblWrapper = document.createElement('div');
       tblWrapper.className = 'nb-table-wrapper';
-      const tblToolbar = document.createElement('div');
-      tblToolbar.className = 'nb-table-toolbar';
-      tblToolbar.contentEditable = 'false';
-      tblToolbar.innerHTML = `
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-above" title="${window.t('notebook_add_row_above')}">↑ +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-row-below" title="${window.t('notebook_add_row_below')}">↓ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-left" title="${window.t('notebook_add_col_left')}">← +</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="add-col-right" title="${window.t('notebook_add_col_right')}">→ +</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-row-header" title="${window.t('notebook_header_row')}">R↕</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="toggle-col-header" title="${window.t('notebook_header_col')}">C↔</button>
-        <span class="nb-tb-sep"></span>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-row">${window.t('notebook_del_row')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-col">${window.t('notebook_del_col')}</button>
-        <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
-      `;
-      tblWrapper.appendChild(tblToolbar);
       tblWrapper.appendChild(table);
-      tblToolbar.querySelectorAll('[data-table-action]').forEach(btn => {
-        btn.addEventListener('click', async (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          await tableAction(tblWrapper.querySelector('table'), btn.dataset.tableAction);
-        });
-      });
       insertNodeAtCursor(tblWrapper);
-      initTableResize();
+      rebindTableToolbars();
       markDirty();
     }
   }
@@ -2440,46 +2627,51 @@ async function toggleVocabLinkOnPage(vocabId, vocabType) {
 function renderVocabLinksList() {
   const el = NB.el;
   const list = el.querySelector('#nbVocabLinksList');
-  const sectionEl = el.querySelector('#nbVocabLinksSection');
+  const sidebar = el.querySelector('#nbVocabSidebar');
   if (!list) return;
 
   const section = NB.sections.find(s => s.id === NB.currentSectionId);
   const page = section ? section.pages.find(p => p.id === NB.currentPageId) : null;
   const links = (page && page.vocabLinks) || [];
 
-  if (!links.length) {
-    sectionEl.classList.add('hidden');
+  if (!links.length || !NB.currentPageId) {
+    sidebar.classList.add('hidden');
     return;
   }
-  sectionEl.classList.remove('hidden');
+  sidebar.classList.remove('hidden');
 
-  list.innerHTML = links.map(l => {
+  const sorted = [...links].sort((a, b) => {
+    if (a.vocabType === 'word' && b.vocabType !== 'word') return -1;
+    if (a.vocabType !== 'word' && b.vocabType === 'word') return 1;
+    return 0;
+  });
+  const hasWords = sorted.some(l => l.vocabType === 'word');
+  const hasPhrases = sorted.some(l => l.vocabType === 'phrase');
+  const selectMode = NB._vocabSelectMode || false;
+
+  list.innerHTML = sorted.map((l, i) => {
     const text = l.text || '';
     const escapedText = escapeHtml(text);
     const encodedSearch = encodeURIComponent(text);
-    return '<span class="nb-vocab-link-chip" title="' + escapeHtml(l.translation || '') + '">' +
-      '<span class="nb-vocab-link-chip-text" onclick="window.navigate(\'vocabulary\',{search:\'' + encodedSearch + '\'})">' +
+    const isFirstPhrase = l.vocabType === 'phrase' && hasWords && sorted[i - 1]?.vocabType === 'word';
+    const separator = isFirstPhrase ? '<div class="nb-vocab-type-sep"></div>' : '';
+    const checked = NB._vocabSelected?.has(l.vocabId) ? ' checked' : '';
+    const checkbox = selectMode ? `<span class="nb-vocab-chip-cb${checked}" data-vocab-id="${escapeHtml(l.vocabId)}">${checked ? '☑' : '☐'}</span>` : '';
+    const navClick = selectMode ? '' : ' onclick="window.navigate(\'vocabulary\',{search:\'' + encodedSearch + '\'})"';
+    return separator + '<span class="nb-vocab-link-chip' + (selectMode ? ' nb-select-mode' : '') + (checked ? ' nb-chip-selected' : '') + '" title="' + escapeHtml(l.translation || '') + '">' +
+      checkbox +
+      '<span class="nb-vocab-link-chip-text"' + navClick + '>' +
       (l.vocabType === 'phrase' ? '💬 ' : '📝 ') + escapedText +
       '</span>' +
-      '<span class="nb-vocab-link-chip-del" onclick="removeVocabLinkFromPage(\'' + escapeHtml(l.vocabId) + '\',\'' + l.vocabType + '\')">✕</span>' +
+      '<span class="nb-vocab-link-chip-del" data-vocab-id="' + escapeHtml(l.vocabId) + '" data-vocab-type="' + l.vocabType + '">✕</span>' +
       '</span>';
   }).join('');
+
+  updateVocabDeleteButton();
+  bindVocabChipEvents();
 }
 
-window.removeVocabLinkFromPage = async function (vocabId, vocabType) {
-  if (!NB.currentPageId) return;
-  try {
-    await window.api('DELETE', '/api/vocab-link', { lang: NB.lang, vocabId, vocabType, pageId: NB.currentPageId });
-    const notebook = await window.api('GET', '/api/notebook/' + NB.lang);
-    NB.notebook = notebook;
-    NB.sections = notebook.sections || [];
-    NB._vocabCache = null; // invalidate vocab cache
-    renderVocabLinksList();
-    window.toast(window.t('vocab_link_removed'));
-  } catch (e) {
-    window.toast(e.error || window.t('common_error'), 'danger');
-  }
-};
+window.removeVocabLinkFromPage = removeVocabLinkFromPage;
 
 function formatDate(iso) {
   if (!iso) return '';
