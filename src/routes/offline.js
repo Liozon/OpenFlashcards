@@ -95,8 +95,9 @@ router.get('/tts/:lang/:speedKey/:itemId', (req, res) => {
   const uid      = userId(req);
   const { lang, speedKey, itemId } = req.params;
 
-  // Sanitize – only allow safe path components
-  if (!/^[a-zA-Z0-9_\-]+$/.test(lang) || !/^spd\d+$/.test(speedKey) || !/^[a-zA-Z0-9_\-]+$/.test(itemId)) {
+  // Sanitize – only allow safe path components.
+  // itemId may contain percent-encoding (e.g. `%D1%8F`) from conjugated pronouns.
+  if (!/^[a-zA-Z0-9_\-]+$/.test(lang) || !/^spd\d+$/.test(speedKey) || !/^[a-zA-Z0-9_%\-]+$/.test(itemId)) {
     return res.status(400).json({ error: 'Invalid parameters' });
   }
 

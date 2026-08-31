@@ -219,6 +219,7 @@
     const display = (question.article ? question.article + ' ' : '') +
       (question.type === 'verb' && question.infinitive ? question.infinitive : question.literal);
 
+    let quizTenseIdx = null;
     function _flatConj(conj) {
       if (!conj) return {};
       const vals = Object.values(conj);
@@ -230,10 +231,12 @@
         });
         if (validTenses.length) {
           const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
+          quizTenseIdx = pick;
           return conj[pick];
         }
         return {};
       }
+      quizTenseIdx = '0';
       return conj;
     }
     const flatConj = _flatConj(question.conjugation || {});
@@ -247,6 +250,8 @@
       promptText = showNative ? e.translation : `${pr} ${e.form}`;
       answerText = showNative ? `${pr} ${e.form}` : e.translation;
     } else {
+      quizPronoun = null;
+      quizTenseIdx = null;
       promptText = showNative ? question.translation : display;
       answerText = showNative ? display : question.translation;
     }
@@ -259,7 +264,7 @@
     const choices = _shuffle([answerText, ...others]);
 
     return {
-      id: question.id, type: question.type, quizPronoun,
+      id: question.id, type: question.type, quizPronoun, quizTenseIdx,
       literal: question.literal, definition: question.definition || '',
       article: question.article || '', infinitive: question.infinitive || '',
       verbGroup: question.verbGroup || '', conjugation: question.conjugation || {},

@@ -61,6 +61,7 @@ function buildQuizQuestion(question, pool, direction, lang) {
   let display = wordDisplay(question);
   let promptText, answerText;
   let quizPronoun = null;
+  let quizTenseIdx = null;
 
   function flattenConjugation(conj) {
     if (!conj) return {};
@@ -73,10 +74,12 @@ function buildQuizQuestion(question, pool, direction, lang) {
       });
       if (validTenses.length) {
         const pick = validTenses[Math.floor(Math.random() * validTenses.length)];
+        quizTenseIdx = pick;
         return conj[pick];
       }
       return {};
     }
+    quizTenseIdx = '0';
     return conj;
   }
 
@@ -100,6 +103,8 @@ function buildQuizQuestion(question, pool, direction, lang) {
       answerText = e.translation;
     }
   } else {
+    quizPronoun = null;
+    quizTenseIdx = null;
     promptText = showNative ? question.translation : display;
     answerText = showNative ? display : question.translation;
   }
@@ -117,6 +122,7 @@ function buildQuizQuestion(question, pool, direction, lang) {
     id: question.id,
     type: question.type,
     quizPronoun,
+    quizTenseIdx,
     literal: question.literal,
     definition: question.definition || '',
     article: question.article || '',
@@ -588,6 +594,42 @@ router.post('/tts/generate', async (req, res) => {
           mode: 'normal', speed: 1.0,
           prevSpeed: null
         });
+      }
+      // Generate TTS for each conjugated pronoun+form
+      if (w.type === 'verb' && w.conjugation && Object.keys(w.conjugation).length) {
+        const conj = w.conjugation;
+        const conjValues = Object.values(conj);
+        const isTenseKeyed = conjValues.length > 0 && conjValues.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'));
+        const tenses = isTenseKeyed ? Object.keys(conj) : ['0'];
+        for (const tIdx of tenses) {
+          const tenseData = isTenseKeyed ? conj[tIdx] : conj;
+          if (!tenseData || typeof tenseData !== 'object') continue;
+        for (const [pronoun, entry] of Object.entries(tenseData)) {
+          const e = normConj(entry);
+          if (!e.form) continue;
+          const encPronoun = encodeURIComponent(pronoun);
+          const conjText = pronoun + ' ' + e.form;
+          const conjId = w.id + '_conj_' + tIdx + '_' + encPronoun;
+          tasks.push({
+            text: conjText, id: conjId, lang,
+            mode: 'normal', speed: numNormal,
+            prevSpeed: normalChanged ? prevNorm : null
+          });
+          tasks.push({
+            text: conjText, id: conjId, lang,
+            mode: 'slow', speed: numSlow,
+            prevSpeed: slowChanged ? prevSlow : null
+          });
+          // Mother-tongue audio for each conjugated pronoun (e.g. "j'ai" / "tu es")
+          if (e.translation && nativeLang !== lang) {
+            tasks.push({
+              text: e.translation, id: conjId + '_trans', lang: nativeLang,
+              mode: 'normal', speed: 1.0,
+              prevSpeed: null
+            });
+          }
+        }
+        }
       }
     }
     for (const p of phrases) {

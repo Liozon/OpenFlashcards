@@ -723,9 +723,12 @@ function renderWordQuiz(q) {
 
   const wordEl = document.getElementById('qWord');
   const ttsWord = q.showNative ? q.answerText : q.promptText;
+  const ttsId = q.quizPronoun
+    ? (q.id + '_conj_' + (q.quizTenseIdx != null ? q.quizTenseIdx : '0') + '_' + encodeURIComponent(q.quizPronoun))
+    : q.id;
   wordEl.appendChild(document.createTextNode(' '));
-  wordEl.appendChild(TTS.button(ttsWord, lang, null, q && q.id));
-  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang, null, q && q.id));
+  wordEl.appendChild(TTS.button(ttsWord, lang, null, ttsId));
+  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang, null, ttsId));
 
   const grid = document.getElementById('choicesGrid');
   q.choices.forEach(choice => {
@@ -755,7 +758,11 @@ async function handleWordAnswer(btn, answer, q) {
   updateScore();
   _checkComboConfetti();
 
-  TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
+  const postSpeakText = q.showNative ? q.answerText : q.promptText;
+  const postSpeakId = q.quizPronoun
+    ? (q.id + '_conj_' + (q.quizTenseIdx != null ? q.quizTenseIdx : '0') + '_' + encodeURIComponent(q.quizPronoun))
+    : q.id;
+  TTS.speak(postSpeakText, q.langCode, postSpeakId);
 
   const card = document.getElementById('wordQuizCard');
 
@@ -776,10 +783,25 @@ async function handleWordAnswer(btn, answer, q) {
     const langDataForConj = (App.config.targetLangs || []).find(l => l.isoCode === q.langCode) || {};
     const tensesForConj = (langDataForConj.tenses && langDataForConj.tenses.length) ? langDataForConj.tenses : [];
 
-    let conjHtml = '';
+    function _addConjRow(container, pronoun, entry, tenseIdx) {
+      const e = normConj(entry);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:90px 1fr 1fr auto;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center';
+      row.innerHTML =
+        '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+        '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+        (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>');
+      const ttsWrap = document.createElement('span');
+      ttsWrap.style.cssText = 'display:flex;gap:2px;justify-content:flex-end';
+      const conjText = pronoun + ' ' + e.form;
+      const conjId = q.id + '_conj_' + tenseIdx + '_' + encodeURIComponent(pronoun);
+      ttsWrap.appendChild(TTS.button(conjText, q.langCode, 'padding:2px 6px;font-size:.78rem', conjId));
+      ttsWrap.appendChild(TTS.buttonSlow(conjText, q.langCode, 'padding:2px 6px;font-size:.78rem', conjId));
+      row.appendChild(ttsWrap);
+      container.appendChild(row);
+    }
 
     if (isTenseKeyed) {
-      // Tense-keyed format: show each tense section
       conjKeys.forEach((tenseIdx, idx) => {
         const tenseData = conjVal[tenseIdx];
         if (!tenseData || typeof tenseData !== 'object') return;
@@ -788,34 +810,25 @@ async function handleWordAnswer(btn, answer, q) {
           ? esc(tenseConfig.targetName || tenseConfig.nativeName)
           : (t('train_conjugation') + ' ' + (parseInt(tenseIdx) + 1));
 
-        conjHtml += '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;margin-top:' + (idx > 0 ? '12px' : '0') + ';text-transform:uppercase;letter-spacing:.05em">' +
-          tenseLabel + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;margin-top:' + (idx > 0 ? '12px' : '0') + ';text-transform:uppercase;letter-spacing:.05em';
+        header.textContent = tenseLabel + (q.infinitive ? ' — ' + q.infinitive : '');
+        conjBox.appendChild(header);
 
         Object.entries(tenseData).forEach(([pronoun, entry]) => {
-          const e = normConj(entry);
-          conjHtml += '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
-            '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
-            '<span style="font-weight:600">' + esc(e.form) + '</span>' +
-            (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
-            '</div>';
+          _addConjRow(conjBox, pronoun, entry, tenseIdx);
         });
       });
     } else {
-      // Flat format: backward compat
-      conjHtml = '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' +
-        t('train_conjugation') + (q.infinitive ? ' — ' + esc(q.infinitive) : '') + '</div>';
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em';
+      header.textContent = t('train_conjugation') + (q.infinitive ? ' — ' + q.infinitive : '');
+      conjBox.appendChild(header);
 
-      conjHtml += Object.entries(conjVal).map(([pronoun, entry]) => {
-        const e = normConj(entry);
-        return '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);align-items:center">' +
-          '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
-          '<span style="font-weight:600">' + esc(e.form) + '</span>' +
-          (e.translation ? '<span style="color:var(--text-faint);font-size:.8rem">' + esc(e.translation) + '</span>' : '<span></span>') +
-          '</div>';
-      }).join('');
+      Object.entries(conjVal).forEach(([pronoun, entry]) => {
+        _addConjRow(conjBox, pronoun, entry, '0');
+      });
     }
-
-    conjBox.innerHTML = conjHtml;
     conjBox.className = 'conj-box';
     card.appendChild(conjBox);
   }
@@ -1356,6 +1369,12 @@ function stopAutoTimer() {
 function startAutoTimer() {
   stopAutoTimer();
   _trainAutoTimer = setInterval(() => {
+    // If the flashcards DOM is gone (user navigated away), stop the timer
+    // so it doesn't keep firing against a detached page.
+    if (!document.getElementById('quizArea') || !document.getElementById('autoCard')) {
+      stopAutoTimer();
+      return;
+    }
     if (_trainAutoPaused) return;
     _trainAutoTimeRemaining = Math.max(0, _trainAutoTimeRemaining - 0.05);
     updateAutoProgress();
@@ -1368,7 +1387,8 @@ function startAutoTimer() {
         if (card) {
           const word = _trainAutoState === 'front' ? card.dataset.frontWord : card.dataset.backWord;
           const langCode = _trainAutoState === 'front' ? card.dataset.frontLang : card.dataset.backLang;
-          TTS.speak(word, langCode, card.dataset.id);
+          const ttsId = _trainAutoState === 'front' ? card.dataset.frontId : card.dataset.backId;
+          TTS.speak(word, langCode, ttsId);
         }
         _trainAutoTtsPlayed = true;
       }
@@ -1430,6 +1450,7 @@ window.toggleAutoPause = function () {
 
 async function loadAutoQuestion() {
   const area = document.getElementById('quizArea');
+  if (!area) { stopAutoTimer(); return; }
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
   _trainAutoCard = null;
@@ -1503,6 +1524,26 @@ function renderAutoCard(card) {
     backLang = nativeLang;
   }
 
+  // Per-side TTS cache id. Native side speaks the translation -> `{id}_trans`.
+  // Studied side speaks a word; if it's a conjugated form use the `_conj_` id,
+  // otherwise the plain word id. Phrases keep the plain id on both sides.
+  let frontId, backId;
+  if (card._type === 'phrase') {
+    frontId = id; backId = id;
+  } else {
+    const targetSideId = card.quizPronoun
+      ? (id + '_conj_' + (card.quizTenseIdx != null ? card.quizTenseIdx : '0') + '_' + encodeURIComponent(card.quizPronoun))
+      : id;
+    // Native side: the broad translation text is `{id}_trans`, but a conjugated
+    // row's mother-tongue text ("je suis") is per-pronoun, so it needs its own
+    // unique id to avoid colliding with the infinitive translation audio.
+    const nativeSideId = card.quizPronoun
+      ? (id + '_conj_' + (card.quizTenseIdx != null ? card.quizTenseIdx : '0') + '_' + encodeURIComponent(card.quizPronoun) + '_trans')
+      : id + '_trans';
+    frontId = frontLang === nativeLang ? nativeSideId : targetSideId;
+    backId = backLang === nativeLang ? nativeSideId : targetSideId;
+  }
+
   _trainAutoState = 'front';
   _trainAutoTimeRemaining = _trainAutoTime;
   _trainAutoTtsPlayed = false;
@@ -1515,7 +1556,8 @@ function renderAutoCard(card) {
 
   area.innerHTML =
     '<div class="auto-card" id="autoCard" data-front-word="' + esc(frontWord) + '" data-front-lang="' + esc(frontLang) + '" ' +
-    'data-back-word="' + esc(backWord) + '" data-back-lang="' + esc(backLang) + '" data-id="' + esc(id) + '">' +
+    'data-back-word="' + esc(backWord) + '" data-back-lang="' + esc(backLang) + '" ' +
+    'data-front-id="' + esc(frontId) + '" data-back-id="' + esc(backId) + '" data-id="' + esc(id) + '">' +
 
     '<div class="auto-card-header">' +
     '<span class="badge badge-' + (card._type === 'phrase' ? 'phrase' : (card.type || 'word')) + '">' + typeLabel + '</span>' +
@@ -1553,21 +1595,21 @@ function renderAutoCard(card) {
   if (!_trainAutoPaused) startAutoTimer();
 
   const frontTts = document.getElementById('autoTtsFront');
-  frontTts.appendChild(TTS.button(frontWord, frontLang, null, id));
-  if (frontLang !== nativeLang) frontTts.appendChild(TTS.buttonSlow(frontWord, frontLang, null, id));
+  frontTts.appendChild(TTS.button(frontWord, frontLang, null, frontId));
+  if (frontLang !== nativeLang) frontTts.appendChild(TTS.buttonSlow(frontWord, frontLang, null, frontId));
 
   const backTts = document.getElementById('autoTtsBack');
-  backTts.appendChild(TTS.button(backWord, backLang, null, id));
-  if (backLang !== nativeLang) backTts.appendChild(TTS.buttonSlow(backWord, backLang, null, id));
+  backTts.appendChild(TTS.button(backWord, backLang, null, backId));
+  if (backLang !== nativeLang) backTts.appendChild(TTS.buttonSlow(backWord, backLang, null, backId));
 
   // Pre-fetch TTS audio for both sides so the server generates it in advance
-  const prefetchTTS = (text, lang) => {
+  const prefetchTTS = (text, lang, ttsId) => {
     if (!text || !lang) return;
-    fetch(TTS._url(text, lang, 'normal', id)).catch(() => { });
-    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => { });
+    fetch(TTS._url(text, lang, 'normal', ttsId)).catch(() => { });
+    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', ttsId)).catch(() => { });
   };
-  prefetchTTS(frontWord, frontLang);
-  prefetchTTS(backWord, backLang);
+  prefetchTTS(frontWord, frontLang, frontId);
+  prefetchTTS(backWord, backLang, backId);
 }
 
 window.toggleTrainSettings = function () {
