@@ -7,6 +7,12 @@ const { requireAdmin } = require('../middleware/auth');
 const { purgeCache, cacheStats, getCached, saveCachedBuffer } = require('../utils/tts-cache');
 const { bufferTTS, wordDisplay } = require('../utils/tts-generate');
 
+function normConj(entry) {
+  if (!entry) return { form: '', translation: '' };
+  if (typeof entry === 'string') return { form: entry, translation: '' };
+  return { form: entry.form || '', translation: entry.translation || '' };
+}
+
 router.use(requireAdmin);
 
 // GET /admin/users
@@ -162,6 +168,25 @@ router.post('/users/:id/tts-cache/generate', async (req, res) => {
         const display = wordDisplay(w);
         tasks.push({ text: display, id: w.id, mode: 'normal', speed: speedNormal, lang: lang.isoCode });
         tasks.push({ text: display, id: w.id, mode: 'slow',   speed: speedSlow,   lang: lang.isoCode });
+        // Conjugation TTS for verbs
+        if (w.type === 'verb' && w.conjugation && Object.keys(w.conjugation).length) {
+          const conj = w.conjugation;
+          const conjValues = Object.values(conj);
+          const isTenseKeyed = conjValues.length > 0 && conjValues.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'));
+          const tenses = isTenseKeyed ? Object.keys(conj) : ['0'];
+          for (const tIdx of tenses) {
+            const tenseData = isTenseKeyed ? conj[tIdx] : conj;
+            if (!tenseData || typeof tenseData !== 'object') continue;
+            for (const [pronoun, entry] of Object.entries(tenseData)) {
+              const e = normConj(entry);
+              if (!e.form) continue;
+              const conjText = pronoun + ' ' + e.form;
+              const conjId = w.id + '_conj_' + tIdx + '_' + encodeURIComponent(pronoun);
+              tasks.push({ text: conjText, id: conjId, mode: 'normal', speed: speedNormal, lang: lang.isoCode });
+              tasks.push({ text: conjText, id: conjId, mode: 'slow',   speed: speedSlow,   lang: lang.isoCode });
+            }
+          }
+        }
       }
       for (const p of phrases) {
         tasks.push({ text: p.text, id: p.id, mode: 'normal', speed: speedNormal, lang: lang.isoCode });

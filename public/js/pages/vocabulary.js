@@ -355,6 +355,72 @@ function buildWordCard(w) {
     normalBtn.insertAdjacentElement('afterend', slowBtn);
   }
 
+  // Verb conjugation section with per-row TTS
+  if (!isPhrase && w.type === 'verb' && w.conjugation && Object.keys(w.conjugation).length) {
+    const conj = w.conjugation;
+    const conjValues = Object.values(conj);
+    const isTenseKeyed = conjValues.length > 0 && conjValues.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'));
+
+    const langDataBase = (App.config.targetLangs || []).find(l => l.isoCode === w.langCode) || {};
+    const tensesCfg = (langDataBase.tenses && langDataBase.tenses.length) ? langDataBase.tenses : [];
+
+    const details = document.createElement('details');
+    details.style.cssText = 'margin-top:8px;font-size:.82rem';
+
+    const summary = document.createElement('summary');
+    summary.style.cssText = 'cursor:pointer;color:var(--text-muted);font-weight:600;font-size:.8rem';
+    summary.textContent = '⚡ ' + t('train_conjugation') + (w.infinitive ? ' — ' + w.infinitive : '');
+    details.appendChild(summary);
+
+    const conjContent = document.createElement('div');
+    conjContent.style.cssText = 'margin-top:6px;padding:8px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)';
+
+    function _addVocabConjRow(container, pronoun, entry, tenseIdx) {
+      const e = normConj(entry);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;font-size:.82rem;padding:2px 0;border-bottom:1px solid var(--border);align-items:center';
+      row.innerHTML =
+        '<span style="color:var(--text-muted)">' + esc(pronoun) + '</span>' +
+        '<span style="font-weight:600">' + esc(e.form) + '</span>' +
+        (e.translation ? '<span style="color:var(--text-faint);font-size:.78rem">' + esc(e.translation) + '</span>' : '<span></span>');
+      const ttsWrap = document.createElement('span');
+      ttsWrap.style.cssText = 'display:flex;gap:2px;justify-content:flex-end';
+      const conjText = pronoun + ' ' + e.form;
+      const conjId = w.id + '_conj_' + tenseIdx + '_' + encodeURIComponent(pronoun);
+      ttsWrap.appendChild(TTS.button(conjText, w.langCode, 'padding:2px 5px;font-size:.72rem', conjId));
+      ttsWrap.appendChild(TTS.buttonSlow(conjText, w.langCode, 'padding:2px 5px;font-size:.72rem', conjId));
+      row.appendChild(ttsWrap);
+      container.appendChild(row);
+    }
+
+    if (isTenseKeyed) {
+      Object.keys(conj).forEach((tenseIdx, idx) => {
+        const tenseData = conj[tenseIdx];
+        if (!tenseData || typeof tenseData !== 'object') return;
+        const tenseConfig = tensesCfg[parseInt(tenseIdx)] || null;
+        const tenseLabel = tenseConfig
+          ? esc(tenseConfig.targetName || tenseConfig.nativeName)
+          : (t('train_conjugation') + ' ' + (parseInt(tenseIdx) + 1));
+
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:.75rem;font-weight:700;color:var(--text-faint);margin-bottom:2px;margin-top:' + (idx > 0 ? '8px' : '0') + ';text-transform:uppercase;letter-spacing:.05em';
+        header.textContent = tenseLabel;
+        conjContent.appendChild(header);
+
+        Object.entries(tenseData).forEach(([pronoun, entry]) => {
+          _addVocabConjRow(conjContent, pronoun, entry, tenseIdx);
+        });
+      });
+    } else {
+      Object.entries(conj).forEach(([pronoun, entry]) => {
+        _addVocabConjRow(conjContent, pronoun, entry, '0');
+      });
+    }
+
+    details.appendChild(conjContent);
+    div.appendChild(details);
+  }
+
   return div;
 }
 

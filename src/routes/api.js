@@ -589,6 +589,33 @@ router.post('/tts/generate', async (req, res) => {
           prevSpeed: null
         });
       }
+      // Generate TTS for each conjugated pronoun+form
+      if (w.type === 'verb' && w.conjugation && Object.keys(w.conjugation).length) {
+        const conj = w.conjugation;
+        const conjValues = Object.values(conj);
+        const isTenseKeyed = conjValues.length > 0 && conjValues.some(v => typeof v === 'object' && v !== null && !v.hasOwnProperty('form'));
+        const tenses = isTenseKeyed ? Object.keys(conj) : ['0'];
+        for (const tIdx of tenses) {
+          const tenseData = isTenseKeyed ? conj[tIdx] : conj;
+          if (!tenseData || typeof tenseData !== 'object') continue;
+          for (const [pronoun, entry] of Object.entries(tenseData)) {
+            const e = normConj(entry);
+            if (!e.form) continue;
+            const conjText = pronoun + ' ' + e.form;
+            const conjId = w.id + '_conj_' + tIdx + '_' + encodeURIComponent(pronoun);
+            tasks.push({
+              text: conjText, id: conjId, lang,
+              mode: 'normal', speed: numNormal,
+              prevSpeed: normalChanged ? prevNorm : null
+            });
+            tasks.push({
+              text: conjText, id: conjId, lang,
+              mode: 'slow', speed: numSlow,
+              prevSpeed: slowChanged ? prevSlow : null
+            });
+          }
+        }
+      }
     }
     for (const p of phrases) {
       tasks.push({
