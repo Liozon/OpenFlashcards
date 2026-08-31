@@ -909,8 +909,9 @@ router.get('/quiz', (req, res) => {
 });
 
 // GET /api/quiz/batch?lang=fr&count=30&direction=random&types=noun,verb&labels=id1&dateFrom=...&dateTo=...
+// order=random (default) | sequential   sortDir=desc (newest first, default) | asc (oldest first)
 router.get('/quiz/batch', (req, res) => {
-  const { lang, direction = 'random', count = 30, dateFrom, dateTo } = req.query;
+  const { lang, direction = 'random', count = 30, dateFrom, dateTo, order = 'random', sortDir = 'desc' } = req.query;
   const types = req.query.types ? req.query.types.split(',') : TYPES;
   const labels = req.query.labels ? req.query.labels.split(',') : [];
   if (!lang) return res.status(400).json({ error: 'lang required' });
@@ -921,19 +922,29 @@ router.get('/quiz/batch', (req, res) => {
   if (dateTo) pool = pool.filter(w => w.createdAt <= dateTo + 'T23:59:59.999Z');
   if (pool.length < 2) return res.status(400).json({ error: 'Add at least 2 words to start!' });
 
-  const getMax = w => w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
-  const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
-  const activePool = unmastered.length >= 2 ? unmastered : pool;
-  activePool.sort((a, b) => {
-    const ra = (a.progress || 0) / getMax(a);
-    const rb = (b.progress || 0) / getMax(b);
-    return ra - rb;
-  });
-  const topN = Math.max(2, Math.ceil(activePool.length * 0.6));
-  const topPool = activePool.slice(0, topN);
+  let topPool;
+  if (order === 'sequential') {
+    topPool = [...pool];
+    topPool.sort((a, b) => {
+      const da = a.createdAt || '';
+      const db = b.createdAt || '';
+      return sortDir === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+    });
+  } else {
+    const getMax = w => w.maxProgress || wordMaxProgress(w.literal, w.infinitive);
+    const unmastered = pool.filter(w => (w.progress || 0) < getMax(w));
+    const activePool = unmastered.length >= 2 ? unmastered : pool;
+    activePool.sort((a, b) => {
+      const ra = (a.progress || 0) / getMax(a);
+      const rb = (b.progress || 0) / getMax(b);
+      return ra - rb;
+    });
+    const topN = Math.max(2, Math.ceil(activePool.length * 0.6));
+    topPool = activePool.slice(0, topN);
+  }
 
-  shuffle(topPool);
-  const batchSize = Math.min(parseInt(count, 10) || 30, topPool.length);
+  if (order !== 'sequential') shuffle(topPool);
+  const batchSize = order === 'sequential' ? topPool.length : Math.min(parseInt(count, 10) || 30, topPool.length);
   const questions = topPool.slice(0, batchSize).map(q => buildQuizQuestion(q, pool, direction, lang));
 
   res.json({ questions });
@@ -991,8 +1002,9 @@ router.get('/quiz/phrase', (req, res) => {
 });
 
 // GET /api/quiz/phrase/batch?lang=fr&count=20&labels=id1&dateFrom=...&dateTo=...
+// order=random (default) | sequential   sortDir=desc (newest first, default) | asc (oldest first)
 router.get('/quiz/phrase/batch', (req, res) => {
-  const { lang, count = 20, dateFrom, dateTo } = req.query;
+  const { lang, count = 20, dateFrom, dateTo, order = 'random', sortDir = 'desc' } = req.query;
   const labels = req.query.labels ? req.query.labels.split(',') : [];
   if (!lang) return res.status(400).json({ error: 'lang required' });
   let phrases = getPhrases(userId(req), lang);
@@ -1000,9 +1012,18 @@ router.get('/quiz/phrase/batch', (req, res) => {
   if (dateFrom) phrases = phrases.filter(p => p.createdAt >= dateFrom);
   if (dateTo) phrases = phrases.filter(p => p.createdAt <= dateTo + 'T23:59:59.999Z');
   if (!phrases.length) return res.status(404).json({ error: 'No phrases yet.' });
-  shuffle(phrases);
-  const batchSize = Math.min(parseInt(count, 10) || 20, phrases.length);
-  res.json({ questions: phrases.slice(0, batchSize) });
+  if (order === 'sequential') {
+    phrases.sort((a, b) => {
+      const da = a.createdAt || '';
+      const db = b.createdAt || '';
+      return sortDir === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+    });
+    res.json({ questions: phrases });
+  } else {
+    shuffle(phrases);
+    const batchSize = Math.min(parseInt(count, 10) || 20, phrases.length);
+    res.json({ questions: phrases.slice(0, batchSize) });
+  }
 });
 
 // POST /api/quiz/phrase/answer
