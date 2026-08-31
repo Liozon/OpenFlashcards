@@ -121,7 +121,7 @@
   "train_correct_msg": "Правильно!",
   "train_wrong_msg": "Правильна відповідь:",
   "train_dir_random": "Випадково",
-  "train_order_random": "Випадково",
+  "train_order_random": "Випадковий порядок",
   "train_order_sequential": "Звичайний порядок",
   "train_sort_newest": "Спочатку нові",
   "train_sort_oldest": "Спочатку старі",

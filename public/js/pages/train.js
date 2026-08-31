@@ -67,8 +67,8 @@ async function _refillAutoQueue() {
   const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
   const orderParam = _trainOrder === 'sequential' ? '&order=sequential&sortDir=' + _trainSortDir : '';
-  const wordCount = _trainOrder === 'sequential' ? 500 : 40;
-  const phraseCount = _trainOrder === 'sequential' ? 500 : 30;
+  const wordCount = 500;
+  const phraseCount = 500;
   if (_trainAutoContent === 'phrases') {
     const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=' + phraseCount + labelsParam + orderParam + _dateParams());
     _trainAutoQueue = (result.questions || []).map(q => ({ ...q, _type: 'phrase' }));
@@ -99,7 +99,6 @@ function _resetQueues() {
 }
 
 function _filterSeenFromQueue(queue) {
-  if (_trainOrder !== 'sequential') return queue;
   return queue.filter(q => !_trainSeenIds.has(q.id));
 }
 
@@ -663,14 +662,14 @@ async function loadWordQuestion() {
   try {
     if (!_trainWordQueue.length) await _refillWordQueue();
     _trainWordQueue = _filterSeenFromQueue(_trainWordQueue);
-    if (!_trainWordQueue.length && _trainOrder === 'sequential') {
+    if (!_trainWordQueue.length) {
       _trainSeenIds = new Set();
       _toastCycleRestart();
       await _refillWordQueue();
     }
     const q = _trainWordQueue.shift();
     if (!q) throw { error: 'No words available.' };
-    if (_trainOrder === 'sequential') _trainSeenIds.add(q.id);
+    _trainSeenIds.add(q.id);
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
@@ -871,14 +870,14 @@ async function loadPhraseQuestion() {
   try {
     if (!_trainPhraseQueue.length) await _refillPhraseQueue();
     _trainPhraseQueue = _filterSeenFromQueue(_trainPhraseQueue);
-    if (!_trainPhraseQueue.length && _trainOrder === 'sequential') {
+    if (!_trainPhraseQueue.length) {
       _trainSeenIds = new Set();
       _toastCycleRestart();
       await _refillPhraseQueue();
     }
     _curPhrase = _trainPhraseQueue.shift();
     if (!_curPhrase) throw { error: 'No phrases available.' };
-    if (_trainOrder === 'sequential') _trainSeenIds.add(_curPhrase.id);
+    _trainSeenIds.add(_curPhrase.id);
     renderPhraseQuiz(_curPhrase);
   } catch (e) {
     area.innerHTML =
@@ -1100,14 +1099,14 @@ async function loadWritingQuestion() {
   try {
     if (!_trainWordQueue.length) await _refillWordQueue(true);
     _trainWordQueue = _filterSeenFromQueue(_trainWordQueue);
-    if (!_trainWordQueue.length && _trainOrder === 'sequential') {
+    if (!_trainWordQueue.length) {
       _trainSeenIds = new Set();
       _toastCycleRestart();
       await _refillWordQueue(true);
     }
     const q = _trainWordQueue.shift();
     if (!q) throw { error: 'No words available.' };
-    if (_trainOrder === 'sequential') _trainSeenIds.add(q.id);
+    _trainSeenIds.add(q.id);
     _curWritingWord = q;
     renderWritingQuiz(q);
   } catch (e) {
@@ -1441,14 +1440,14 @@ async function loadAutoQuestion() {
   try {
     if (!_trainAutoQueue.length) await _refillAutoQueue();
     _trainAutoQueue = _filterSeenFromQueue(_trainAutoQueue);
-    if (!_trainAutoQueue.length && _trainOrder === 'sequential') {
+    if (!_trainAutoQueue.length) {
       _trainSeenIds = new Set();
       _toastCycleRestart();
       await _refillAutoQueue();
     }
     const card = _trainAutoQueue.shift();
     if (!card) throw { error: 'No content available.' };
-    if (_trainOrder === 'sequential') _trainSeenIds.add(card.id);
+    _trainSeenIds.add(card.id);
     _trainAutoCard = card;
     renderAutoCard(card);
   } catch (e) {

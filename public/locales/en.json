@@ -122,7 +122,7 @@
   "train_wrong_msg": "The answer was:",
   "train_dir_random": "Random",
   "train_click_hint": "Click to see translation",
-  "train_order_random": "Random",
+  "train_order_random": "Random order",
   "train_order_sequential": "Normal order",
   "train_sort_newest": "Newest first",
   "train_sort_oldest": "Oldest first",

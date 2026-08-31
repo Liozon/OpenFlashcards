@@ -121,7 +121,7 @@
   "train_correct_msg": "Correct !",
   "train_wrong_msg": "La réponse était :",
   "train_dir_random": "Aléatoire",
-  "train_order_random": "Aléatoire",
+  "train_order_random": "Ordre aléatoire",
   "train_order_sequential": "Ordre normal",
   "train_sort_newest": "Plus récents d'abord",
   "train_sort_oldest": "Plus anciens d'abord",

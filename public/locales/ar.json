@@ -121,7 +121,7 @@
   "train_correct_msg": "صحيح!",
   "train_wrong_msg": "كانت الإجابة:",
   "train_dir_random": "عشوائي",
-  "train_order_random": "عشوائي",
+  "train_order_random": "ترتيب عشوائي",
   "train_order_sequential": "الترتيب العادي",
   "train_sort_newest": "الأحدث أولاً",
   "train_sort_oldest": "الأقدم أولاً",
