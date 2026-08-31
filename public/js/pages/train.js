@@ -14,6 +14,9 @@ let _trainMode = 'word';
 let _trainTypes = [];
 let _trainLabels = [];
 let _trainDirection = 'random';
+let _trainOrder = 'random';        // 'random' | 'sequential'
+let _trainSortDir = 'desc';        // 'desc' (newest first) | 'asc' (oldest first)
+let _trainSeenIds = new Set();     // IDs already shown this session (sequential mode)
 let _trainCorrect = 0;
 let _trainWrong = 0;
 let _trainStreak = 0;
@@ -46,14 +49,16 @@ async function _refillWordQueue(dir) {
   const apiDir = dir ? 'native' : (dirMap[_trainDirection] || 'random');
   const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-  const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=' + apiDir + typesParam + labelsParam + _dateParams());
+  const orderParam = _trainOrder === 'sequential' ? '&order=sequential&sortDir=' + _trainSortDir : '';
+  const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=500&direction=' + apiDir + typesParam + labelsParam + orderParam + _dateParams());
   _trainWordQueue = result.questions || [];
 }
 
 async function _refillPhraseQueue() {
   const lang = currentLang();
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
-  const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams());
+  const orderParam = _trainOrder === 'sequential' ? '&order=sequential&sortDir=' + _trainSortDir : '';
+  const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=500' + labelsParam + orderParam + _dateParams());
   _trainPhraseQueue = result.questions || [];
 }
 
@@ -61,22 +66,29 @@ async function _refillAutoQueue() {
   const lang = currentLang();
   const typesParam = _trainTypes.length ? '&types=' + _trainTypes.join(',') : '';
   const labelsParam = _trainLabels.length ? '&labels=' + _trainLabels.join(',') : '';
+  const orderParam = _trainOrder === 'sequential' ? '&order=sequential&sortDir=' + _trainSortDir : '';
+  const wordCount = 500;
+  const phraseCount = 500;
   if (_trainAutoContent === 'phrases') {
-    const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams());
+    const result = await api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=' + phraseCount + labelsParam + orderParam + _dateParams());
     _trainAutoQueue = (result.questions || []).map(q => ({ ...q, _type: 'phrase' }));
   } else if (_trainAutoContent === 'words') {
-    const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=random' + typesParam + labelsParam + _dateParams());
+    const result = await api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=' + wordCount + '&direction=random' + typesParam + labelsParam + orderParam + _dateParams());
     _trainAutoQueue = (result.questions || []).map(q => ({ ...q, _type: 'word' }));
   } else {
     const [wordRes, phraseRes] = await Promise.all([
-      api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=40&direction=random' + typesParam + labelsParam + _dateParams()).catch(() => ({ questions: [] })),
-      api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=30' + labelsParam + _dateParams()).catch(() => ({ questions: [] }))
+      api('GET', '/api/quiz/batch?lang=' + encodeURIComponent(lang) + '&count=' + wordCount + '&direction=random' + typesParam + labelsParam + orderParam + _dateParams()).catch(() => ({ questions: [] })),
+      api('GET', '/api/quiz/phrase/batch?lang=' + encodeURIComponent(lang) + '&count=' + phraseCount + labelsParam + orderParam + _dateParams()).catch(() => ({ questions: [] }))
     ]);
     const words = (wordRes.questions || []).map(q => ({ ...q, _type: 'word' }));
     const phrases = (phraseRes.questions || []).map(q => ({ ...q, _type: 'phrase' }));
     const merged = [...words, ...phrases];
     if (!merged.length) throw { error: 'No words or phrases available.' };
-    _trainAutoQueue = _shuffle(merged);
+    if (_trainOrder === 'sequential') {
+      _trainAutoQueue = merged;
+    } else {
+      _trainAutoQueue = _shuffle(merged);
+    }
   }
 }
 
@@ -86,11 +98,23 @@ function _resetQueues() {
   _trainAutoQueue = [];
 }
 
+function _filterSeenFromQueue(queue) {
+  return queue.filter(q => !_trainSeenIds.has(q.id));
+}
+
+function _toastCycleRestart() {
+  try {
+    if (window.toast) {
+      window.toast(t('train_cycle_restart'), 'info');
+    }
+  } catch (e) { }
+}
+
 // ── Date format helpers ───────────────────────────────────────────────────────
 const _DATE_FORMATS = [
-  'DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','DD.MM.YYYY','D.M.YYYY',
-  'MM/DD/YYYY','M/D/YYYY','MM-DD-YYYY','M-D-YYYY','MM.DD.YYYY','M.D.YYYY',
-  'YYYY-MM-DD','YYYY/MM/DD','YYYY.MM.DD','YYYYMMDD'
+  'DD/MM/YYYY', 'D/M/YYYY', 'DD-MM-YYYY', 'D-M-YYYY', 'DD.MM.YYYY', 'D.M.YYYY',
+  'MM/DD/YYYY', 'M/D/YYYY', 'MM-DD-YYYY', 'M-D-YYYY', 'MM.DD.YYYY', 'M.D.YYYY',
+  'YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYYMMDD'
 ];
 
 function _dateFmtInfo(fmt) {
@@ -98,7 +122,7 @@ function _dateFmtInfo(fmt) {
   if (fmt.includes('/')) sep = '/';
   else if (fmt.includes('-')) sep = '-';
   else if (fmt.includes('.')) sep = '.';
-  const parts = sep ? fmt.split(sep) : ['YYYY','MM','DD'];
+  const parts = sep ? fmt.split(sep) : ['YYYY', 'MM', 'DD'];
   const order = parts.map(p => p.includes('Y') ? 'year' : p.includes('M') ? 'month' : 'day');
   const padded = parts.map(p => p.length > 1);
   return { sep, order, padded };
@@ -111,7 +135,7 @@ function _parseDateStr(str, fmt) {
   if (info.sep) {
     parts = str.split(info.sep);
   } else {
-    if (str.length === 8) parts = [str.slice(0,4), str.slice(4,6), str.slice(6,8)];
+    if (str.length === 8) parts = [str.slice(0, 4), str.slice(4, 6), str.slice(6, 8)];
     else return '';
   }
   if (parts.length !== 3) return '';
@@ -119,14 +143,14 @@ function _parseDateStr(str, fmt) {
   parts.forEach((p, i) => { vals[info.order[i]] = parseInt(p, 10); });
   if (!vals.year || !vals.month || !vals.day) return '';
   if (vals.month < 1 || vals.month > 12 || vals.day < 1 || vals.day > 31) return '';
-  return String(vals.year).padStart(4,'0') + '-' + String(vals.month).padStart(2,'0') + '-' + String(vals.day).padStart(2,'0');
+  return String(vals.year).padStart(4, '0') + '-' + String(vals.month).padStart(2, '0') + '-' + String(vals.day).padStart(2, '0');
 }
 
 function _fmtDateStr(iso, fmt) {
   if (!iso || !fmt) return '';
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return '';
-  const vals = { year: parseInt(m[1],10), month: parseInt(m[2],10), day: parseInt(m[3],10) };
+  const vals = { year: parseInt(m[1], 10), month: parseInt(m[2], 10), day: parseInt(m[3], 10) };
   const info = _dateFmtInfo(fmt);
   const parts = info.order.map(key => {
     const val = vals[key];
@@ -168,6 +192,7 @@ function renderTrain(el) {
   stopAutoTimer();
   _trainCorrect = 0; _trainWrong = 0; _trainStreak = 0;
   _trainTypes = []; _trainLabels = []; _trainMode = 'flashcards'; _trainDirection = 'random';
+  _trainOrder = 'random'; _trainSortDir = 'desc'; _trainSeenIds = new Set();
   _trainDateFrom = ''; _trainDateTo = '';
 
   const ld = currentLangData();
@@ -242,6 +267,18 @@ function renderTrain(el) {
     '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
     '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
+    '</div>' +
+
+    // ── 5b. Order (random vs normal/sequential) ──
+    '<div class="filter-row" id="orderFilters">' +
+    '<button class="type-btn active" data-order="random"      onclick="setTrainOrder(\'random\',this)">🔀 ' + t('train_order_random') + '</button>' +
+    '<button class="type-btn"        data-order="sequential"  onclick="setTrainOrder(\'sequential\',this)">📖 ' + t('train_order_sequential') + '</button>' +
+    '</div>' +
+
+    // ── 5c. Sequential sort direction (visible only in sequential order) ──
+    '<div class="filter-row" id="sortDirFilters" style="display:none">' +
+    '<button class="type-btn active" data-sortdir="desc"      onclick="setTrainSortDir(\'desc\',this)">⬇️ ' + t('train_sort_newest') + '</button>' +
+    '<button class="type-btn"        data-sortdir="asc"       onclick="setTrainSortDir(\'asc\',this)">⬆️ ' + t('train_sort_oldest') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
@@ -378,6 +415,7 @@ window.startTraining = function () {
   }
   if (_trainMode === 'flashcards') _trainAutoStarted = true;
   _resetQueues();
+  _trainSeenIds = new Set();
   loadQuestion();
 };
 
@@ -400,6 +438,10 @@ window.setTrainMode = function (mode, btn) {
   document.getElementById('autoContentFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoDirFilters').style.display = isAuto ? '' : 'none';
   document.getElementById('autoTimeRow').style.display = isAuto ? '' : 'none';
+  const orderRow = document.getElementById('orderFilters');
+  if (orderRow) orderRow.style.display = '';
+  const sortRow = document.getElementById('sortDirFilters');
+  if (sortRow) sortRow.style.display = _trainOrder === 'sequential' ? '' : 'none';
   const lf = document.getElementById('labelFilters');
   if (lf && lf.children.length) lf.style.display = (isWord || isWriting || isPhrase || isMixed || isAuto) ? '' : 'none';
   if (isAuto) {
@@ -474,7 +516,7 @@ window.onDatePick = function (input, which) {
 window.clearDateFilter = function () {
   _trainDateFrom = '';
   _trainDateTo = '';
-  ['trainDateFromDisplay','trainDateToDisplay','trainDateFrom','trainDateTo'].forEach(id => {
+  ['trainDateFromDisplay', 'trainDateToDisplay', 'trainDateFrom', 'trainDateTo'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -486,6 +528,26 @@ window.setTrainDir = function (dir, btn) {
   _trainDirection = dir;
   document.querySelectorAll('#dirFilters .type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  _resetQueues();
+  if (_trainSessionStarted) loadQuestion();
+};
+
+window.setTrainOrder = function (order, btn) {
+  _trainOrder = order;
+  document.querySelectorAll('#orderFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sortRow = document.getElementById('sortDirFilters');
+  if (sortRow) sortRow.style.display = order === 'sequential' ? '' : 'none';
+  _trainSeenIds = new Set();
+  _resetQueues();
+  if (_trainSessionStarted) loadQuestion();
+};
+
+window.setTrainSortDir = function (dir, btn) {
+  _trainSortDir = dir;
+  document.querySelectorAll('#sortDirFilters .type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _trainSeenIds = new Set();
   _resetQueues();
   if (_trainSessionStarted) loadQuestion();
 };
@@ -599,8 +661,15 @@ async function loadWordQuestion() {
 
   try {
     if (!_trainWordQueue.length) await _refillWordQueue();
+    _trainWordQueue = _filterSeenFromQueue(_trainWordQueue);
+    if (!_trainWordQueue.length) {
+      _trainSeenIds = new Set();
+      _toastCycleRestart();
+      await _refillWordQueue();
+    }
     const q = _trainWordQueue.shift();
     if (!q) throw { error: 'No words available.' };
+    _trainSeenIds.add(q.id);
     renderWordQuiz(q);
   } catch (e) {
     area.innerHTML =
@@ -800,8 +869,15 @@ async function loadPhraseQuestion() {
 
   try {
     if (!_trainPhraseQueue.length) await _refillPhraseQueue();
+    _trainPhraseQueue = _filterSeenFromQueue(_trainPhraseQueue);
+    if (!_trainPhraseQueue.length) {
+      _trainSeenIds = new Set();
+      _toastCycleRestart();
+      await _refillPhraseQueue();
+    }
     _curPhrase = _trainPhraseQueue.shift();
     if (!_curPhrase) throw { error: 'No phrases available.' };
+    _trainSeenIds.add(_curPhrase.id);
     renderPhraseQuiz(_curPhrase);
   } catch (e) {
     area.innerHTML =
@@ -1022,8 +1098,15 @@ async function loadWritingQuestion() {
 
   try {
     if (!_trainWordQueue.length) await _refillWordQueue(true);
+    _trainWordQueue = _filterSeenFromQueue(_trainWordQueue);
+    if (!_trainWordQueue.length) {
+      _trainSeenIds = new Set();
+      _toastCycleRestart();
+      await _refillWordQueue(true);
+    }
     const q = _trainWordQueue.shift();
     if (!q) throw { error: 'No words available.' };
+    _trainSeenIds.add(q.id);
     _curWritingWord = q;
     renderWritingQuiz(q);
   } catch (e) {
@@ -1356,8 +1439,15 @@ async function loadAutoQuestion() {
 
   try {
     if (!_trainAutoQueue.length) await _refillAutoQueue();
+    _trainAutoQueue = _filterSeenFromQueue(_trainAutoQueue);
+    if (!_trainAutoQueue.length) {
+      _trainSeenIds = new Set();
+      _toastCycleRestart();
+      await _refillAutoQueue();
+    }
     const card = _trainAutoQueue.shift();
     if (!card) throw { error: 'No content available.' };
+    _trainSeenIds.add(card.id);
     _trainAutoCard = card;
     renderAutoCard(card);
   } catch (e) {

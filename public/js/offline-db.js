@@ -269,17 +269,22 @@
     };
   }
 
-  function _buildQuizWordBatch(words, lang, direction, types, labels, count) {
+  function _buildQuizWordBatch(words, lang, direction, types, labels, count, order, sortDir) {
     const pool = _filterWordPool(words, types, labels);
     if (pool.length < 2) return { questions: [] };
 
-    const active = _sortWordPool(pool);
-    const topN = Math.max(2, Math.ceil(active.length * 0.6));
-    const topPool = active.slice(0, topN);
+    if (order === 'sequential') {
+      pool.sort((a, b) => {
+        const da = a.createdAt || '';
+        const db = b.createdAt || '';
+        return sortDir === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+      });
+    } else {
+      _shuffle(pool);
+    }
 
-    _shuffle(topPool);
-    const batchSize = Math.min(parseInt(count, 10) || 30, topPool.length);
-    const questions = topPool.slice(0, batchSize).map(q => _buildWordQuestion(q, pool, direction, lang));
+    const batchSize = Math.min(parseInt(count, 10) || 30, pool.length);
+    const questions = pool.slice(0, batchSize).map(q => _buildWordQuestion(q, pool, direction, lang));
 
     return { questions };
   }
@@ -292,15 +297,20 @@
     return active[Math.floor(Math.random() * topN)];
   }
 
-  function _buildQuizPhraseBatch(phrases, lang, labels, count) {
+  function _buildQuizPhraseBatch(phrases, lang, labels, count, order, sortDir) {
     const pool = _filterPhrasePool(phrases, labels);
     if (!pool.length) return { questions: [] };
-    const active = _sortPhrasePool(pool);
-    const topN = Math.max(1, Math.ceil(active.length * 0.6));
-    const topPool = active.slice(0, topN);
-    _shuffle(topPool);
-    const batchSize = Math.min(parseInt(count, 10) || 20, topPool.length);
-    return { questions: topPool.slice(0, batchSize) };
+    if (order === 'sequential') {
+      pool.sort((a, b) => {
+        const da = a.createdAt || '';
+        const db = b.createdAt || '';
+        return sortDir === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+      });
+      return { questions: pool };
+    }
+    _shuffle(pool);
+    const batchSize = Math.min(parseInt(count, 10) || 20, pool.length);
+    return { questions: pool.slice(0, batchSize) };
   }
 
   function _filterPhrasePool(phrases, labels) {
@@ -375,7 +385,9 @@
       const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
       const dir = qs.get('direction') || 'random';
       const count = parseInt(qs.get('count'), 10) || 30;
-      return _buildQuizWordBatch(words, lang, dir, types, labels, count);
+      const order = qs.get('order') || 'random';
+      const sortDir = qs.get('sortDir') || 'desc';
+      return _buildQuizWordBatch(words, lang, dir, types, labels, count, order, sortDir);
     }
 
     // ── /api/quiz/answer (POST) ──────────────────────────────────────────────
@@ -427,7 +439,9 @@
       const phrases = langData.phrases || [];
       const labels = qs.get('labels') ? qs.get('labels').split(',') : [];
       const count = parseInt(qs.get('count'), 10) || 20;
-      const result = _buildQuizPhraseBatch(phrases, lang, labels, count);
+      const order = qs.get('order') || 'random';
+      const sortDir = qs.get('sortDir') || 'desc';
+      const result = _buildQuizPhraseBatch(phrases, lang, labels, count, order, sortDir);
       if (!result || !result.questions.length) throw { error: 'No phrases yet.' };
       return result;
     }
