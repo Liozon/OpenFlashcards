@@ -180,10 +180,15 @@ router.post('/users/:id/tts-cache/generate', async (req, res) => {
             for (const [pronoun, entry] of Object.entries(tenseData)) {
               const e = normConj(entry);
               if (!e.form) continue;
+              const encPronoun = encodeURIComponent(pronoun);
               const conjText = pronoun + ' ' + e.form;
-              const conjId = w.id + '_conj_' + tIdx + '_' + encodeURIComponent(pronoun);
+              const conjId = w.id + '_conj_' + tIdx + '_' + encPronoun;
               tasks.push({ text: conjText, id: conjId, mode: 'normal', speed: speedNormal, lang: lang.isoCode });
               tasks.push({ text: conjText, id: conjId, mode: 'slow',   speed: speedSlow,   lang: lang.isoCode });
+              // Mother-tongue audio for each conjugated pronoun (e.g. "j'ai" / "tu es")
+              if (e.translation && cfg.nativeLang && cfg.nativeLang !== lang.isoCode) {
+                tasks.push({ text: e.translation, id: conjId + '_trans', mode: 'normal', speed: 1.0, lang: cfg.nativeLang });
+              }
             }
           }
         }

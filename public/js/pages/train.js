@@ -723,9 +723,12 @@ function renderWordQuiz(q) {
 
   const wordEl = document.getElementById('qWord');
   const ttsWord = q.showNative ? q.answerText : q.promptText;
+  const ttsId = q.quizPronoun
+    ? (q.id + '_conj_' + (q.quizTenseIdx != null ? q.quizTenseIdx : '0') + '_' + encodeURIComponent(q.quizPronoun))
+    : q.id;
   wordEl.appendChild(document.createTextNode(' '));
-  wordEl.appendChild(TTS.button(ttsWord, lang, null, q && q.id));
-  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang, null, q && q.id));
+  wordEl.appendChild(TTS.button(ttsWord, lang, null, ttsId));
+  wordEl.appendChild(TTS.buttonSlow(ttsWord, lang, null, ttsId));
 
   const grid = document.getElementById('choicesGrid');
   q.choices.forEach(choice => {
@@ -755,7 +758,11 @@ async function handleWordAnswer(btn, answer, q) {
   updateScore();
   _checkComboConfetti();
 
-  TTS.speak(q.showNative ? q.answerText : q.promptText, q.langCode, q.id);
+  const postSpeakText = q.showNative ? q.answerText : q.promptText;
+  const postSpeakId = q.quizPronoun
+    ? (q.id + '_conj_' + (q.quizTenseIdx != null ? q.quizTenseIdx : '0') + '_' + encodeURIComponent(q.quizPronoun))
+    : q.id;
+  TTS.speak(postSpeakText, q.langCode, postSpeakId);
 
   const card = document.getElementById('wordQuizCard');
 
@@ -1362,6 +1369,12 @@ function stopAutoTimer() {
 function startAutoTimer() {
   stopAutoTimer();
   _trainAutoTimer = setInterval(() => {
+    // If the flashcards DOM is gone (user navigated away), stop the timer
+    // so it doesn't keep firing against a detached page.
+    if (!document.getElementById('quizArea') || !document.getElementById('autoCard')) {
+      stopAutoTimer();
+      return;
+    }
     if (_trainAutoPaused) return;
     _trainAutoTimeRemaining = Math.max(0, _trainAutoTimeRemaining - 0.05);
     updateAutoProgress();
@@ -1374,7 +1387,8 @@ function startAutoTimer() {
         if (card) {
           const word = _trainAutoState === 'front' ? card.dataset.frontWord : card.dataset.backWord;
           const langCode = _trainAutoState === 'front' ? card.dataset.frontLang : card.dataset.backLang;
-          TTS.speak(word, langCode, card.dataset.id);
+          const ttsId = _trainAutoState === 'front' ? card.dataset.frontId : card.dataset.backId;
+          TTS.speak(word, langCode, ttsId);
         }
         _trainAutoTtsPlayed = true;
       }
@@ -1436,6 +1450,7 @@ window.toggleAutoPause = function () {
 
 async function loadAutoQuestion() {
   const area = document.getElementById('quizArea');
+  if (!area) { stopAutoTimer(); return; }
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
   _trainAutoCard = null;
@@ -1509,6 +1524,26 @@ function renderAutoCard(card) {
     backLang = nativeLang;
   }
 
+  // Per-side TTS cache id. Native side speaks the translation -> `{id}_trans`.
+  // Studied side speaks a word; if it's a conjugated form use the `_conj_` id,
+  // otherwise the plain word id. Phrases keep the plain id on both sides.
+  let frontId, backId;
+  if (card._type === 'phrase') {
+    frontId = id; backId = id;
+  } else {
+    const targetSideId = card.quizPronoun
+      ? (id + '_conj_' + (card.quizTenseIdx != null ? card.quizTenseIdx : '0') + '_' + encodeURIComponent(card.quizPronoun))
+      : id;
+    // Native side: the broad translation text is `{id}_trans`, but a conjugated
+    // row's mother-tongue text ("je suis") is per-pronoun, so it needs its own
+    // unique id to avoid colliding with the infinitive translation audio.
+    const nativeSideId = card.quizPronoun
+      ? (id + '_conj_' + (card.quizTenseIdx != null ? card.quizTenseIdx : '0') + '_' + encodeURIComponent(card.quizPronoun) + '_trans')
+      : id + '_trans';
+    frontId = frontLang === nativeLang ? nativeSideId : targetSideId;
+    backId = backLang === nativeLang ? nativeSideId : targetSideId;
+  }
+
   _trainAutoState = 'front';
   _trainAutoTimeRemaining = _trainAutoTime;
   _trainAutoTtsPlayed = false;
@@ -1521,7 +1556,8 @@ function renderAutoCard(card) {
 
   area.innerHTML =
     '<div class="auto-card" id="autoCard" data-front-word="' + esc(frontWord) + '" data-front-lang="' + esc(frontLang) + '" ' +
-    'data-back-word="' + esc(backWord) + '" data-back-lang="' + esc(backLang) + '" data-id="' + esc(id) + '">' +
+    'data-back-word="' + esc(backWord) + '" data-back-lang="' + esc(backLang) + '" ' +
+    'data-front-id="' + esc(frontId) + '" data-back-id="' + esc(backId) + '" data-id="' + esc(id) + '">' +
 
     '<div class="auto-card-header">' +
     '<span class="badge badge-' + (card._type === 'phrase' ? 'phrase' : (card.type || 'word')) + '">' + typeLabel + '</span>' +
@@ -1559,21 +1595,21 @@ function renderAutoCard(card) {
   if (!_trainAutoPaused) startAutoTimer();
 
   const frontTts = document.getElementById('autoTtsFront');
-  frontTts.appendChild(TTS.button(frontWord, frontLang, null, id));
-  if (frontLang !== nativeLang) frontTts.appendChild(TTS.buttonSlow(frontWord, frontLang, null, id));
+  frontTts.appendChild(TTS.button(frontWord, frontLang, null, frontId));
+  if (frontLang !== nativeLang) frontTts.appendChild(TTS.buttonSlow(frontWord, frontLang, null, frontId));
 
   const backTts = document.getElementById('autoTtsBack');
-  backTts.appendChild(TTS.button(backWord, backLang, null, id));
-  if (backLang !== nativeLang) backTts.appendChild(TTS.buttonSlow(backWord, backLang, null, id));
+  backTts.appendChild(TTS.button(backWord, backLang, null, backId));
+  if (backLang !== nativeLang) backTts.appendChild(TTS.buttonSlow(backWord, backLang, null, backId));
 
   // Pre-fetch TTS audio for both sides so the server generates it in advance
-  const prefetchTTS = (text, lang) => {
+  const prefetchTTS = (text, lang, ttsId) => {
     if (!text || !lang) return;
-    fetch(TTS._url(text, lang, 'normal', id)).catch(() => { });
-    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', id)).catch(() => { });
+    fetch(TTS._url(text, lang, 'normal', ttsId)).catch(() => { });
+    if (lang !== nativeLang) fetch(TTS._url(text, lang, 'slow', ttsId)).catch(() => { });
   };
-  prefetchTTS(frontWord, frontLang);
-  prefetchTTS(backWord, backLang);
+  prefetchTTS(frontWord, frontLang, frontId);
+  prefetchTTS(backWord, backLang, backId);
 }
 
 window.toggleTrainSettings = function () {
