@@ -34,8 +34,15 @@ app.use('/api', requireAuth, apiRoutes);
 app.use('/admin', requireAuth, adminRoutes);
 
 // ── SPA catch-all: serve index.html for all non-API routes ─────────────────
-app.get('*', (req, res) => {
+app.get('/*splat', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// ── Error handling ──────────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  console.error(err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
