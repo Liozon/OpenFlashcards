@@ -93,7 +93,8 @@ function getUserConfig(userId) {
     currentLang: null,
     uiLang: 'en',
     darkMode: true,
-    hideZeroStats: false
+    hideZeroStats: false,
+    accentColor: '#439b00'
   });
 }
 

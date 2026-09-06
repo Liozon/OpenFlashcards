@@ -261,12 +261,12 @@ img {
 
 .btn-primary {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-dk);
 }
 
 .btn-primary:hover {
   background: var(--primary-hvr);
-  box-shadow: 0 4px 12px rgba(88, 204, 2, .3);
+  box-shadow: 0 4px 12px var(--primary-bg-correct);
 }
 
 .btn-secondary {
@@ -568,7 +568,7 @@ img {
 .type-btn.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--primary-dk);
 }
 
 .word-grid {
@@ -1288,7 +1288,7 @@ img {
 }
 .atv-word:hover {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-dk);
 }
 .atv-sep {
   color: var(--text-faint);
@@ -1316,7 +1316,7 @@ img {
 .ats-word:hover {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--primary-dk);
 }
 .ats-word strong {
   font-weight: 700;
@@ -1668,6 +1668,74 @@ img {
   margin-bottom: 20px;
 }
 
+/* ── Main (accent) color picker ──────────────────────────────── */
+.accent-field {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.accent-field label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.accent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accent-row input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.accent-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  outline: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  padding: 0;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch.active {
+  outline: 3px solid var(--primary);
+  box-shadow: var(--shadow);
+  transform: scale(1.1);
+}
+
 .selected-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1714,7 +1782,7 @@ img {
 .train-settings-toggle.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--primary-dk);
 }
 
 .train-settings-panel {

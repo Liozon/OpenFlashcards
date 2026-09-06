@@ -170,6 +170,91 @@ function _updateOfflineBanner(show) {
   }
 }
 
+function hexToRgb(hex) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length !== 6) return null;
+  const num = parseInt(h, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function rgbToHex(r, g, b) {
+  const to2 = v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
+  return `#${to2(r)}${to2(g)}${to2(b)}`;
+}
+
+function mixColor(hex, target, t) {
+  const c = hexToRgb(hex);
+  const tg = hexToRgb(target);
+  if (!c || !tg) return hex;
+  return rgbToHex(c.r + (tg.r - c.r) * t, c.g + (tg.g - c.g) * t, c.b + (tg.b - c.b) * t);
+}
+
+function relativeLuminance(hex) {
+  const c = hexToRgb(hex);
+  if (!c) return 0;
+  const ln = v => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
+  return 0.2126 * ln(c.r) + 0.7152 * ln(c.g) + 0.0722 * ln(c.b);
+}
+
+function contrastRatio(a, b) {
+  const la = relativeLuminance(a), lb = relativeLuminance(b);
+  const hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function hexToRgba(hex, alpha) {
+  const c = hexToRgb(hex);
+  if (!c) return 'rgba(0,0,0,0)';
+  return `rgba(${c.r},${c.g},${c.b},${alpha})`;
+}
+
+function darkenHex(hex, factor) {
+  const c = hexToRgb(hex);
+  if (!c) return hex || '#439b00';
+  return rgbToHex(c.r * factor, c.g * factor, c.b * factor);
+}
+
+window.ACCENT_COLORS = ['#439b00', '#0ea5e9', '#e11d48', '#7c3aed', '#eab308', '#ea580c', '#0d9488', '#f43f5e', '#2563eb', '#65a30d'];
+
+// Make the accent legible against the app background in the active theme.
+// Mid-tone colors are used as-is; only colors too close to the background
+// (e.g. black in dark mode, white in light mode) are shifted toward the
+// opposite end until they reach the minimum contrast.
+function ensureVisibleAccent(hex, dark) {
+  const bg = dark ? '#121212' : '#ffffff';
+  if (contrastRatio(hex, bg) >= 2.5) return hex;
+  const target = dark ? '#ffffff' : '#000000';
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 12; i++) {
+    const mid = (lo + hi) / 2;
+    if (contrastRatio(mixColor(hex, target, mid), bg) >= 2.5) hi = mid; else lo = mid;
+  }
+  return mixColor(hex, target, hi);
+}
+
+function applyAccentColor(color) {
+  const root = document.documentElement;
+  const dark = root.getAttribute('data-theme') === 'dark';
+  const base = color || '#439b00';
+  const effective = ensureVisibleAccent(base, dark);
+  let onAccent;
+  if (effective !== base) {
+    // Edge-adjusted color: pick the most readable text ourselves.
+    const cW = contrastRatio(effective, '#ffffff');
+    const cD = contrastRatio(effective, '#1c1c1c');
+    onAccent = cD > cW ? '#1c1c1c' : '#ffffff';
+  } else {
+    // Standard accent: keep white text except on genuinely light colors.
+    onAccent = relativeLuminance(base) > 0.45 ? '#1c1c1c' : '#ffffff';
+  }
+  root.style.setProperty('--primary', effective);
+  root.style.setProperty('--primary-bg', effective);
+  root.style.setProperty('--primary-dk', onAccent);
+  root.style.setProperty('--primary-hvr', darkenHex(effective, 0.74));
+  root.style.setProperty('--primary-bg-correct', hexToRgba(effective, 0.48));
+}
+
 function applyTheme() {
   const dark = App.config ? App.config.darkMode : true;
   if (dark) {
@@ -177,6 +262,8 @@ function applyTheme() {
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
+  const accent = App.config && App.config.accentColor;
+  if (accent) applyAccentColor(accent);
   const btn = document.getElementById('darkToggle');
   if (btn) btn.textContent = dark ? '☀️' : '🌙';
 }
@@ -703,13 +790,53 @@ function renderOnboarding(el) {
           <div id="onbLearnChips" class="selected-chips"></div>
         </div>
 
+        <div class="field-group" style="margin-top:16px" id="onbColorGroup">
+          <label>${t('onb_color')}</label>
+          <div class="accent-row">
+            <input type="color" id="onbAccentInput" value="#439b00" title="${t('onb_color_custom')}">
+            <span id="onbAccentHex" class="accent-hex">#439B00</span>
+          </div>
+          <div id="onbAccentSwatches" class="color-swatches"></div>
+        </div>
+
         <div id="onbError" class="alert alert-danger hidden"></div>
         <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')} →</button>
       </div>
     </div>`;
 
   let nativeLang = null;
+  let accentColor = '#439b00';
   const learnLangs = {};
+
+  // Main (accent) color selection
+  const onbAccentInput = document.getElementById('onbAccentInput');
+  const onbAccentHex = document.getElementById('onbAccentHex');
+  const onbAccentSwatches = document.getElementById('onbAccentSwatches');
+  const ACCENT_COLORS = window.ACCENT_COLORS || ['#439b00', '#0ea5e9', '#e11d48', '#7c3aed', '#eab308', '#ea580c', '#0d9488', '#f43f5e'];
+  if (onbAccentSwatches) {
+    onbAccentSwatches.innerHTML = ACCENT_COLORS.map(c =>
+      `<button type="button" class="color-swatch${c.toLowerCase() === '#439b00' ? ' active' : ''}" data-color="${c}" style="background:${c}" title="${c.toUpperCase()}"></button>`
+    ).join('');
+    onbAccentSwatches.querySelectorAll('.color-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        accentColor = sw.dataset.color;
+        onbAccentInput.value = accentColor;
+        if (onbAccentHex) onbAccentHex.textContent = accentColor.toUpperCase();
+        onbAccentSwatches.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+        if (window.applyAccentColor) window.applyAccentColor(accentColor);
+      });
+    });
+  }
+  if (onbAccentInput) {
+    onbAccentInput.addEventListener('input', () => {
+      accentColor = onbAccentInput.value;
+      if (onbAccentHex) onbAccentHex.textContent = accentColor.toUpperCase();
+      if (onbAccentSwatches) onbAccentSwatches.querySelectorAll('.color-swatch').forEach(s =>
+        s.classList.toggle('active', s.dataset.color.toLowerCase() === accentColor.toLowerCase()));
+      if (window.applyAccentColor) window.applyAccentColor(accentColor);
+    });
+  }
 
   // Native search
   const nSearch = document.getElementById('onbNativeSearch');
@@ -744,6 +871,8 @@ function renderOnboarding(el) {
           document.querySelector('.languages-to-learn > input').placeholder = t('onb_search');
           const learnP = document.querySelector('.onboarding-card p[style]');
           if (learnP) learnP.textContent = t('onb_learn_q');
+          const onbColorLabel = document.querySelector('#onbColorGroup > label');
+          if (onbColorLabel) onbColorLabel.textContent = t('onb_color');
           const startBtn = document.getElementById('onbStartBtn');
           if (startBtn) startBtn.textContent = `${t('onb_start')} →`;
         });
@@ -796,7 +925,7 @@ function renderOnboarding(el) {
       if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
 
       try {
-        await saveConfig({ nativeLang: nativeLang.code, uiLang: nativeLang.code });
+        await saveConfig({ nativeLang: nativeLang.code, uiLang: nativeLang.code, accentColor });
         for (const l of Object.values(learnLangs)) {
           await api('POST', '/api/languages', l);
         }

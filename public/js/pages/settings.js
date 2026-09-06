@@ -45,6 +45,14 @@ async function renderSettings(el) {
         </label>
         <span>${t('settings_hide_zero_stats')}</span>
       </div>
+      <div class="accent-field">
+        <label>${t('settings_main_color')}</label>
+        <div class="accent-row">
+          <input type="color" id="accentColorInput" value="${cfg.accentColor || '#439b00'}" title="${t('settings_main_color_custom')}">
+          <span id="accentColorHex" class="accent-hex">${(cfg.accentColor || '#439b00').toUpperCase()}</span>
+        </div>
+        <div id="accentSwatches" class="color-swatches"></div>
+      </div>
     </div>
 
     <div class="card settings-section">
@@ -110,6 +118,44 @@ async function renderSettings(el) {
     await saveConfig({ hideZeroStats: this.checked });
     toast(`✓ ${t('settings_config_saved')}`);
   });
+
+  // ── Main (accent) color ────────────────────────────────────────────────────
+  const ACCENT_COLORS = window.ACCENT_COLORS || ['#439b00', '#0ea5e9', '#e11d48', '#7c3aed', '#eab308', '#ea580c', '#0d9488', '#f43f5e'];
+  const accentInput = document.getElementById('accentColorInput');
+  const accentHex = document.getElementById('accentColorHex');
+  const accentSwatches = document.getElementById('accentSwatches');
+  if (accentSwatches) {
+    accentSwatches.innerHTML = ACCENT_COLORS.map(c =>
+      `<button type="button" class="color-swatch" data-color="${c}" style="background:${c}" title="${c.toUpperCase()}"></button>`
+    ).join('');
+    accentSwatches.querySelectorAll('.color-swatch').forEach(sw => {
+      if (sw.dataset.color.toLowerCase() === (cfg.accentColor || '#439b00').toLowerCase()) sw.classList.add('active');
+      sw.addEventListener('click', async () => {
+        setAccentColor(sw.dataset.color);
+        accentSwatches.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+        await saveConfig({ accentColor: sw.dataset.color });
+        toast(`✓ ${t('settings_config_saved')}`);
+      });
+    });
+  }
+  function setAccentColor(hex) {
+    const c = hex || '#439b00';
+    if (accentInput) accentInput.value = c;
+    if (accentHex) accentHex.textContent = c.toUpperCase();
+    if (window.applyAccentColor) window.applyAccentColor(c);
+  }
+  if (accentInput) {
+    accentInput.addEventListener('input', () => {
+      setAccentColor(accentInput.value);
+      if (accentSwatches) accentSwatches.querySelectorAll('.color-swatch').forEach(s =>
+        s.classList.toggle('active', s.dataset.color.toLowerCase() === accentInput.value.toLowerCase()));
+    });
+    accentInput.addEventListener('change', async () => {
+      await saveConfig({ accentColor: accentInput.value });
+      toast(`✓ ${t('settings_config_saved')}`);
+    });
+  }
 
   // ── Date format ────────────────────────────────────────────────────────────
   function _fmtDatePreview(fmt) {
