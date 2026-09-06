@@ -1385,10 +1385,30 @@ function startAutoTimer() {
       if (elapsed >= _trainAutoTtsDelay) {
         const card = document.getElementById('autoCard');
         if (card) {
+          const playSide = _trainAutoState;
+          const playCard = card;
           const word = _trainAutoState === 'front' ? card.dataset.frontWord : card.dataset.backWord;
           const langCode = _trainAutoState === 'front' ? card.dataset.frontLang : card.dataset.backLang;
           const ttsId = _trainAutoState === 'front' ? card.dataset.frontId : card.dataset.backId;
-          TTS.speak(word, langCode, ttsId);
+          TTS.speak(word, langCode, ttsId).then(audioEl => {
+            // If the audio is longer than the time left on the card, hold the
+            // current side until the audio finishes (plus a small buffer) so
+            // short speeds / delays never cut off longer TTS clips.
+            if (!audioEl) return;
+            const extendTimer = () => {
+              // Ignore stale callbacks (e.g. metadata loaded after the user
+              // flipped the card or skipped to the next question).
+              if (playCard !== _trainAutoCard || playSide !== _trainAutoState) return;
+              if (audioEl.duration && audioEl.duration > 0 && audioEl.duration > _trainAutoTimeRemaining) {
+                _trainAutoTimeRemaining = audioEl.duration + 0.5;
+              }
+            };
+            if (audioEl.readyState >= 1) {
+              extendTimer();
+            } else {
+              audioEl.addEventListener('loadedmetadata', extendTimer, { once: true });
+            }
+          }).catch(function () { });
         }
         _trainAutoTtsPlayed = true;
       }
@@ -1408,12 +1428,13 @@ function updateAutoProgress() {
   const bar = document.getElementById('autoProgressBar');
   const label = document.getElementById('autoTimeLabel');
   if (!bar || !label) return;
-  const pct = (_trainAutoTimeRemaining / _trainAutoTime) * 100;
+  const pct = Math.min(100, (_trainAutoTimeRemaining / _trainAutoTime) * 100);
   bar.style.width = Math.max(0, pct) + '%';
   label.textContent = Math.ceil(_trainAutoTimeRemaining) + 's';
 }
 
 function flipAutoCard() {
+  TTS.stop();
   const inner = document.getElementById('autoFlipInner');
   if (!inner) return;
   _trainAutoState = 'back';
@@ -1438,11 +1459,13 @@ window.toggleAutoPause = function () {
   if (!btn) return;
   if (_trainAutoPaused) {
     stopAutoTimer();
+    TTS.pause();
     btn.textContent = '▶ ' + t('train_auto_resume');
     btn.className = 'btn btn-primary';
   } else {
     _trainAutoStarted = true;
     startAutoTimer();
+    TTS.resume();
     btn.textContent = '⏸ ' + t('train_auto_pause');
     btn.className = 'btn btn-secondary';
   }
@@ -1450,7 +1473,8 @@ window.toggleAutoPause = function () {
 
 async function loadAutoQuestion() {
   const area = document.getElementById('quizArea');
-  if (!area) { stopAutoTimer(); return; }
+  if (!area) { stopAutoTimer(); TTS.stop(); return; }
+  TTS.stop();
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
   _trainAutoCard = null;
@@ -1610,7 +1634,64 @@ function renderAutoCard(card) {
   };
   prefetchTTS(frontWord, frontLang, frontId);
   prefetchTTS(backWord, backLang, backId);
+
+  _fitAutoCardText();
+  _registerAutoCardResize();
 }
+
+// Dynamically shrink the flashcard text so long words/phrases never overflow
+// the flip area and overlap the progress bar / control buttons below it.
+function _fitAutoCardText() {
+  const flipArea = document.querySelector('#autoCard .auto-flip-container');
+  if (!flipArea) return;
+  const availHeight = flipArea.clientHeight;
+  if (availHeight <= 0) return;
+  const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const MIN_FONT = 0.8;
+  flipArea.querySelectorAll('.auto-flip-face').forEach(face => {
+    const display = face.querySelector('.auto-word-display');
+    if (!display) return;
+    display.style.fontSize = '';
+    display.style.maxHeight = '';
+    display.style.overflow = '';
+    face.style.maxHeight = '';
+    face.style.overflowY = '';
+    if (face.scrollHeight <= availHeight) return;
+    let fontRem = (parseFloat(getComputedStyle(display).fontSize) || (2.4 * rootFs)) / rootFs;
+    let guards = 0;
+    while (face.scrollHeight > availHeight && fontRem > MIN_FONT && guards < 40) {
+      fontRem = Math.round((fontRem - 0.1) * 20) / 20;
+      display.style.fontSize = fontRem + 'rem';
+      guards++;
+    }
+    if (face.scrollHeight > availHeight) {
+      face.style.maxHeight = availHeight + 'px';
+      face.style.overflowY = 'hidden';
+    }
+  });
+}
+
+let _trainFitResizeHandler = null;
+function _registerAutoCardResize() {
+  if (_trainFitResizeHandler) window.removeEventListener('resize', _trainFitResizeHandler);
+  _trainFitResizeHandler = function () {
+    if (!document.getElementById('autoCard')) return;
+    _fitAutoCardText();
+  };
+  window.addEventListener('resize', _trainFitResizeHandler);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => _fitAutoCardText());
+  }
+}
+
+// Stop any running audio and auto-timer when leaving the page so TTS clips
+// don't keep playing in the background after navigation.
+const _origTrainNavigate = window.navigate;
+window.navigate = function (page, params, _fromPopState) {
+  TTS.stop();
+  stopAutoTimer();
+  _origTrainNavigate.call(window, page, params, _fromPopState);
+};
 
 window.toggleTrainSettings = function () {
   const panel = document.getElementById('trainSettingsPanel');

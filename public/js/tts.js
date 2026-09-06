@@ -49,6 +49,11 @@ window.TTS = {
   _audio: null,
   _unlockCtx: null,
 
+  // Currently active Audio element (playing, paused, or last played) plus its
+  // paused state, so the caller can pause / resume / stop the ongoing TTS.
+  _active: null,
+  _paused: false,
+
   _getAudio: function () {
     if (!TTS._audio) {
       TTS._audio = new Audio();
@@ -77,9 +82,10 @@ window.TTS = {
   },
 
   _play: function (url, fallback) {
+    let audio;
     if (TTS._isIOS) {
       // iOS: reuse shared Audio element (Safari blocks new Audio() outside user gesture)
-      const audio = TTS._getAudio();
+      audio = TTS._getAudio();
       try { audio.pause(); } catch (_) { }
       audio.src = url;
       audio.play().catch(function () {
@@ -87,17 +93,46 @@ window.TTS = {
       });
     } else {
       // Android/Desktop: create fresh Audio each time
-      const audio = new Audio(url);
+      audio = new Audio(url);
       audio.volume = 1;
       audio.play().catch(function () {
         if (fallback) fallback();
       });
     }
+    TTS._active = audio;
+    TTS._paused = false;
+    return audio;
+  },
+
+  // Pause the currently playing TTS audio. Playback can be resumed with TTS.resume().
+  pause: function () {
+    if (!TTS._active || TTS._paused) return;
+    try { TTS._active.pause(); } catch (_) { }
+    TTS._paused = true;
+  },
+
+  // Resume the previously paused TTS audio.
+  resume: function () {
+    if (!TTS._active || !TTS._paused) return;
+    const el = TTS._active;
+    el.play().catch(function () { });
+    TTS._paused = false;
+  },
+
+  // Stop the currently playing/paused TTS audio and release its source.
+  stop: function () {
+    const el = TTS._active;
+    if (!el) return;
+    try { el.pause(); } catch (_) { }
+    try { el.removeAttribute('src'); el.load(); } catch (_) { }
+    TTS._active = null;
+    TTS._paused = false;
   },
 
   // Play text via proxy (normal speed). itemId = word/phrase UUID for cache key.
+  // Returns the Audio element when playable audio is used, or null for web-speech fallback.
   speak: async function (text, langCode, itemId) {
-    if (!text) return;
+    if (!text) return null;
     const lang = langCode || 'fr';
     const speed = TTS._getSpeed(lang, 'normal');
     const offlineMode = window.App && App.config && App.config.offlineMode;
@@ -109,22 +144,22 @@ window.TTS = {
       if (buf) {
         const blob = new Blob([buf], { type: 'audio/mpeg' });
         const burl = URL.createObjectURL(blob);
-        TTS._play(burl, () => TTS._webSpeech(text, lang, false));
-        return;
+        return TTS._play(burl, () => TTS._webSpeech(text, lang, false));
       }
       // Not in IDB — if offline, fall back to Web Speech; if online, try network
       if (isOffline) {
         TTS._webSpeech(text, lang, false);
-        return;
+        return null;
       }
     }
     const url = TTS._url(text, lang, 'normal', itemId);
-    TTS._play(url, () => TTS._webSpeech(text, lang, false));
+    return TTS._play(url, () => TTS._webSpeech(text, lang, false));
   },
 
   // Play text slowly. itemId = word/phrase UUID for cache key.
+  // Returns the Audio element when playable audio is used, or null for web-speech fallback.
   speakSlow: async function (text, langCode, itemId) {
-    if (!text) return;
+    if (!text) return null;
     const lang = langCode || 'fr';
     const speed = TTS._getSpeed(lang, 'slow');
     const offlineMode = window.App && App.config && App.config.offlineMode;
@@ -135,16 +170,15 @@ window.TTS = {
       if (buf) {
         const blob = new Blob([buf], { type: 'audio/mpeg' });
         const burl = URL.createObjectURL(blob);
-        TTS._play(burl, () => TTS._webSpeech(text, lang, true));
-        return;
+        return TTS._play(burl, () => TTS._webSpeech(text, lang, true));
       }
       if (isOffline) {
         TTS._webSpeech(text, lang, true);
-        return;
+        return null;
       }
     }
     const url = TTS._url(text, lang, 'slow', itemId);
-    TTS._play(url, () => TTS._webSpeech(text, lang, true));
+    return TTS._play(url, () => TTS._webSpeech(text, lang, true));
   },
 
   // Fallback Web Speech API
