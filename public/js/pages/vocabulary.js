@@ -338,8 +338,9 @@ function buildWordCard(w) {
     (w.definition ? '<div class="word-def">' + esc(w.definition) + '</div>' : '') +
     (mastered
       ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
-      : '<div class="progress-bar-wrap" title="' + progress + ' / ' + maxProg + '">' +
-      '<div class="progress-bar-fill" style="width:' + diffPct + '%"></div>' +
+      : '<div class="progress-row" title="' + progress + ' / ' + maxProg + '">' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + diffPct + '%"></div></div>' +
+      '<span class="progress-pct">' + diffPct + '%</span>' +
       '</div>') +
     (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
     (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + t('vocab_decl_count').replace('{n}', Object.keys(w.declensions).length) + '</div>' : '') +
@@ -465,8 +466,9 @@ function buildPhraseCard(p) {
       const pPct = Math.round((pProg / pMax) * 100);
       return pMast
         ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
-        : '<div class="progress-bar-wrap" title="' + pProg + ' / ' + pMax + '">' +
-        '<div class="progress-bar-fill" style="width:' + pPct + '%"></div>' +
+        : '<div class="progress-row" title="' + pProg + ' / ' + pMax + '">' +
+        '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pPct + '%"></div></div>' +
+        '<span class="progress-pct">' + pPct + '%</span>' +
         '</div>';
     })()) +
     labelHtml +

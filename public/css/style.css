@@ -653,6 +653,27 @@ img {
   transition: width .4s ease;
 }
 
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.progress-row .progress-bar-wrap {
+  flex: 1;
+  margin-top: 0;
+  min-width: 0;
+}
+
+.progress-pct {
+  font-size: .72rem;
+  color: var(--text-faint);
+  font-weight: 600;
+  min-width: 2.6em;
+  text-align: right;
+}
+
 .mastered-badge {
   display: inline-block;
   margin-top: 8px;
