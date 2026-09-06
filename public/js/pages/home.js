@@ -41,16 +41,23 @@ async function renderHome(el) {
       const nb = await api('GET', '/api/notebook/' + encodeURIComponent(lang));
       notebookPages = (nb.sections || []).reduce((sum, s) => sum + (s.pages || []).length, 0);
     } catch { }
-    document.getElementById('statsGrid').innerHTML =
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {})"><div class="stat-number">' + stats.totalWords + '</div><div class="stat-label">' + t('home_total_words') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'phrase\'})"><div class="stat-number">' + stats.totalPhrases + '</div><div class="stat-label">' + t('home_phrases') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'mastered\'})"><div class="stat-number">' + stats.mastered + '</div><div class="stat-label">' + t('home_mastered') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'noun\'})"><div class="stat-number">' + (stats.byType.noun || 0) + '</div><div class="stat-label">' + t('home_nouns') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'verb\'})"><div class="stat-number">' + (stats.byType.verb || 0) + '</div><div class="stat-label">' + t('home_verbs') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adjective\'})"><div class="stat-number">' + (stats.byType.adjective || 0) + '</div><div class="stat-label">' + t('home_adj') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'adverb\'})"><div class="stat-number">' + (stats.byType.adverb || 0) + '</div><div class="stat-label">' + t('home_adv') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'vocabulary\', {filter:\'other\'})"><div class="stat-number">' + (stats.byType.other || 0) + '</div><div class="stat-label">' + t('home_other') + '</div></div>' +
-      '<div class="stat-card stat-card-clickable" onclick="navigate(\'notebook\')"><div class="stat-number">' + notebookPages + '</div><div class="stat-label">' + t('home_notebook') + '</div></div>';
+    const statCards = [
+      { value: stats.totalWords, label: t('home_total_words'), onClick: "navigate('vocabulary', {})" },
+      { value: stats.totalPhrases, label: t('home_phrases'), onClick: "navigate('vocabulary', {filter:'phrase'})" },
+      { value: stats.mastered, label: t('home_mastered'), onClick: "navigate('vocabulary', {filter:'mastered'})" },
+      { value: stats.byType.noun || 0, label: t('home_nouns'), onClick: "navigate('vocabulary', {filter:'noun'})" },
+      { value: stats.byType.verb || 0, label: t('home_verbs'), onClick: "navigate('vocabulary', {filter:'verb'})" },
+      { value: stats.byType.adjective || 0, label: t('home_adj'), onClick: "navigate('vocabulary', {filter:'adjective'})" },
+      { value: stats.byType.adverb || 0, label: t('home_adv'), onClick: "navigate('vocabulary', {filter:'adverb'})" },
+      { value: stats.byType.other || 0, label: t('home_other'), onClick: "navigate('vocabulary', {filter:'other'})" },
+      { value: notebookPages, label: t('home_notebook'), onClick: 'navigate(\'notebook\')' }
+    ];
+    const shown = (App.config && App.config.hideZeroStats) ? statCards.filter(c => c.value > 0) : statCards;
+    document.getElementById('statsGrid').innerHTML = shown.length
+      ? shown.map(c =>
+          '<div class="stat-card stat-card-clickable" onclick="' + c.onClick + '"><div class="stat-number">' + c.value + '</div><div class="stat-label">' + c.label + '</div></div>'
+        ).join('')
+      : '<p style="color:var(--text-muted)">' + t('home_stats_empty') + '</p>';
   } catch {
     document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">' + t('home_stats_error') + '</p>';
   }

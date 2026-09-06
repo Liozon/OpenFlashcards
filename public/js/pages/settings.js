@@ -38,6 +38,13 @@ async function renderSettings(el) {
         </label>
         <span>${t('settings_dark')}</span>
       </div>
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="hideZeroStatsToggle" ${cfg.hideZeroStats ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
+        <span>${t('settings_hide_zero_stats')}</span>
+      </div>
     </div>
 
     <div class="card settings-section">
@@ -96,6 +103,12 @@ async function renderSettings(el) {
   document.getElementById('darkModeToggle').addEventListener('change', async function () {
     await saveConfig({ darkMode: this.checked });
     document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
+  });
+
+  // Hide zero stats on home page
+  document.getElementById('hideZeroStatsToggle').addEventListener('change', async function () {
+    await saveConfig({ hideZeroStats: this.checked });
+    toast(`✓ ${t('settings_config_saved')}`);
   });
 
   // ── Date format ────────────────────────────────────────────────────────────

@@ -157,7 +157,7 @@ router.get('/config', (req, res) => {
 // PUT /api/config
 router.put('/config', (req, res) => {
   const cfg = getUserConfig(userId(req));
-  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode', 'showGreenBorder', 'showConfetti', 'dateFormat', 'autoTranslate', 'suggestions'];
+  const allowed = ['nativeLang', 'targetLangs', 'currentLang', 'uiLang', 'darkMode', 'offlineMode', 'showGreenBorder', 'showConfetti', 'dateFormat', 'autoTranslate', 'suggestions', 'hideZeroStats'];
   allowed.forEach(k => { if (req.body[k] !== undefined) cfg[k] = req.body[k]; });
   saveUserConfig(userId(req), cfg);
   res.json({ ok: true, config: cfg });

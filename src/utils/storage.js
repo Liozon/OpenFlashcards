@@ -92,7 +92,8 @@ function getUserConfig(userId) {
     targetLangs: [],
     currentLang: null,
     uiLang: 'en',
-    darkMode: true
+    darkMode: true,
+    hideZeroStats: false
   });
 }
 
