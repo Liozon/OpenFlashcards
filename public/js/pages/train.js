@@ -202,42 +202,42 @@ function renderTrain(el) {
   const targetName = ld ? (ld.flag || '') + ' ' + ld.name : lang.toUpperCase();
 
   el.innerHTML =
-    '<div class="page-title">🎯 ' + t('train_title') + '</div>' +
+    '<div class="page-title">' + window.phIcon('target') + ' ' + t('train_title') + '</div>' +
 
     '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
     '<div class="score-bar" id="scoreBar" style="flex:1;display:flex;gap:16px;justify-content:center;margin-bottom:0">' +
-    '<div class="score-item">✅ <span id="trCorrect">0</span></div>' +
-    '<div class="score-item">❌ <span id="trWrong">0</span></div>' +
-    '<div class="score-item">🔥 <span id="trStreak">0</span></div>' +
+    '<div class="score-item">' + window.phIcon('check') + ' <span id="trCorrect">0</span></div>' +
+    '<div class="score-item">' + window.phIcon('x-red') + ' <span id="trWrong">0</span></div>' +
+    '<div class="score-item">' + window.phIcon('fire') + ' <span id="trStreak">0</span></div>' +
     '</div>' +
-    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="true" aria-controls="trainSettingsPanel">⚙️</button>' +
+    '<button class="train-settings-toggle" id="trainSettingsToggle" onclick="toggleTrainSettings()" aria-expanded="true" aria-controls="trainSettingsPanel">' + window.phIcon('gear') + '</button>' +
     '</div>' +
 
     '<div id="trainSettingsPanel" class="train-settings-panel open">' +
 
     // ── 1. Mode ──
     '<div class="filter-row">' +
-    '<button class="type-btn active"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">🃏 ' + t('train_flashcards') + '</button>' +
-    '<button class="type-btn" id="modeWord"    onclick="setTrainMode(\'word\',this)">📝 ' + t('train_words') + '</button>' +
-    '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">✍️ ' + t('train_writing') + '</button>' +
-    '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">🎲 ' + t('train_mixed') + '</button>' +
+    '<button class="type-btn active"        id="modeAuto"    onclick="setTrainMode(\'flashcards\',this)">' + window.phIcon('cards') + ' ' + t('train_flashcards') + '</button>' +
+    '<button class="type-btn" id="modeWord"    onclick="setTrainMode(\'word\',this)">' + window.phIcon('lego') + ' ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        id="modePhrase"  onclick="setTrainMode(\'phrase\',this)">' + window.phIcon('chat-circle') + ' ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        id="modeWriting" onclick="setTrainMode(\'writing\',this)">' + window.phIcon('pen-nib') + ' ' + t('train_writing') + '</button>' +
+    '<button class="type-btn"        id="modeMixed"   onclick="setTrainMode(\'mixed\',this)">' + window.phIcon('shuffle') + ' ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     // ── 2. Scope ──
     '<div class="filter-row" id="typeFilters">' +
-    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">🌍 ' + t('train_all') + '</button>' +
-    '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">📦 ' + t('add_type_noun').replace('📦 ', '') + '</button>' +
-    '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">⚡ ' + t('add_type_verb').replace('⚡ ', '') + '</button>' +
-    '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">🎨 ' + t('add_type_adj').replace('🎨 ', '') + '</button>' +
-    '<button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter(\'adverb\',this)">💨 ' + t('add_type_adv').replace('💨 ', '') + '</button>' +
-    '<button class="type-btn" data-type="other"    onclick="toggleTypeFilter(\'other\',this)">🧩 ' + t('add_type_other').replace('🔀 ', '') + '</button>' +
+    '<button class="type-btn active" data-type="" onclick="toggleTypeFilter(\'\',this)">' + window.phIcon('globe') + ' ' + t('train_all') + '</button>' +
+    '<button class="type-btn" data-type="noun"      onclick="toggleTypeFilter(\'noun\',this)">' + window.phIcon('package') + ' ' + t('add_type_noun') + '</button>' +
+    '<button class="type-btn" data-type="verb"      onclick="toggleTypeFilter(\'verb\',this)">' + window.phIcon('lightning') + ' ' + t('add_type_verb') + '</button>' +
+    '<button class="type-btn" data-type="adjective" onclick="toggleTypeFilter(\'adjective\',this)">' + window.phIcon('palette') + ' ' + t('add_type_adj') + '</button>' +
+    '<button class="type-btn" data-type="adverb"    onclick="toggleTypeFilter(\'adverb\',this)">' + window.phIcon('wind') + ' ' + t('add_type_adv') + '</button>' +
+    '<button class="type-btn" data-type="other"    onclick="toggleTypeFilter(\'other\',this)">' + window.phIcon('puzzle-piece') + ' ' + t('add_type_other') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="autoContentFilters" style="display:none">' +
-    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">📝 ' + t('train_words') + '</button>' +
-    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">💬 ' + t('train_phrases') + '</button>' +
-    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">🎲 ' + t('train_mixed') + '</button>' +
+    '<button class="type-btn active" data-auto-content="words"     onclick="setAutoContent(\'words\',this)">' + window.phIcon('lego') + ' ' + t('train_words') + '</button>' +
+    '<button class="type-btn"        data-auto-content="phrases"   onclick="setAutoContent(\'phrases\',this)">' + window.phIcon('chat-circle') + ' ' + t('train_phrases') + '</button>' +
+    '<button class="type-btn"        data-auto-content="everything" onclick="setAutoContent(\'everything\',this)">' + window.phIcon('shuffle') + ' ' + t('train_mixed') + '</button>' +
     '</div>' +
 
     // ── 3. Labels ──
@@ -245,57 +245,57 @@ function renderTrain(el) {
 
     // ── 4. Date filter ──
     '<div id="dateFilters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin-bottom:20px">' +
-    '<span style="font-size:.85rem;color:var(--text-muted)">📅 ' + t('train_date_from') + '</span>' +
+    '<span style="font-size:.85rem;color:var(--text-muted)">' + window.phIcon('calendar-dots') + ' ' + t('train_date_from') + '</span>' +
     '<span style="position:relative;display:inline-block">' +
     '<input type="text" id="trainDateFromDisplay" readonly placeholder="' + _getDateFormat() + '"' +
     ' style="width:115px;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem;text-align:center;pointer-events:none">' +
     '<input type="date" id="trainDateFrom" onchange="onDatePick(this,\'from\')" onclick="this.showPicker()"' +
     ' style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.02;cursor:pointer;font-size:16px;color:transparent;background:transparent">' +
     '</span>' +
-    '<span style="font-size:.85rem;color:var(--text-muted)">📅 ' + t('train_date_to') + '</span>' +
+    '<span style="font-size:.85rem;color:var(--text-muted)">' + window.phIcon('calendar-dots') + ' ' + t('train_date_to') + '</span>' +
     '<span style="position:relative;display:inline-block">' +
     '<input type="text" id="trainDateToDisplay" readonly placeholder="' + _getDateFormat() + '"' +
     ' style="width:115px;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.82rem;text-align:center;pointer-events:none">' +
     '<input type="date" id="trainDateTo" onchange="onDatePick(this,\'to\')" onclick="this.showPicker()"' +
     ' style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.02;cursor:pointer;font-size:16px;color:transparent;background:transparent">' +
     '</span>' +
-    '<button class="btn btn-secondary btn-sm" onclick="clearDateFilter()" style="padding:4px 10px;font-size:.78rem">✕</button>' +
+    '<button class="btn btn-secondary btn-sm" onclick="clearDateFilter()" style="padding:4px 10px;font-size:.78rem">' + window.phIcon('x') + '</button>' +
     '</div>' +
 
     // ── 5. Mode-specific settings ──
     '<div class="filter-row" id="dirFilters">' +
-    '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
+    '<button class="type-btn active" data-dir="random"        onclick="setTrainDir(\'random\',this)">' + window.phIcon('shuffle-rand') + ' ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn" data-dir="native→target"        onclick="setTrainDir(\'native→target\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
     '<button class="type-btn" data-dir="target→native"        onclick="setTrainDir(\'target→native\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
     '</div>' +
 
     // ── 5b. Order (random vs normal/sequential) ──
     '<div class="filter-row" id="orderFilters">' +
-    '<button class="type-btn active" data-order="random"      onclick="setTrainOrder(\'random\',this)">🔀 ' + t('train_order_random') + '</button>' +
-    '<button class="type-btn"        data-order="sequential"  onclick="setTrainOrder(\'sequential\',this)">📖 ' + t('train_order_sequential') + '</button>' +
+    '<button class="type-btn active" data-order="random"      onclick="setTrainOrder(\'random\',this)">' + window.phIcon('shuffle-rand') + ' ' + t('train_order_random') + '</button>' +
+    '<button class="type-btn"        data-order="sequential"  onclick="setTrainOrder(\'sequential\',this)">' + window.phIcon('book-open') + ' ' + t('train_order_sequential') + '</button>' +
     '</div>' +
 
     // ── 5c. Sequential sort direction (visible only in sequential order) ──
     '<div class="filter-row" id="sortDirFilters" style="display:none">' +
-    '<button class="type-btn active" data-sortdir="desc"      onclick="setTrainSortDir(\'desc\',this)">⬇️ ' + t('train_sort_newest') + '</button>' +
-    '<button class="type-btn"        data-sortdir="asc"       onclick="setTrainSortDir(\'asc\',this)">⬆️ ' + t('train_sort_oldest') + '</button>' +
+    '<button class="type-btn active" data-sortdir="desc"      onclick="setTrainSortDir(\'desc\',this)">' + window.phIcon('arrow-down') + ' ' + t('train_sort_newest') + '</button>' +
+    '<button class="type-btn"        data-sortdir="asc"       onclick="setTrainSortDir(\'asc\',this)">' + window.phIcon('arrow-up') + ' ' + t('train_sort_oldest') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="writingDiffFilters" style="display:none">' +
-    '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">🔇 ' + t('train_writing_hard') + '</button>' +
-    '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">🔊 ' + t('train_writing_easy') + '</button>' +
+    '<button class="type-btn active" id="writingBtnHard" onclick="setWritingDifficulty(false,this)">' + window.phIcon('speaker-slash') + ' ' + t('train_writing_hard') + '</button>' +
+    '<button class="type-btn"        id="writingBtnEasy" onclick="setWritingDifficulty(true,this)">' + window.phIcon('speaker-high') + ' ' + t('train_writing_easy') + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="autoDirFilters" style="display:none">' +
-    '<button class="type-btn active" data-auto-side="random" onclick="setAutoSideFirst(\'random\',this)">🔀 ' + t('train_dir_random') + '</button>' +
+    '<button class="type-btn active" data-auto-side="random" onclick="setAutoSideFirst(\'random\',this)">' + window.phIcon('shuffle-rand') + ' ' + t('train_dir_random') + '</button>' +
     '<button class="type-btn"        data-auto-side="native" onclick="setAutoSideFirst(\'native\',this)">' + nativeFlag + '→' + targetFlag + '</button>' +
     '<button class="type-btn"        data-auto-side="target" onclick="setAutoSideFirst(\'target\',this)">' + targetFlag + '→' + nativeFlag + '</button>' +
     '</div>' +
 
     '<div class="filter-row" id="autoTimeRow" style="display:none">' +
-    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">⏱ ' + t('train_auto_speed') + ': <span id="autoTimeValue">' + _trainAutoTime + '</span>s' +
+    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">' + window.phIcon('hourglass') + ' ' + t('train_auto_speed') + ': <span id="autoTimeValue">' + _trainAutoTime + '</span>s' +
     '<input type="range" min="2" max="15" value="' + _trainAutoTime + '" step="1" oninput="setAutoTime(this.value)" style="width:160px"></label>' +
-    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">🔊 ' + t('train_auto_tts_delay') + ': <span id="autoTtsDelayValue">' + _trainAutoTtsDelay + '</span>s' +
+    '<label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text-muted)">' + window.phIcon('speaker-high') + ' ' + t('train_auto_tts_delay') + ': <span id="autoTtsDelayValue">' + _trainAutoTtsDelay + '</span>s' +
     '<input type="range" min="0" max="10" value="' + _trainAutoTtsDelay + '" step="1" oninput="setAutoTtsDelay(this.value)" style="width:160px"></label>' +
     '</div>' +
 
@@ -326,7 +326,7 @@ function renderTrain(el) {
 
     '<div id="quizArea">' +
     '<div class="quiz-card" style="text-align:center">' +
-    '<p style="font-size:3rem;margin-bottom:16px">🎯</p>' +
+    '<p style="font-size:3rem;margin-bottom:16px">' + window.phIcon('target') + '</p>' +
     '<p style="color:var(--text-muted);font-size:1.1rem">' + t('train_configure_prompt') + '</p>' +
     '</div>' +
     '</div>';
@@ -383,7 +383,7 @@ async function _populateLabelFilters(lang) {
   const allBtn = document.createElement('button');
   allBtn.className = 'type-btn active';
   allBtn.dataset.labelId = '';
-  allBtn.textContent = `🏷️ ${t('train_labels_filter')}`;
+  allBtn.innerHTML = window.phIcon('tag') + ' ' + esc(t('train_labels_filter'));
   allBtn.addEventListener('click', () => toggleLabelFilter('', allBtn));
   row.appendChild(allBtn);
   labels.forEach(lb => {
@@ -674,9 +674,9 @@ async function loadWordQuestion() {
   } catch (e) {
     area.innerHTML =
       '<div class="quiz-card" style="text-align:center">' +
-      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="font-size:2rem;margin-bottom:12px">' + window.phIcon('mailbox') + '</p>' +
       '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + window.phIcon('plus') + ' ' + t('home_add_words') + '</button>' +
       '</div>';
   }
 
@@ -685,16 +685,16 @@ async function loadWordQuestion() {
 function renderWordQuiz(q) {
   const area = document.getElementById('quizArea');
   const iconLabel = {
-    noun: { key: 'vocab_noun', icon: '📦' },
-    verb: { key: 'vocab_verb', icon: '⚡' },
-    adjective: { key: 'vocab_adjective', icon: '🎨' },
-    adverb: { key: 'vocab_adverb', icon: '💨' },
-    other: { key: 'vocab_other', icon: '🧩' }
+    noun: { key: 'vocab_noun', icon: 'package' },
+    verb: { key: 'vocab_verb', icon: 'lightning' },
+    adjective: { key: 'vocab_adjective', icon: 'palette' },
+    adverb: { key: 'vocab_adverb', icon: 'wind' },
+    other: { key: 'vocab_other', icon: 'puzzle-piece' }
   };
   const typeLabels = Object.fromEntries(
     Object.entries(iconLabel).map(([type, { key, icon }]) => [
       type,
-      `${icon} ${t(key)}`
+      window.phIcon(icon) + ' ' + t(key)
     ])
   );
   const lang = currentLang();
@@ -705,7 +705,7 @@ function renderWordQuiz(q) {
     : '<span style="font-size:.8rem;color:var(--text-faint)">' + lang.toUpperCase() + ' → ' + nativeLang.toUpperCase() + '</span>';
 
   const verbGroupBadge = (q.type === 'verb' && q.verbGroup)
-    ? '<span style="font-size:.78rem;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-left:4px">📚 ' + esc(q.verbGroup) + '</span>'
+    ? '<span style="font-size:.78rem;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin-left:4px">' + window.phIcon('books') + ' ' + esc(q.verbGroup) + '</span>'
     : '';
 
   area.innerHTML =
@@ -849,7 +849,7 @@ async function handleWordAnswer(btn, answer, q) {
     const declBox = document.createElement('div');
     declBox.style.cssText = 'margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border)';
     declBox.innerHTML =
-      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📐 ' + t('train_declensions') + '</div>' +
+      '<div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">' + window.phIcon('arrows-split') + ' ' + t('train_declensions') + '</div>' +
       '<div style="font-size:.85rem;padding:3px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;gap:10px">' +
       '<span style="color:var(--text-muted);min-width:100px">' + t('common_nominative') + '</span>' +
       '<span style="font-weight:600">' + esc(q.literal) + '</span>' +
@@ -864,7 +864,7 @@ async function handleWordAnswer(btn, answer, q) {
   nextRow.style.cssText = 'margin-top:20px;width:100%;max-width:500px;text-align:center';
   nextRow.innerHTML =
     '<div style="margin-bottom:12px;font-weight:700;color:' + (correct ? 'var(--primary-dk)' : 'var(--danger-dk)') + '">' +
-    (correct ? `✓ ${t('train_correct_msg')}` : `✗ ${t('train_wrong_msg')}` + ' <em>' + esc(q.answerText) + '</em>') +
+    (correct ? window.phIcon('check') + ' ' + t('train_correct_msg') : window.phIcon('x-red') + ' ' + t('train_wrong_msg') + ' <em>' + esc(q.answerText) + '</em>') +
     '</div>' +
     '<button class="btn btn-primary btn-full" onclick="loadQuestion()">' + t('train_next') + ' →</button>';
   card.appendChild(nextRow);
@@ -895,9 +895,9 @@ async function loadPhraseQuestion() {
   } catch (e) {
     area.innerHTML =
       '<div class="phrase-card" style="text-align:center">' +
-      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="font-size:2rem;margin-bottom:12px">' + window.phIcon('mailbox') + '</p>' +
       '<p style="color:var(--text-muted)">' + (t('train_no_phrases') || e.error) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('train_add_phrases') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + window.phIcon('plus') + ' ' + t('train_add_phrases') + '</button>' +
       '</div>';
   }
 }
@@ -916,7 +916,7 @@ function renderPhraseQuiz(phrase) {
   area.innerHTML =
     '<div class="phrase-card" id="phraseQuizCard">' +
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
-    '<div class="badge badge-phrase">💬 ' + t('train_phrases') + '</div>' +
+    '<div class="badge badge-phrase">' + window.phIcon('chat-circle') + ' ' + t('train_phrases') + '</div>' +
     '<span style="font-size:.8rem;color:var(--text-faint)">' + nativeLang.toUpperCase() + ' → ' + lang.toUpperCase() + '</span>' +
     '</div>' +
     '<p style="color:var(--text-muted);font-size:.9rem;margin-bottom:8px">' + t('train_reconstruct') + '</p>' +
@@ -929,9 +929,9 @@ function renderPhraseQuiz(phrase) {
     '<div class="word-bank" id="wordBank"></div>' +
     '<div id="phraseResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions">' +
-    '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + ' ✓</button>' +
+    '<button class="btn btn-primary"          id="checkPhraseBtn" onclick="checkPhraseAnswer()" style="flex:1">' + t('train_check') + ' ' + window.phIcon('check') + '</button>' +
     '<button class="btn btn-secondary hidden" id="nextPhraseBtn"  onclick="loadQuestion()"      style="flex:1">' + t('train_next') + ' →</button>' +
-    '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">↺</button>' +
+    '<button class="btn btn-secondary" onclick="clearPhraseAnswer()" title="Clear" style="padding:12px 16px">' + window.phIcon('arrow-counter-clockwise') + '</button>' +
     '</div>' +
     '</div>';
 
@@ -980,7 +980,8 @@ async function loadWordsForTooltips(lang, phrase) {
 function showTooltip(el, text, word, langCode) {
   const tip = document.createElement('div');
   tip.className = 'word-tooltip';
-  tip.textContent = text || '? (click 🔊)';
+  const marker = window.phIcon('speaker-high');
+  tip.innerHTML = text ? esc(text) : '? (click ' + (marker || '🔊') + ')';
   const ttsBtn = TTS.button(word, langCode, 'margin-left:6px;padding:2px 6px;font-size:.8rem;');
   const ttsBtnSlow = TTS.buttonSlow(word, langCode, 'margin-left:2px;padding:2px 6px;font-size:.8rem;');
   tip.appendChild(ttsBtnSlow);
@@ -1060,8 +1061,8 @@ window.checkPhraseAnswer = async function () {
   const resultEl = document.getElementById('phraseResultEl');
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
-    ? t('train_correct_msg')
-    : `✗ ${t('train_wrong_msg')}` + ' <strong>' + esc(expected) + '</strong>';
+    ? window.phIcon('check') + ' ' + t('train_correct_msg')
+    : window.phIcon('x-red') + ' ' + t('train_wrong_msg') + ' <strong>' + esc(expected) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkPhraseBtn').classList.add('hidden');
@@ -1125,9 +1126,9 @@ async function loadWritingQuestion() {
   } catch (e) {
     area.innerHTML =
       '<div class="quiz-card" style="text-align:center">' +
-      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="font-size:2rem;margin-bottom:12px">' + window.phIcon('mailbox') + '</p>' +
       '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + window.phIcon('plus') + ' ' + t('home_add_words') + '</button>' +
       '</div>';
   }
 }
@@ -1137,16 +1138,16 @@ function renderWritingQuiz(q) {
   const nativeLang = (App.config && App.config.nativeLang) || 'en';
   const lang = currentLang();
   const iconLabel = {
-    noun: { key: 'vocab_noun', icon: '📦' },
-    verb: { key: 'vocab_verb', icon: '⚡' },
-    adjective: { key: 'vocab_adjective', icon: '🎨' },
-    adverb: { key: 'vocab_adverb', icon: '💨' },
-    other: { key: 'vocab_other', icon: '🧩' }
+    noun: { key: 'vocab_noun', icon: 'package' },
+    verb: { key: 'vocab_verb', icon: 'lightning' },
+    adjective: { key: 'vocab_adjective', icon: 'palette' },
+    adverb: { key: 'vocab_adverb', icon: 'wind' },
+    other: { key: 'vocab_other', icon: 'puzzle-piece' }
   };
   const typeLabels = Object.fromEntries(
     Object.entries(iconLabel).map(([type, { key, icon }]) => [
       type,
-      `${icon} ${t(key)} `
+      window.phIcon(icon) + ' ' + t(key) + ' '
     ])
   );
 
@@ -1188,9 +1189,9 @@ function renderWritingQuiz(q) {
     // Result + feedback
     '<div id="writingResultEl" class="phrase-result hidden"></div>' +
     '<div class="phrase-actions" style="margin-top:16px">' +
-    '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + ' ✓</button>' +
+    '<button class="btn btn-primary"          id="checkWritingBtn" onclick="checkWritingAnswer()" style="flex:1">' + t('train_writing_check') + ' ' + window.phIcon('check') + '</button>' +
     '<button class="btn btn-secondary hidden" id="nextWritingBtn"  onclick="loadQuestion()"        style="flex:1">' + t('train_next') + ' →</button>' +
-    '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">↺</button>' +
+    '<button class="btn btn-secondary" onclick="clearWritingAnswer()" title="Clear" style="padding:12px 16px">' + window.phIcon('arrow-counter-clockwise') + '</button>' +
     '</div>' +
     '</div>';
 
@@ -1301,8 +1302,8 @@ window.checkWritingAnswer = async function () {
   const resultEl = document.getElementById('writingResultEl');
   resultEl.className = 'phrase-result ' + (correct ? 'correct' : 'wrong');
   resultEl.innerHTML = correct
-    ? `✓ ${t('train_writing_correct')}`
-    : `✗ ${t('train_writing_wrong')}` + ' <strong>' + esc(targetWord) + '</strong>';
+    ? window.phIcon('check') + ' ' + t('train_writing_correct')
+    : window.phIcon('x-red') + ' ' + t('train_writing_wrong') + ' <strong>' + esc(targetWord) + '</strong>';
   resultEl.classList.remove('hidden');
 
   document.getElementById('checkWritingBtn').classList.add('hidden');
@@ -1385,10 +1386,30 @@ function startAutoTimer() {
       if (elapsed >= _trainAutoTtsDelay) {
         const card = document.getElementById('autoCard');
         if (card) {
+          const playSide = _trainAutoState;
+          const playCard = card;
           const word = _trainAutoState === 'front' ? card.dataset.frontWord : card.dataset.backWord;
           const langCode = _trainAutoState === 'front' ? card.dataset.frontLang : card.dataset.backLang;
           const ttsId = _trainAutoState === 'front' ? card.dataset.frontId : card.dataset.backId;
-          TTS.speak(word, langCode, ttsId);
+          TTS.speak(word, langCode, ttsId).then(audioEl => {
+            // If the audio is longer than the time left on the card, hold the
+            // current side until the audio finishes (plus a small buffer) so
+            // short speeds / delays never cut off longer TTS clips.
+            if (!audioEl) return;
+            const extendTimer = () => {
+              // Ignore stale callbacks (e.g. metadata loaded after the user
+              // flipped the card or skipped to the next question).
+              if (playCard !== _trainAutoCard || playSide !== _trainAutoState) return;
+              if (audioEl.duration && audioEl.duration > 0 && audioEl.duration > _trainAutoTimeRemaining) {
+                _trainAutoTimeRemaining = audioEl.duration + 0.5;
+              }
+            };
+            if (audioEl.readyState >= 1) {
+              extendTimer();
+            } else {
+              audioEl.addEventListener('loadedmetadata', extendTimer, { once: true });
+            }
+          }).catch(function () { });
         }
         _trainAutoTtsPlayed = true;
       }
@@ -1408,12 +1429,13 @@ function updateAutoProgress() {
   const bar = document.getElementById('autoProgressBar');
   const label = document.getElementById('autoTimeLabel');
   if (!bar || !label) return;
-  const pct = (_trainAutoTimeRemaining / _trainAutoTime) * 100;
+  const pct = Math.min(100, (_trainAutoTimeRemaining / _trainAutoTime) * 100);
   bar.style.width = Math.max(0, pct) + '%';
   label.textContent = Math.ceil(_trainAutoTimeRemaining) + 's';
 }
 
 function flipAutoCard() {
+  TTS.stop();
   const inner = document.getElementById('autoFlipInner');
   if (!inner) return;
   _trainAutoState = 'back';
@@ -1438,11 +1460,13 @@ window.toggleAutoPause = function () {
   if (!btn) return;
   if (_trainAutoPaused) {
     stopAutoTimer();
+    TTS.pause();
     btn.textContent = '▶ ' + t('train_auto_resume');
     btn.className = 'btn btn-primary';
   } else {
     _trainAutoStarted = true;
     startAutoTimer();
+    TTS.resume();
     btn.textContent = '⏸ ' + t('train_auto_pause');
     btn.className = 'btn btn-secondary';
   }
@@ -1450,7 +1474,8 @@ window.toggleAutoPause = function () {
 
 async function loadAutoQuestion() {
   const area = document.getElementById('quizArea');
-  if (!area) { stopAutoTimer(); return; }
+  if (!area) { stopAutoTimer(); TTS.stop(); return; }
+  TTS.stop();
   area.innerHTML = '<div class="quiz-card"><div class="loading-state"><div class="spinner"></div></div></div>';
 
   _trainAutoCard = null;
@@ -1474,9 +1499,9 @@ async function loadAutoQuestion() {
   } catch (e) {
     area.innerHTML =
       '<div class="quiz-card" style="text-align:center">' +
-      '<p style="font-size:2rem;margin-bottom:12px">📭</p>' +
+      '<p style="font-size:2rem;margin-bottom:12px">' + window.phIcon('mailbox') + '</p>' +
       '<p style="color:var(--text-muted)">' + (t('train_no_words') || e.error) + '</p>' +
-      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">➕ ' + t('home_add_words') + '</button>' +
+      '<button class="btn btn-primary" style="margin-top:16px" onclick="navigate(\'add\')">' + window.phIcon('plus') + ' ' + t('home_add_words') + '</button>' +
       '</div>';
   }
 }
@@ -1494,15 +1519,15 @@ function renderAutoCard(card) {
     nativeWord = card.translation;
     targetWord = card.text;
     id = card.id;
-    typeLabel = '💬 ' + t('train_phrases');
+    typeLabel = window.phIcon('chat-circle') + ' ' + t('train_phrases');
   } else {
     nativeWord = card.showNative ? card.promptText : card.answerText;
     targetWord = card.showNative ? card.answerText : card.promptText;
     id = card.id;
     const iconLabel = {
-      noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩'
+      noun: 'package', verb: 'lightning', adjective: 'palette', adverb: 'wind', other: 'puzzle-piece'
     };
-    typeLabel = (iconLabel[card.type] || '📝') + ' ' + (card.type || t('train_words'));
+    typeLabel = window.phIcon(iconLabel[card.type] || 'lego') + ' ' + (card.type || t('train_words'));
   }
 
   let frontWord, backWord, frontLang, backLang;
@@ -1586,8 +1611,8 @@ function renderAutoCard(card) {
     '<div class="auto-time-label" id="autoTimeLabel">' + _trainAutoTime + 's</div>' +
 
     '<div class="auto-controls">' +
-    '<button class="btn ' + (_trainAutoPaused ? 'btn-primary' : 'btn-secondary') + '" id="autoPauseBtn" onclick="toggleAutoPause()">' + (_trainAutoPaused ? '▶ ' + t('train_auto_resume') : '⏸ ' + t('train_auto_pause')) + '</button>' +
-    '<button class="btn btn-secondary" id="autoFlipBtn" onclick="manualFlipAuto()">🔄 ' + t('train_auto_flip') + '</button>' +
+    '<button class="btn ' + (_trainAutoPaused ? 'btn-primary' : 'btn-secondary') + '" id="autoPauseBtn" onclick="toggleAutoPause()">' + (_trainAutoPaused ? window.phIcon('play') + ' ' + t('train_auto_resume') : window.phIcon('pause') + ' ' + t('train_auto_pause')) + '</button>' +
+    '<button class="btn btn-secondary" id="autoFlipBtn" onclick="manualFlipAuto()">' + window.phIcon('repeat') + ' ' + t('train_auto_flip') + '</button>' +
     '<button class="btn btn-secondary" id="autoNextBtn" onclick="loadAutoQuestion()">→ ' + t('train_next') + '</button>' +
     '</div>' +
     '</div>';
@@ -1610,7 +1635,64 @@ function renderAutoCard(card) {
   };
   prefetchTTS(frontWord, frontLang, frontId);
   prefetchTTS(backWord, backLang, backId);
+
+  _fitAutoCardText();
+  _registerAutoCardResize();
 }
+
+// Dynamically shrink the flashcard text so long words/phrases never overflow
+// the flip area and overlap the progress bar / control buttons below it.
+function _fitAutoCardText() {
+  const flipArea = document.querySelector('#autoCard .auto-flip-container');
+  if (!flipArea) return;
+  const availHeight = flipArea.clientHeight;
+  if (availHeight <= 0) return;
+  const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const MIN_FONT = 0.8;
+  flipArea.querySelectorAll('.auto-flip-face').forEach(face => {
+    const display = face.querySelector('.auto-word-display');
+    if (!display) return;
+    display.style.fontSize = '';
+    display.style.maxHeight = '';
+    display.style.overflow = '';
+    face.style.maxHeight = '';
+    face.style.overflowY = '';
+    if (face.scrollHeight <= availHeight) return;
+    let fontRem = (parseFloat(getComputedStyle(display).fontSize) || (2.4 * rootFs)) / rootFs;
+    let guards = 0;
+    while (face.scrollHeight > availHeight && fontRem > MIN_FONT && guards < 40) {
+      fontRem = Math.round((fontRem - 0.1) * 20) / 20;
+      display.style.fontSize = fontRem + 'rem';
+      guards++;
+    }
+    if (face.scrollHeight > availHeight) {
+      face.style.maxHeight = availHeight + 'px';
+      face.style.overflowY = 'hidden';
+    }
+  });
+}
+
+let _trainFitResizeHandler = null;
+function _registerAutoCardResize() {
+  if (_trainFitResizeHandler) window.removeEventListener('resize', _trainFitResizeHandler);
+  _trainFitResizeHandler = function () {
+    if (!document.getElementById('autoCard')) return;
+    _fitAutoCardText();
+  };
+  window.addEventListener('resize', _trainFitResizeHandler);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => _fitAutoCardText());
+  }
+}
+
+// Stop any running audio and auto-timer when leaving the page so TTS clips
+// don't keep playing in the background after navigation.
+const _origTrainNavigate = window.navigate;
+window.navigate = function (page, params, _fromPopState) {
+  TTS.stop();
+  stopAutoTimer();
+  _origTrainNavigate.call(window, page, params, _fromPopState);
+};
 
 window.toggleTrainSettings = function () {
   const panel = document.getElementById('trainSettingsPanel');

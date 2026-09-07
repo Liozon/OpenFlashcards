@@ -1,0 +1,231 @@
+@font-face {
+  font-family: "Phosphor-Bold";
+    src: url("./Phosphor-Bold.woff2") format("woff2");
+font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.ph-bold {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "Phosphor-Bold" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Enable Ligatures ================ */
+  letter-spacing: 0;
+  -webkit-font-feature-settings: "liga";
+  -moz-font-feature-settings: "liga=1";
+  -moz-font-feature-settings: "liga";
+  -ms-font-feature-settings: "liga" 1;
+  font-feature-settings: "liga";
+  -webkit-font-variant-ligatures: discretionary-ligatures;
+  font-variant-ligatures: discretionary-ligatures;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ph-bold.ph-arrow-counter-clockwise:before {
+  content: "\e038";
+}
+.ph-bold.ph-arrow-down:before {
+  content: "\e03e";
+}
+.ph-bold.ph-arrow-right:before {
+  content: "\e06c";
+}
+.ph-bold.ph-arrow-up:before {
+  content: "\e08e";
+}
+.ph-bold.ph-arrows-clockwise:before {
+  content: "\e094";
+}
+.ph-bold.ph-arrows-split:before {
+  content: "\ed3c";
+}
+.ph-bold.ph-book-bookmark:before {
+  content: "\e0e4";
+}
+.ph-bold.ph-book-open:before {
+  content: "\e0e6";
+}
+.ph-bold.ph-books:before {
+  content: "\e758";
+}
+.ph-bold.ph-calendar-dots:before {
+  content: "\e7b4";
+}
+.ph-bold.ph-cards:before {
+  content: "\e0f8";
+}
+.ph-bold.ph-caret-down:before {
+  content: "\e136";
+}
+.ph-bold.ph-caret-left:before {
+  content: "\e138";
+}
+.ph-bold.ph-caret-right:before {
+  content: "\e13a";
+}
+.ph-bold.ph-chat-circle:before {
+  content: "\e168";
+}
+.ph-bold.ph-check:before {
+  content: "\e182";
+}
+.ph-bold.ph-cloud:before {
+  content: "\e1aa";
+}
+.ph-bold.ph-cloud-arrow-down:before {
+  content: "\e1ac";
+}
+.ph-bold.ph-confetti:before {
+  content: "\e81a";
+}
+.ph-bold.ph-export:before {
+  content: "\eaf0";
+}
+.ph-bold.ph-files:before {
+  content: "\e710";
+}
+.ph-bold.ph-fire:before {
+  content: "\e242";
+}
+.ph-bold.ph-gear:before {
+  content: "\e270";
+}
+.ph-bold.ph-globe:before {
+  content: "\e288";
+}
+.ph-bold.ph-hourglass:before {
+  content: "\e2b2";
+}
+.ph-bold.ph-house:before {
+  content: "\e2c2";
+}
+.ph-bold.ph-image-square:before {
+  content: "\e2cc";
+}
+.ph-bold.ph-lego:before {
+  content: "\e8c6";
+}
+.ph-bold.ph-lightning:before {
+  content: "\e2de";
+}
+.ph-bold.ph-link:before {
+  content: "\e2e2";
+}
+.ph-bold.ph-list:before {
+  content: "\e2f0";
+}
+.ph-bold.ph-list-checks:before {
+  content: "\eadc";
+}
+.ph-bold.ph-magnifying-glass:before {
+  content: "\e30c";
+}
+.ph-bold.ph-mailbox:before {
+  content: "\ec1e";
+}
+.ph-bold.ph-microphone:before {
+  content: "\e326";
+}
+.ph-bold.ph-moon:before {
+  content: "\e330";
+}
+.ph-bold.ph-package:before {
+  content: "\e390";
+}
+.ph-bold.ph-palette:before {
+  content: "\e6c8";
+}
+.ph-bold.ph-password:before {
+  content: "\e752";
+}
+.ph-bold.ph-pause:before {
+  content: "\e39e";
+}
+.ph-bold.ph-pen-nib:before {
+  content: "\e3ac";
+}
+.ph-bold.ph-pencil-simple:before {
+  content: "\e3b4";
+}
+.ph-bold.ph-play:before {
+  content: "\e3d0";
+}
+.ph-bold.ph-plus:before {
+  content: "\e3d4";
+}
+.ph-bold.ph-puzzle-piece:before {
+  content: "\e596";
+}
+.ph-bold.ph-quotes:before {
+  content: "\e660";
+}
+.ph-bold.ph-repeat:before {
+  content: "\e3f6";
+}
+.ph-bold.ph-shuffle:before {
+  content: "\e422";
+}
+.ph-bold.ph-sign-out:before {
+  content: "\e42a";
+}
+.ph-bold.ph-speaker-high:before {
+  content: "\e44a";
+}
+.ph-bold.ph-speaker-slash:before {
+  content: "\e45a";
+}
+.ph-bold.ph-spinner-gap:before {
+  content: "\e66c";
+}
+.ph-bold.ph-sun:before {
+  content: "\e472";
+}
+.ph-bold.ph-tag:before {
+  content: "\e478";
+}
+.ph-bold.ph-target:before {
+  content: "\e47c";
+}
+.ph-bold.ph-translate:before {
+  content: "\e4a2";
+}
+.ph-bold.ph-trash:before {
+  content: "\e4a6";
+}
+.ph-bold.ph-tray-arrow-up:before {
+  content: "\ee52";
+}
+.ph-bold.ph-user-circle-check:before {
+  content: "\ec38";
+}
+.ph-bold.ph-users:before {
+  content: "\e4d6";
+}
+.ph-bold.ph-warning:before {
+  content: "\e4e0";
+}
+.ph-bold.ph-waveform:before {
+  content: "\e802";
+}
+.ph-bold.ph-wifi-slash:before {
+  content: "\e4f2";
+}
+.ph-bold.ph-wind:before {
+  content: "\e5d2";
+}
+.ph-bold.ph-x:before {
+  content: "\e4f6";
+}
+.ph-bold.ph-stack:before {
+  content: "\e466";
+}

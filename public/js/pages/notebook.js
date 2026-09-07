@@ -27,15 +27,16 @@ function renderNotebook(el, params) {
 
 function getNotebookHTML() {
   const t = window.t;
+  const ic = window.phIcon;
   return `
     <div class="notebook-layout">
       <div class="nb-sidebar" id="nbSidebar">
         <div class="nb-sidebar-header">
           <select id="nbLangSelector" class="nb-lang-selector" title="${t('notebook_switch_lang')}"></select>
           <div class="nb-sidebar-actions">
-            <button class="nb-tb-btn btn-sm" id="nbSearchToggle" title="${t('notebook_search')}">🔍</button>
-            <button class="nb-tb-btn btn-sm" id="nbAddSection" title="${t('notebook_add_section')}">➕</button>
-            <button class="nb-tb-btn btn-sm" id="nbToggleActions" title="Page actions">⚙️</button>
+            <button class="nb-tb-btn btn-sm" id="nbSearchToggle" title="${t('notebook_search')}">${ic('magnifying-glass')}</button>
+            <button class="nb-tb-btn btn-sm" id="nbAddSection" title="${t('notebook_add_section')}">${ic('plus')}</button>
+            <button class="nb-tb-btn btn-sm" id="nbToggleActions" title="Page actions">${ic('gear')}</button>
           </div>
         </div>
         <div class="nb-search-box hidden" id="nbSearchBox">
@@ -48,7 +49,7 @@ function getNotebookHTML() {
       <button class="nb-sidebar-reopen hidden" id="nbSidebarReopen" title="Expand sidebar">▶</button>
       <div class="nb-main" id="nbMain">
         <div class="nb-welcome" id="nbWelcome">
-          <div class="nb-welcome-icon">📓</div>
+          <div class="nb-welcome-icon">${ic('book-open')}</div>
           <h2>${t('notebook_welcome')}</h2>
           <p>${t('notebook_welcome_desc')}</p>
         </div>
@@ -58,7 +59,7 @@ function getNotebookHTML() {
               <h2 class="nb-read-title" id="nbReadTitle"></h2>
               <span class="nb-page-meta" id="nbReadMeta"></span>
             </div>
-            <button class="btn btn-sm btn-primary" id="nbEditBtn">✏️</button>
+            <button class="btn btn-sm btn-primary" id="nbEditBtn">${ic('pencil-simple')}</button>
           </div>
           <div class="nb-editor-toolbar" id="nbToolbar">
             <button class="nb-tb-btn" data-cmd="bold" title="${t('notebook_bold')}"><b>B</b></button>
@@ -93,18 +94,18 @@ function getNotebookHTML() {
             <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="insertUnorderedList" title="${t('notebook_bullet_list')}">◉</button>
             <button class="nb-tb-btn" data-cmd="insertOrderedList" title="${t('notebook_numbered_list')}">⒈</button>
-            <button class="nb-tb-btn" data-cmd="taskList" title="${t('notebook_task_list')}">☑</button>
+            <button class="nb-tb-btn" data-cmd="taskList" title="${t('notebook_task_list')}">${ic('list-checks')}</button>
             <span class="nb-tb-sep"></span>
             <button class="nb-tb-btn" data-cmd="insertTable" title="${t('notebook_table')}">⊞</button>
             <button class="nb-tb-btn" data-cmd="insertCodeBlock" title="${t('notebook_code')}">{ }</button>
-            <button class="nb-tb-btn" data-cmd="insertBlockquote" title="${t('notebook_quote')}">💬</button>
+            <button class="nb-tb-btn" data-cmd="insertBlockquote" title="${t('notebook_quote')}">${ic('chat-circle')}</button>
             <button class="nb-tb-btn" data-cmd="insertHorizontalRule" title="${t('notebook_divider')}">—</button>
             <span class="nb-tb-sep"></span>
-            <button class="nb-tb-btn" data-cmd="link" title="${t('notebook_link')}">🌐🔗</button>
-            <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">📓🔗</button>
-            <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">📚🔗</button>
+            <button class="nb-tb-btn" data-cmd="link" title="${t('notebook_link')}">${ic('globe')}${ic('link')}</button>
+            <button class="nb-tb-btn" data-cmd="pageLink" title="${t('notebook_page_link')}">${ic('book-open')}${ic('link')}</button>
+            <button class="nb-tb-btn" data-cmd="vocabLink" title="${t('notebook_vocab_link')}">${ic('books')}${ic('link')}</button>
             <span class="nb-tb-sep"></span>
-            <button class="nb-tb-btn" data-cmd="insertImage" title="${t('notebook_image')}">🖼️</button>
+            <button class="nb-tb-btn" data-cmd="insertImage" title="${t('notebook_image')}">${ic('image-square')}</button>
           </div>
           <input type="file" id="nbImageInput" accept="image/*" style="display:none">
           <div class="nb-page-header" id="nbPageHeader">
@@ -119,7 +120,7 @@ function getNotebookHTML() {
               <span id="nbEditorStatus">${t('notebook_saved')}</span>
             </div>
             <div class="nb-editor-footer-right" style="display: none">
-              <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">📄</button>
+              <button class="btn btn-sm btn-secondary" id="nbExportPage" title="${t('notebook_export_page')}">${ic('export')}</button>
               <button class="btn btn-sm btn-danger" id="nbDeletePage">${t('notebook_delete')}</button>
             </div>
           </div>
@@ -127,10 +128,10 @@ function getNotebookHTML() {
       </div>
       <div class="nb-vocab-sidebar" id="nbVocabSidebar">
         <div class="nb-vocab-sidebar-header">
-          <span>📝 <span id="nbVocabSidebarTitle">${t('notebook_linked_vocab')}</span></span>
+          <span>${ic('lego')} <span id="nbVocabSidebarTitle">${t('notebook_linked_vocab')}</span></span>
           <span class="nb-vocab-sidebar-actions">
-            <button class="nb-tb-btn btn-sm" id="nbVocabSelectToggle" title="${t('notebook_select_items') || 'Select items'}">☑</button>
-            <button class="nb-tb-btn btn-sm hidden" id="nbVocabDeleteSelected" title="${t('common_delete')}">🗑️</button>
+            <button class="nb-tb-btn btn-sm" id="nbVocabSelectToggle" title="${t('notebook_select_items') || 'Select items'}">${ic('list-checks')}</button>
+            <button class="nb-tb-btn btn-sm hidden" id="nbVocabDeleteSelected" title="${t('common_delete')}">${ic('trash')}</button>
           </span>
         </div>
         <div class="nb-vocab-links-list" id="nbVocabLinksList"></div>
@@ -186,7 +187,7 @@ function getNotebookHTML() {
         <div class="nb-color-grid" id="nbColorGrid"></div>
         <div class="nb-color-custom-row">
           <label class="nb-color-custom-btn" id="nbColorCustomBtn">
-            <span id="nbColorCustomLabel">🎨 ${t('notebook_custom_color')}</span>
+            <span id="nbColorCustomLabel">${ic('palette')} ${t('notebook_custom_color')}</span>
             <input type="color" id="nbColorCustomInput" class="nb-color-custom-input">
           </label>
         </div>
@@ -473,13 +474,13 @@ function renderSidebar() {
         ${s.color ? `<span class="nb-section-color-dot" style="background:${s.color}"></span>` : ''}
         <span class="nb-section-name">${escapeHtml(s.name)}</span>
         <div class="nb-section-actions">
-          ${si > 0 ? `<button class="nb-context-btn" data-action="section-up" title="${window.t('notebook_move_up')}">⬆️</button>` : ''}
-          ${si < totalSections - 1 ? `<button class="nb-context-btn" data-action="section-down" title="${window.t('notebook_move_down')}">⬇️</button>` : ''}
-          <button class="nb-context-btn" data-action="rename-section" title="${window.t('notebook_rename')}">✏️</button>
-          <button class="nb-context-btn" data-action="section-color" title="${window.t('notebook_color')}">🎨</button>
-          <button class="nb-context-btn" data-action="delete-section" title="${window.t('common_delete')}">🗑️</button>
+          ${si > 0 ? `<button class="nb-context-btn" data-action="section-up" title="${window.t('notebook_move_up')}">${window.phIcon('arrow-up')}</button>` : ''}
+          ${si < totalSections - 1 ? `<button class="nb-context-btn" data-action="section-down" title="${window.t('notebook_move_down')}">${window.phIcon('arrow-down')}</button>` : ''}
+          <button class="nb-context-btn" data-action="rename-section" title="${window.t('notebook_rename')}">${window.phIcon('pencil-simple')}</button>
+          <button class="nb-context-btn" data-action="section-color" title="${window.t('notebook_color')}">${window.phIcon('palette')}</button>
+          <button class="nb-context-btn" data-action="delete-section" title="${window.t('common_delete')}">${window.phIcon('trash')}</button>
         </div>
-        <button class="nb-section-add-btn" data-action="add-page" title="${window.t('notebook_add_page')}">➕</button>
+        <button class="nb-section-add-btn" data-action="add-page" title="${window.t('notebook_add_page')}">${window.phIcon('plus')}</button>
       </div>
       <div class="nb-page-list" data-section-id="${s.id}">
         ${(s.pages || []).map((p, pi) => {
@@ -491,13 +492,13 @@ function renderSidebar() {
             ${p.color ? `<span class="nb-page-color-dot" style="background:${p.color}"></span>` : ''}
             <span class="nb-page-name">${escapeHtml(p.name)}</span>
             <div class="nb-page-actions">
-            <button class="nb-context-btn" data-action="duplicate-page" title="${window.t('notebook_duplicate')}">📋</button>
-              <button class="nb-context-btn" data-action="move-page" title="${window.t('notebook_move')}">📤</button>
-              ${pi > 0 ? `<button class="nb-context-btn" data-action="page-up" title="${window.t('notebook_move_up')}">⬆️</button>` : ''}
-              ${pi < totalPages - 1 ? `<button class="nb-context-btn" data-action="page-down" title="${window.t('notebook_move_down')}">⬇️</button>` : ''}
-              <button class="nb-context-btn" data-action="rename-page" title="${window.t('notebook_rename')}">✏️</button>
-              <button class="nb-context-btn" data-action="page-color" title="${window.t('notebook_color')}">🎨</button>              
-              <button class="nb-context-btn" data-action="delete-page" title="${window.t('common_delete')}">🗑️</button>
+            <button class="nb-context-btn" data-action="duplicate-page" title="${window.t('notebook_duplicate')}">${window.phIcon('files')}</button>
+              <button class="nb-context-btn" data-action="move-page" title="${window.t('notebook_move')}">${window.phIcon('tray-arrow-up')}</button>
+              ${pi > 0 ? `<button class="nb-context-btn" data-action="page-up" title="${window.t('notebook_move_up')}">${window.phIcon('arrow-up')}</button>` : ''}
+              ${pi < totalPages - 1 ? `<button class="nb-context-btn" data-action="page-down" title="${window.t('notebook_move_down')}">${window.phIcon('arrow-down')}</button>` : ''}
+              <button class="nb-context-btn" data-action="rename-page" title="${window.t('notebook_rename')}">${window.phIcon('pencil-simple')}</button>
+              <button class="nb-context-btn" data-action="page-color" title="${window.t('notebook_color')}">${window.phIcon('palette')}</button>              
+              <button class="nb-context-btn" data-action="delete-page" title="${window.t('common_delete')}">${window.phIcon('trash')}</button>
             </div>
           </div>`;
     }).join('')}
@@ -873,7 +874,7 @@ function exportCurrentPage() {
   a.download = title.replace(/[^a-zA-Z0-9_-]/g, '_') + '.html';
   a.click();
   URL.revokeObjectURL(a.href);
-  nbToast('📄 ' + window.t('notebook_renamed'));
+  nbToast(window.phIcon('export') + ' ' + window.t('notebook_renamed'), 'success', true);
 }
 
 // ── Page reordering ─────────────────────────────────────────
@@ -953,7 +954,7 @@ function rebindTableToolbars() {
       <button class="nb-tb-btn btn-sm" data-table-action="add-cell" title="${window.t('notebook_add_cell')}">${window.t('notebook_add_cell')}</button>
       <button class="nb-tb-btn btn-sm" data-table-action="del-cell" title="${window.t('notebook_del_cell')}">${window.t('notebook_del_cell')}</button>
       <span class="nb-tb-sep"></span>
-      <button class="nb-tb-btn btn-sm" data-table-action="del-table">🗑️</button>
+      <button class="nb-tb-btn btn-sm" data-table-action="del-table">${window.phIcon('trash')}</button>
     `;
     wrapper.insertBefore(toolbar, table);
     toolbar.querySelectorAll('[data-table-action]').forEach(btn => {
@@ -2661,9 +2662,9 @@ function renderVocabLinksList() {
     return separator + '<span class="nb-vocab-link-chip' + (selectMode ? ' nb-select-mode' : '') + (checked ? ' nb-chip-selected' : '') + '" title="' + escapeHtml(l.translation || '') + '">' +
       checkbox +
       '<span class="nb-vocab-link-chip-text"' + navClick + '>' +
-      (l.vocabType === 'phrase' ? '💬 ' : '📝 ') + escapedText +
+      (l.vocabType === 'phrase' ? window.phIcon('chat-circle') + ' ' : window.phIcon('lego') + ' ') + escapedText +
       '</span>' +
-      '<span class="nb-vocab-link-chip-del" data-vocab-id="' + escapeHtml(l.vocabId) + '" data-vocab-type="' + l.vocabType + '">✕</span>' +
+      '<span class="nb-vocab-link-chip-del" data-vocab-id="' + escapeHtml(l.vocabId) + '" data-vocab-type="' + l.vocabType + '">' + window.phIcon('x') + '</span>' +
       '</span>';
   }).join('');
 
@@ -2680,8 +2681,8 @@ function formatDate(iso) {
   } catch { return iso; }
 }
 
-function nbToast(msg, type) {
-  if (window.toast) window.toast(msg, type);
+function nbToast(msg, type, html) {
+  if (window.toast) window.toast(msg, type, html);
 }
 
 // Handle navigation away from notebook

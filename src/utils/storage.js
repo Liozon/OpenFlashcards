@@ -92,7 +92,12 @@ function getUserConfig(userId) {
     targetLangs: [],
     currentLang: null,
     uiLang: 'en',
-    darkMode: true
+    darkMode: true,
+    hideZeroStats: false,
+    accentColor: '#439b00',
+    iconStyle: 'emoji',
+    iconWeight: 'regular',
+    iconColor: 'text'
   });
 }
 

@@ -1,16 +1,21 @@
 // pages/add.js
 'use strict';
 
+function _okMessage(el, text) {
+  el.innerHTML = phIcon('check') + ' ' + String(text).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 function renderAdd(el) {
+  const ic = window.phIcon;
   window._addWordType = 'noun';
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
   // Block writes when offline
   if (window.App && App.config && App.config.offlineMode && !navigator.onLine) {
-    el.innerHTML = `<div class="page-title">➕ ${t('nav_add')}</div>
+    el.innerHTML = `<div class="page-title">${ic('plus')} ${t('nav_add')}</div>
       <div class="card" style="text-align:center;padding:32px 20px">
-        <div style="font-size:3rem;margin-bottom:12px">📴</div>
+        <div style="font-size:3rem;margin-bottom:12px">${ic('wifi-slash')}</div>
         <h3 style="margin-bottom:8px">${t('offline_no_connection')}</h3>
         <p style="color:var(--text-muted)">${t('offline_readonly')}</p>
       </div>`;
@@ -34,20 +39,20 @@ function renderAdd(el) {
     : '';
 
   el.innerHTML = `
-    <div class="page-title">➕ ${t('add_title')}</div>
+    <div class="page-title">${ic('plus')} ${t('add_title')}</div>
     <div class="add-tabs">
-      <button class="add-tab active" data-tab="word"   onclick="switchAddTab('word',this)">📝 ${t('add_tab_word')}</button>
-      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">💬 ${t('add_tab_phrase')}</button>
+      <button class="add-tab active" data-tab="word"   onclick="switchAddTab('word',this)">${ic('lego')} ${t('add_tab_word')}</button>
+      <button class="add-tab"        data-tab="phrase" onclick="switchAddTab('phrase',this)">${ic('chat-circle')} ${t('add_tab_phrase')}</button>
     </div>
 
     <!-- WORD FORM -->
     <div id="tabWord">
       <div class="type-selector" id="wordTypeSelector">
-        <button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">📦 ${t('add_type_noun')}</button>
-        <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">⚡ ${t('add_type_verb')}</button>
-        <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">🎨 ${t('add_type_adj')}</button>
-        <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">💨 ${t('add_type_adv')}</button>
-        <button class="type-btn"        data-type="other"     onclick="selectWordType('other',this)">🧩 ${t('add_type_other')}</button>
+<button class="type-btn active" data-type="noun"      onclick="selectWordType('noun',this)">${ic('package')} ${t('add_type_noun')}</button>
+      <button class="type-btn"        data-type="verb"       onclick="selectWordType('verb',this)">${ic('lightning')} ${t('add_type_verb')}</button>
+      <button class="type-btn"        data-type="adjective"  onclick="selectWordType('adjective',this)">${ic('palette')} ${t('add_type_adj')}</button>
+      <button class="type-btn"        data-type="adverb"     onclick="selectWordType('adverb',this)">${ic('wind')} ${t('add_type_adv')}</button>
+      <button class="type-btn"        data-type="other"     onclick="selectWordType('other',this)">${ic('puzzle-piece')} ${t('add_type_other')}</button>
       </div>
 
       <div class="card">
@@ -89,7 +94,7 @@ function renderAdd(el) {
         ${declensions.length ? `
         <details id="declensionsSection" style="margin-bottom:16px">
           <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);margin-bottom:8px">
-            📐 ${t('add_declensions')} <span class="optional">${t('vocab_optional')}</span>
+            ${ic('arrows-split')} ${t('add_declensions')} <span class="optional">${t('vocab_optional')}</span>
           </summary>
           <div id="declGrid"></div>
         </details>` : ''}
@@ -101,7 +106,7 @@ function renderAdd(el) {
         <div id="wordLabelPickerContainer"></div>
         <div id="wordAddErr" class="alert alert-danger hidden"></div>
         <div id="wordAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">➕ ${t('add_btn_word')}</button>
+        <button class="btn btn-primary btn-full" id="addWordBtn" onclick="submitWord()">${ic('plus')} ${t('add_btn_word')}</button>
       </div>
     </div>
 
@@ -123,7 +128,7 @@ function renderAdd(el) {
         <div id="phraseLabelPickerContainer"></div>
         <div id="phraseAddErr" class="alert alert-danger hidden"></div>
         <div id="phraseAddOk"  class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">➕ ${t('add_btn_phrase')}</button>
+        <button class="btn btn-primary btn-full" id="addPhraseBtn" onclick="submitPhrase()">${ic('plus')} ${t('add_btn_phrase')}</button>
       </div>
     </div>
 
@@ -701,7 +706,7 @@ window.submitWord = async function () {
   btn.disabled = true;
   try {
     await api('POST', '/api/words', body);
-    okEl.textContent = `✓ ${t('add_ok_word')} "${literal}"`;
+    _okMessage(okEl, `${t('add_ok_word')} "${literal}"`);
     okEl.classList.remove('hidden');
 
     ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
@@ -742,7 +747,7 @@ window.submitPhrase = async function () {
   btn.disabled = true;
   try {
     await api('POST', '/api/phrases', { lang, text, translation, helpNote, labels: phraseLabels });
-    okEl.textContent = `✓ ${t('add_ok_phrase')}`;
+    _okMessage(okEl, t('add_ok_phrase'));
     okEl.classList.remove('hidden');
     document.getElementById('pText').value = '';
     document.getElementById('pTranslation').value = '';

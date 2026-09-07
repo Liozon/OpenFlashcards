@@ -3,12 +3,13 @@
 
 async function renderSettings(el) {
   const cfg = App.config;
+  const ic = window.phIcon;
 
   el.innerHTML = `
-    <div class="page-title">⚙️ ${t('settings_title')}</div>
+    <div class="page-title">${ic('gear')} ${t('settings_title')}</div>
 
     <div class="card settings-section">
-      <h2>🌍 ${t('settings_languages')}</h2>
+      <h2>${ic('globe')} ${t('settings_languages')}</h2>
       <div id="langChips" class="lang-chips"></div>
       <div class="field-group" style="margin-top:12px">
         <label>${t('settings_add_lang')}</label>
@@ -19,7 +20,7 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
-      <h2>🌐 ${t('settings_ui_lang')}</h2>
+      <h2>${ic('translate')} ${t('settings_ui_lang')}</h2>
       <div class="field-group">
         <div class="combobox-wrap">
           <input type="text" id="uiLangSearch" placeholder="${t('settings_ui_lang_ph')}" autocomplete="off" value="${getUiLangName()}">
@@ -30,7 +31,7 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
-      <h2>🎨 ${t('settings_appearance')}</h2>
+      <h2>${ic('palette')} ${t('settings_appearance')}</h2>
       <div class="toggle-row">
       <label class="toggle-switch">
           <input type="checkbox" id="darkModeToggle" ${cfg.darkMode ? 'checked' : ''}>
@@ -38,10 +39,48 @@ async function renderSettings(el) {
         </label>
         <span>${t('settings_dark')}</span>
       </div>
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="hideZeroStatsToggle" ${cfg.hideZeroStats ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
+        <span>${t('settings_hide_zero_stats')}</span>
+      </div>
+      <div class="accent-field">
+        <label>${t('settings_main_color')}</label>
+        <div class="accent-row">
+          <input type="color" id="accentColorInput" value="${cfg.accentColor || '#439b00'}" title="${t('settings_main_color_custom')}">
+          <span id="accentColorHex" class="accent-hex">${(cfg.accentColor || '#439b00').toUpperCase()}</span>
+        </div>
+        <div id="accentSwatches" class="color-swatches"></div>
+      </div>
+      <div class="field-group" style="margin-top:14px">
+        <label>${t('settings_icon_style')}</label>
+        <div class="seg-row" id="settingsIconStyleSeg" role="group" aria-label="${t('settings_icon_style')}">
+          <button type="button" class="seg-btn ${cfg.iconStyle === 'emoji' ? 'active' : ''}" data-style="emoji">${phIcon('cards', 'emoji')} ${t('settings_icon_emoji')}</button>
+          <button type="button" class="seg-btn ${cfg.iconStyle === 'icons' ? 'active' : ''}" data-style="icons"><span id="settingsPvIcons">${phIcon('cards', 'icons', cfg.iconWeight)}</span> ${t('settings_icon_icons')}</button>
+          <button type="button" class="seg-btn ${cfg.iconStyle === 'none' ? 'active' : ''}" data-style="none" id="settingsIconNoneBtn">${t('settings_icon_none')}</button>
+        </div>
+      </div>
+      <div class="field-group" id="settingsIconWeightGroup" style="margin-top:8px;display:${cfg.iconStyle === 'icons' ? '' : 'none'}">
+        <label>${t('settings_icon_weight')}</label>
+        <div class="seg-row" id="settingsIconWeightSeg" role="group" aria-label="${t('settings_icon_weight')}">
+          <button type="button" class="seg-btn ${(cfg.iconWeight || 'regular') === 'regular' ? 'active' : ''}" data-weight="regular" id="settingsWReg">${t('settings_icon_weight_regular')}</button>
+          <button type="button" class="seg-btn ${(cfg.iconWeight || 'regular') === 'bold' ? 'active' : ''}" data-weight="bold" id="settingsWBold">${t('settings_icon_weight_bold')}</button>
+          <button type="button" class="seg-btn ${(cfg.iconWeight || 'regular') === 'fill' ? 'active' : ''}" data-weight="fill" id="settingsWFill">${t('settings_icon_weight_fill')}</button>
+        </div>
+      </div>
+      <div class="field-group" id="settingsIconColorGroup" style="margin-top:8px;display:${cfg.iconStyle === 'icons' ? '' : 'none'}">
+        <label>${t('settings_icon_color')}</label>
+        <div class="seg-row" id="settingsIconColorSeg" role="group" aria-label="${t('settings_icon_color')}">
+          <button type="button" class="seg-btn ${(cfg.iconColor || 'text') === 'accent' ? 'active' : ''}" data-color="accent" id="settingsColorAccent">${phIcon('cards', 'icons', cfg.iconWeight)} ${t('settings_icon_color_accent')}</button>
+          <button type="button" class="seg-btn ${(cfg.iconColor || 'text') === 'text' ? 'active' : ''}" data-color="text" id="settingsColorText">${phIcon('cards', 'icons', cfg.iconWeight)} ${t('settings_icon_color_text')}</button>
+        </div>
+      </div>
     </div>
 
     <div class="card settings-section">
-      <h2>📅 ${t('settings_date_format')}</h2>
+      <h2>${ic('calendar-dots')} ${t('settings_date_format')}</h2>
       <p style="color:var(--text-muted);margin-bottom:12px;font-size:.9rem">${t('settings_date_format_desc')}</p>
       <div class="field-group">
         <select id="dateFormatSelect" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.9rem;width:100%">
@@ -54,13 +93,13 @@ async function renderSettings(el) {
     </div>
 
     <div class="card settings-section">
-      <h2>🔐 ${t('settings_account')}</h2>
+      <h2>${ic('password')} ${t('settings_account')}</h2>
       <p style="color:var(--text-muted);margin-bottom:16px">${t('settings_logged_as')} <strong>${esc(App.user.username)}</strong></p>
       <button class="btn btn-secondary btn-sm" onclick="showChangePassword()">${t('settings_change_pw')}</button>
     </div>
 
     <div class="card settings-section" id="offlineSection">
-      <h2>📴 ${t('offline_title')}</h2>
+      <h2>${ic('wifi-slash')} ${t('offline_title')}</h2>
       <p style="color:var(--text-muted);margin-bottom:12px;font-size:.9rem">${t('offline_desc')}</p>
       <div class="toggle-row" style="margin-bottom:16px">        
         <label class="toggle-switch">
@@ -82,10 +121,10 @@ async function renderSettings(el) {
 
       <div id="offlineActionRow" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
         <button class="btn btn-primary btn-sm" id="offlineSyncNowBtn" style="display:${cfg.offlineMode ? '' : 'none'}" onclick="window._triggerOfflineSync && window._triggerOfflineSync()">
-          🔄 ${t('offline_sync_now')}
+          ${phIcon('arrows-clockwise')} ${t('offline_sync_now')}
         </button>
         <button class="btn btn-secondary btn-sm" id="offlineClearBtn" style="display:none">
-          🗑️ ${t('offline_clear')}
+          ${phIcon('trash')} ${t('offline_clear')}
         </button>
       </div>
     </div>`;
@@ -95,8 +134,99 @@ async function renderSettings(el) {
   // Dark mode
   document.getElementById('darkModeToggle').addEventListener('change', async function () {
     await saveConfig({ darkMode: this.checked });
-    document.getElementById('darkToggle').textContent = this.checked ? '☀️' : '🌙';
+    updateDarkToggle();
   });
+
+  // ── Icon style / weight ─────────────────────────────────────────────────────
+  const iconStyleSeg = document.getElementById('settingsIconStyleSeg');
+  const iconWeightSeg = document.getElementById('settingsIconWeightSeg');
+  // After a live style/weight change, re-apply chrome/nav and re-render this page
+  // so no already-rendered <i> keeps the previous weight's class (which the old
+  // swapped-out stylesheet would otherwise leave unstyled → blank icons).
+  const reapplyIconPresentation = () => {
+    setAppIconStyles();
+    applyNavLabels();
+    applyChromeIcons();
+    renderSettings(document.getElementById('pageContent'));
+  };
+  if (iconStyleSeg) {
+    iconStyleSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', async () => {
+        const style = b.dataset.style;
+        await saveConfig({ iconStyle: style });
+        reapplyIconPresentation();
+        toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+      });
+    });
+  }
+  if (iconWeightSeg) {
+    iconWeightSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', async () => {
+        const weight = b.dataset.weight;
+        await saveConfig({ iconWeight: weight });
+        reapplyIconPresentation();
+        toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+      });
+    });
+  }
+  const iconColorSeg = document.getElementById('settingsIconColorSeg');
+  if (iconColorSeg) {
+    iconColorSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', async () => {
+        const color = b.dataset.color;
+        await saveConfig({ iconColor: color });
+        applyNavLabels();
+        applyChromeIcons();
+        setAppIconStyles();
+        renderSettings(document.getElementById('pageContent'));
+        toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+      });
+    });
+  }
+
+  // Hide zero stats on home page
+  document.getElementById('hideZeroStatsToggle').addEventListener('change', async function () {
+    await saveConfig({ hideZeroStats: this.checked });
+    toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+  });
+
+  // ── Main (accent) color ────────────────────────────────────────────────────
+  const ACCENT_COLORS = window.ACCENT_COLORS || ['#439b00', '#0ea5e9', '#e11d48', '#7c3aed', '#eab308', '#ea580c', '#0d9488', '#f43f5e'];
+  const accentInput = document.getElementById('accentColorInput');
+  const accentHex = document.getElementById('accentColorHex');
+  const accentSwatches = document.getElementById('accentSwatches');
+  if (accentSwatches) {
+    accentSwatches.innerHTML = ACCENT_COLORS.map(c =>
+      `<button type="button" class="color-swatch" data-color="${c}" style="background:${c}" title="${c.toUpperCase()}"></button>`
+    ).join('');
+    accentSwatches.querySelectorAll('.color-swatch').forEach(sw => {
+      if (sw.dataset.color.toLowerCase() === (cfg.accentColor || '#439b00').toLowerCase()) sw.classList.add('active');
+      sw.addEventListener('click', async () => {
+        setAccentColor(sw.dataset.color);
+        accentSwatches.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+        await saveConfig({ accentColor: sw.dataset.color });
+        toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+      });
+    });
+  }
+  function setAccentColor(hex) {
+    const c = hex || '#439b00';
+    if (accentInput) accentInput.value = c;
+    if (accentHex) accentHex.textContent = c.toUpperCase();
+    if (window.applyAccentColor) window.applyAccentColor(c);
+  }
+  if (accentInput) {
+    accentInput.addEventListener('input', () => {
+      setAccentColor(accentInput.value);
+      if (accentSwatches) accentSwatches.querySelectorAll('.color-swatch').forEach(s =>
+        s.classList.toggle('active', s.dataset.color.toLowerCase() === accentInput.value.toLowerCase()));
+    });
+    accentInput.addEventListener('change', async () => {
+      await saveConfig({ accentColor: accentInput.value });
+      toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
+    });
+  }
 
   // ── Date format ────────────────────────────────────────────────────────────
   function _fmtDatePreview(fmt) {
@@ -127,7 +257,7 @@ async function renderSettings(el) {
     dateFormatSelect.addEventListener('change', async function () {
       await saveConfig({ dateFormat: this.value });
       _updateDatePreview();
-      toast(`✓ ${t('settings_config_saved')}`);
+      toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
     });
     _updateDatePreview();
   }
@@ -147,16 +277,16 @@ async function renderSettings(el) {
     let pendingHtml = '';
     if (pending > 0) {
       const label = window.t ? t('offline_pending_sync') : 'answer(s) pending sync';
-      pendingHtml = `<br><span style="color:var(--warning,#ff9800);font-weight:600">⏳ ${pending} ${label}</span>`;
+      pendingHtml = `<br><span style="color:var(--warning,#ff9800);font-weight:600">${window.phIcon('hourglass')} ${pending} ${label}</span>`;
     }
 
     if (!meta) {
-      offlineStatus.innerHTML = `<span style="color:var(--text-muted)">⚠️ ${t('offline_not_synced')}</span>${pendingHtml}`;
+      offlineStatus.innerHTML = `<span style="color:var(--text-muted)">${window.phIcon('warning')} ${t('offline_not_synced')}</span>${pendingHtml}`;
     } else {
       const d = new Date(meta.syncedAt);
       const fmt = d.toLocaleString();
       offlineStatus.innerHTML =
-        `<span style="color:var(--success,#4caf50)">✓ ${t('offline_last_sync')}: <strong>${fmt}</strong></span><br>` +
+        `<span style="color:var(--success,#4caf50)">${window.phIcon('check')} ${t('offline_last_sync')}: <strong>${fmt}</strong></span><br>` +
         `<small style="color:var(--text-muted)">${t('offline_langs')}: ${(meta.langs || []).join(', ')} · ${t('offline_tts_files')}: ${ttsCount}</small>` +
         pendingHtml;
     }
@@ -226,13 +356,13 @@ async function renderSettings(el) {
       toast(t('offline_no_connection'), 'danger'); return;
     }
 
-    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = window.phIcon('hourglass'); btn.disabled = true; }
     if (syncNowBtn) { syncNowBtn.disabled = true; }
     if (progressWrap) { progressWrap.style.display = ''; }
 
     function setProgress(pct, label) {
       if (progressBar) progressBar.style.width = pct + '%';
-      if (progressText) progressText.textContent = label;
+      if (progressText) progressText.innerHTML = label;
     }
 
     try {
@@ -249,39 +379,39 @@ async function renderSettings(el) {
       await OfflineSync.fullSync(langs, configByLang, prog => {
         if (prog.phase === 'data') {
           setProgress(Math.round(prog.pct * 0.3), t('offline_progress_data'));
-          if (btn) btn.textContent = '📦';
+          if (btn) btn.innerHTML = window.phIcon('package');
 
         } else if (prog.phase === 'tts_gen') {
           const langIdx = langs.indexOf(prog.lang);
           const base = 30 + langIdx * langShare;
           const pct = Math.round(base + (prog.pct / 100) * langShare * 0.5);
           const label = prog.total > 0
-            ? `🎙️ ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()} (${prog.done}/${prog.total})`
-            : `🎙️ ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()}…`;
+            ? `${window.phIcon('microphone')} ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()} (${prog.done}/${prog.total})`
+            : `${window.phIcon('microphone')} ${t('offline_progress_tts_gen')} ${prog.lang.toUpperCase()}…`;
           setProgress(pct, label);
-          if (btn) btn.textContent = '🎙️';
+          if (btn) btn.innerHTML = window.phIcon('microphone');
 
         } else if (prog.phase === 'tts_dl') {
           const langIdx = langs.indexOf(prog.lang);
           const base = 30 + langIdx * langShare + langShare * 0.5;
           const pct = Math.round(base + (prog.pct / 100) * langShare * 0.5);
           const label = prog.total > 0
-            ? `📥 ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()} (${prog.done || 0}/${prog.total})`
-            : `📥 ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()}…`;
+            ? `${window.phIcon('cloud-arrow-down')} ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()} (${prog.done || 0}/${prog.total})`
+            : `${window.phIcon('cloud-arrow-down')} ${t('offline_progress_tts_dl')} ${prog.lang.toUpperCase()}…`;
           setProgress(pct, label);
-          if (btn) btn.textContent = '📥';
+          if (btn) btn.innerHTML = window.phIcon('cloud-arrow-down');
         }
       });
       setProgress(100, t('offline_sync_done'));
       toast(t('offline_sync_done'));
       await refreshOfflineStatus();
-      if (btn) { btn.textContent = '✅'; setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000); }
+      if (btn) { btn.innerHTML = window.phIcon('check'); setTimeout(() => { btn.innerHTML = window.phIcon('arrows-clockwise'); btn.disabled = false; }, 2000); }
       if (syncNowBtn) { syncNowBtn.disabled = false; }
       setTimeout(() => { if (progressWrap) progressWrap.style.display = 'none'; }, 3000);
     } catch (err) {
       console.error('[offline sync]', err);
       toast(t('offline_sync_error'), 'danger');
-      if (btn) { btn.textContent = '❌'; setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000); }
+      if (btn) { btn.innerHTML = window.phIcon('x-red'); setTimeout(() => { btn.innerHTML = window.phIcon('arrows-clockwise'); btn.disabled = false; }, 2000); }
       if (syncNowBtn) syncNowBtn.disabled = false;
     }
   };
@@ -324,7 +454,7 @@ async function renderSettings(el) {
       renderLangChips();
       searchEl.value = '';
       selectedNewLang = null;
-      toast(`✓ ${t('settings_lang_added')}`);
+      toast(window.phIcon('check') + ' ' + t('settings_lang_added'), 'success', true);
     } catch (e) {
       toast(e.error || t('common_error'), 'danger');
       addBtn.disabled = false;
@@ -377,7 +507,7 @@ async function renderSettings(el) {
     await window.setUiLang(code);
     await saveConfig({ uiLang: code });
     App.config.uiLang = code;
-    toast(`✓ ${t('settings_ui_lang_saved')}`);
+    toast(window.phIcon('check') + ' ' + t('settings_ui_lang_saved'), 'success', true);
     applyNavLabels();
     navigate('settings');
   }
@@ -443,8 +573,8 @@ function renderLangChips() {
   el.innerHTML = langs.map(l =>
     `<div class="lang-chip">
       ${l.flag || '🌐'} ${l.name}
-      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">⚙️ ${t('settings_configure')}</button>
-      <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="${t('common_delete')}">✕</span>
+      <button class="btn btn-sm btn-secondary" style="margin-left:6px;padding:2px 8px;font-size:.78rem" onclick="openLangConfig('${l.isoCode}')">${window.phIcon('gear')} ${t('settings_configure')}</button>
+      <span class="remove-lang" onclick="removeLang('${l.isoCode}')" title="${t('common_delete')}">${window.phIcon('x')}</span>
     </div>`
   ).join('');
 }
@@ -491,7 +621,7 @@ window.openLangConfig = function (isoCode) {
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <input type="text" class="decl-target" data-i="${i}" value="${esc(d.targetName)}" placeholder="${t('settings_decl_ph_target')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <button onclick="removeDeclension(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+        <button onclick="removeDeclension(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">${window.phIcon('x')}</button>
       </div>`).join('');
     container.querySelectorAll('.decl-native').forEach(inp =>
       inp.addEventListener('input', () => { declensions[+inp.dataset.i].nativeName = inp.value; }));
@@ -512,7 +642,7 @@ window.openLangConfig = function (isoCode) {
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
         <input type="text" class="tense-target" data-i="${i}" value="${esc(d.targetName)}" placeholder="${t('settings_tenses_ph_target')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <button onclick="removeTense(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+        <button onclick="removeTense(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">${window.phIcon('x')}</button>
       </div>`).join('');
     container.querySelectorAll('.tense-native').forEach(inp =>
       inp.addEventListener('input', () => { tenses[+inp.dataset.i].nativeName = inp.value; }));
@@ -531,7 +661,7 @@ window.openLangConfig = function (isoCode) {
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <input type="text" class="vg-name" data-i="${i}" value="${esc(g.name)}" placeholder="${t('settings_vg_ph')}"
           style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <button onclick="removeVerbGroup(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+        <button onclick="removeVerbGroup(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">${window.phIcon('x')}</button>
       </div>`).join('');
     container.querySelectorAll('.vg-name').forEach(inp =>
       inp.addEventListener('input', () => { verbGroups[+inp.dataset.i].name = inp.value; }));
@@ -550,7 +680,7 @@ window.openLangConfig = function (isoCode) {
           <span class="lb-dot" data-i="${i}" style="width:22px;height:22px;border-radius:50%;background:${esc(lb.color)};display:inline-block;flex-shrink:0;border:2px solid var(--border)"></span>
           <input type="text" class="lb-name" data-i="${i}" value="${esc(lb.name)}" placeholder="${t('labels_name')}"
             style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-          <button onclick="removeLabelCfg(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">✕</button>
+          <button onclick="removeLabelCfg(${i})" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--danger);padding:4px">${window.phIcon('x')}</button>
         </div>
         <div class="lb-swatches" data-i="${i}" style="display:flex;flex-wrap:wrap;gap:6px;padding-left:30px;align-items:center">
           ${LABEL_COLORS.map(c => `
@@ -603,31 +733,31 @@ window.openLangConfig = function (isoCode) {
 
   openModal(`${t('settings_lang_config_title')}: ${lang.flag || '🌐'} ${lang.name}`, `
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">📐 ${t('settings_declensions_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('arrows-split')} ${t('settings_declensions_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_declensions_desc')}</p>
       <div id="declContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addDeclension()">${t('settings_decl_add')}</button>
     </div>
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">⏳ ${t('settings_tenses_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('hourglass')} ${t('settings_tenses_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_tenses_desc')}</p>
       <div id="tenseContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addTense()">${t('settings_tenses_add')}</button>
     </div>
     <div style="margin-bottom:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">📚 ${t('settings_vg_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('books')} ${t('settings_vg_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_vg_desc')}</p>
       <div id="vgContainer"></div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addVerbGroup()">${t('settings_vg_add')}</button>
     </div>
     <div>
-      <h3 style="font-size:1rem;margin-bottom:4px">🏷️ ${t('labels_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('tag')} ${t('labels_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('labels_manage')}</p>
       <div id="labelsContainer"></div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addLabelCfg()">➕ ${t('labels_add_btn')}</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addLabelCfg()">${window.phIcon('plus')} ${t('labels_add_btn')}</button>
     </div>
     <div style="margin-top:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">🔊 ${t('settings_tts_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('speaker-high')} ${t('settings_tts_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:12px">${t('settings_tts_desc')}</p>
       <div style="margin-bottom:12px">
         <label style="display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-bottom:6px">
@@ -637,7 +767,7 @@ window.openLangConfig = function (isoCode) {
         <input type="range" id="ttsNormalSlider" min="0.5" max="2" step="0.01" value="${ttsSpeedNormal}"
           style="width:100%;accent-color:var(--primary)">
         <button type="button" id="ttsNormalTest" class="btn btn-secondary btn-sm" style="margin-top:8px">
-          🔊 ${t('settings_tts_test')}
+          ${window.phIcon('speaker-high')} ${t('settings_tts_test')}
         </button>
       </div>
       <div style="margin-top:12px">
@@ -648,12 +778,12 @@ window.openLangConfig = function (isoCode) {
         <input type="range" id="ttsSlowSlider" min="0.1" max="0.8" step="0.01" value="${ttsSpeedSlow}"
           style="width:100%;accent-color:var(--primary)">
         <button type="button" id="ttsSlowTest" class="btn btn-secondary btn-sm" style="margin-top:8px">
-          🐌 ${t('settings_tts_test')}
+          ${window.phIcon('spinner-gap')} ${t('settings_tts_test')}
         </button>
       </div>
     </div>
     <div style="margin-top:20px">
-      <h3 style="font-size:1rem;margin-bottom:4px">🗄️ ${t('settings_tts_cache_title')}</h3>
+      <h3 style="font-size:1rem;margin-bottom:4px">${window.phIcon('waveform')} ${t('settings_tts_cache_title')}</h3>
       <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">${t('settings_tts_cache_desc')}</p>
       <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;user-select:none">
         <div class="toggle-switch ${ttsCacheEnabled ? 'active' : ''}" id="ttsCacheToggle" style="
@@ -682,10 +812,10 @@ window.openLangConfig = function (isoCode) {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
         <button type="button" id="ttsCacheGenBtn" class="btn btn-secondary btn-sm" style="${ttsCacheEnabled ? '' : 'display:none'}">
-          ⚡ ${t('settings_tts_cache_generate')}
+          ${window.phIcon('lightning')} ${t('settings_tts_cache_generate')}
         </button>
         <button type="button" id="ttsCachePurgeBtn" class="btn btn-danger btn-sm" style="display:none">
-          🗑️ ${t('settings_tts_cache_purge')}
+          ${window.phIcon('trash')} ${t('settings_tts_cache_purge')}
         </button>
       </div>
     </div>
@@ -778,7 +908,7 @@ window.openLangConfig = function (isoCode) {
           const infoEl = document.getElementById('ttsCacheInfo');
           if (result && result.ok) {
             if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
-            toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+toast(window.phIcon('trash') + ' ' + t('settings_tts_cache_purged').replace('{n}', result.deleted), 'success', true);
             const freshPurgeBtn = document.getElementById('ttsCachePurgeBtn');
             if (freshPurgeBtn) freshPurgeBtn.style.display = 'none';
           } else {
@@ -827,7 +957,7 @@ window.openLangConfig = function (isoCode) {
       const infoEl = document.getElementById('ttsCacheInfo');
       if (result && result.ok) {
         if (infoEl) infoEl.textContent = t('settings_tts_cache_empty');
-        toast('🗑️ ' + t('settings_tts_cache_purged').replace('{n}', result.deleted));
+        toast(window.phIcon('trash') + ' ' + t('settings_tts_cache_purged').replace('{n}', result.deleted), 'success', true);
         if (freshPurgeBtn) freshPurgeBtn.style.display = 'none';
       } else {
         toast(t('common_error'), 'danger');
@@ -912,9 +1042,9 @@ window.openLangConfig = function (isoCode) {
             const pct = total > 0 ? Math.round(done / total * 100) : 0;
             barEl.style.width = pct + '%';
             countEl.textContent = done + ' / ' + total;
-            const icon = evt.mode === 'slow' ? '🐌' : '🔊';
+            const icon = evt.mode === 'slow' ? window.phIcon('spinner-gap') : window.phIcon('speaker-high');
             const label = evt.text || '';
-            labelEl.textContent = icon + ' ' + label.slice(0, 38) + (label.length > 38 ? '…' : '');
+            labelEl.innerHTML = icon + ' ' + esc(label.slice(0, 38)) + (label.length > 38 ? '…' : '');
           } else if (evt.type === 'done') {
             done = evt.done;
             total = evt.total;
@@ -942,7 +1072,7 @@ window.openLangConfig = function (isoCode) {
     if (wasCancelled) {
       toast(t('settings_tts_cache_gen_cancelled').replace('{n}', done));
     } else if (total > 0) {
-      toast('✅ ' + t('settings_tts_cache_gen_done').replace('{n}', done));
+      toast(window.phIcon('check') + ' ' + t('settings_tts_cache_gen_done').replace('{n}', done), 'success', true);
     } else {
       toast(t('settings_tts_cache_gen_empty'));
     }
@@ -1012,12 +1142,12 @@ window.openLangConfig = function (isoCode) {
         if (r && r.ok) totalPurged += r.deleted;
       }
       if (totalPurged > 0) {
-        toast(`🗑️ ${t('settings_tts_cache_speed_purged').replace('{n}', totalPurged)}`);
+        toast(window.phIcon('trash') + ' ' + t('settings_tts_cache_speed_purged').replace('{n}', totalPurged), 'success', true);
       }
 
       closeModal();
       renderLangChips();
-      toast(`✓ ${t('settings_config_saved')}`);
+      toast(window.phIcon('check') + ' ' + t('settings_saved'), 'success', true);
     } catch (e) {
       errEl.textContent = e.error || t('common_error');
       errEl.classList.remove('hidden');
@@ -1067,7 +1197,7 @@ window.submitChangePassword = async function () {
   try {
     await api('POST', '/auth/change-password', { currentPassword: current, newPassword: newPass });
     closeModal();
-    toast(`✅ ${t('settings_pw_ok')}`);
+    toast(window.phIcon('check') + ' ' + t('settings_pw_ok'), 'success', true);
   } catch (e) {
     errEl.textContent = e.error || t('common_error');
     errEl.classList.remove('hidden');
