@@ -94,7 +94,10 @@ function getUserConfig(userId) {
     uiLang: 'en',
     darkMode: true,
     hideZeroStats: false,
-    accentColor: '#439b00'
+    accentColor: '#439b00',
+    iconStyle: 'emoji',
+    iconWeight: 'regular',
+    iconColor: 'text'
   });
 }
 

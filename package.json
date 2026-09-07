@@ -8,9 +8,11 @@
     "restart": "node --watch src/server.js",
     "dev": "node src/server.js",
     "sync-version": "node scripts/sync-version.js",
-    "version": "node scripts/sync-version.js"
+    "version": "node scripts/sync-version.js",
+    "postinstall": "node scripts/build-phosphor.js"
   },
   "dependencies": {
+    "@phosphor-icons/web": "^2.1.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "express": "^5.2.1",

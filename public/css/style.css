@@ -3901,3 +3901,114 @@ img {
     display: none;
   }
 }
+
+/* ── Phosphor icon system ────────────────────────────────────────────────── */
+/* Icon glyphs inherit the surrounding text color so they stay visible on any
+   surface (nav links, buttons, toasts). Semantic .ph-ok/.ph-bad/.ph-warn
+   classes still override with their meaning-specific colors. */
+body.icon-icons .ph,
+body.icon-icons .ph-bold,
+body.icon-icons .ph-fill,
+body.icon-none .ph,
+body.icon-none .ph-bold,
+body.icon-none .ph-fill {
+  display: inline-block;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+  color: inherit;
+  /* Phosphor glyphs read ~20% smaller than emoji at the same font-size, so
+     scale them up slightly to match the emoji visual size. */
+  font-size: 1.2em;
+}
+
+body.icon-icons .ph.ph-ok,
+body.icon-icons .ph-bold.ph-ok,
+body.icon-icons .ph-fill.ph-ok,
+body.icon-none .ph.ph-ok,
+body.icon-none .ph-bold.ph-ok,
+body.icon-none .ph-fill.ph-ok {
+  color: #2ecc71;
+}
+
+body.icon-icons .ph.ph-bad,
+body.icon-icons .ph-bold.ph-bad,
+body.icon-icons .ph-fill.ph-bad,
+body.icon-none .ph.ph-bad,
+body.icon-none .ph-bold.ph-bad,
+body.icon-none .ph-fill.ph-bad {
+  color: var(--danger);
+}
+
+body.icon-icons .ph.ph-warn,
+body.icon-icons .ph-bold.ph-warn,
+body.icon-icons .ph-fill.ph-warn,
+body.icon-none .ph.ph-warn,
+body.icon-none .ph-bold.ph-warn,
+body.icon-none .ph-fill.ph-warn {
+  color: var(--warning);
+}
+
+/* "Colorful" icon mode (iconColor: accent): icons follow the accent color
+   everywhere EXCEPT on surfaces that already use an accent-tinted background
+   (active nav, primary buttons, active seg buttons, etc.) where the icon must
+   keep the surface's text color to stay readable.
+   Semantic .ph-ok/.ph-bad/.ph-warn are excluded so meaning colors are kept. */
+body.icon-icons.icon-color-accent .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn) {
+  color: var(--primary);
+}
+
+body.icon-icons.icon-color-accent .nav-link.active .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nav-link.active .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nav-link.active .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .active .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .active .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .active .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn-primary .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn-primary .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn-primary .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-tb-btn .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-tb-btn .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-tb-btn .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-context-btn .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-context-btn .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .nb-context-btn .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn) {
+  color: inherit;
+}
+
+/* Segmented control used in onboarding + settings for icon style / weight */
+.seg-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+
+.seg-btn:hover {
+  border-color: var(--primary);
+}
+
+.seg-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+  color: var(--primary-dk);
+}

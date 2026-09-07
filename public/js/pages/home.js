@@ -5,16 +5,17 @@ async function renderHome(el) {
   const lang = currentLang();
   if (!lang) { navigate('settings'); return; }
 
+  const ic = window.phIcon;
   el.innerHTML = `
-    <div class="page-title">🏠 ${t('home_title')}</div>
+    <div class="page-title">${ic('house')} ${t('home_title')}</div>
     <div id="statsGrid" class="stats-grid">
       <div class="stat-card"><div class="spinner" style="width:24px;height:24px"></div></div>
     </div>
     <div class="quick-actions">
-      <button class="btn btn-primary" onclick="navigate('add')">➕ ${t('home_add_words')}</button>
-      <button class="btn btn-secondary" onclick="navigate('train')">🎯 ${t('home_practice')}</button>
-      <button class="btn btn-secondary" onclick="navigate('vocabulary')">📚 ${t('home_vocabulary')}</button>
-      <button class="btn btn-secondary" onclick="navigate('notebook')">📓 ${t('nav_notebook')}</button>
+      <button class="btn btn-primary" onclick="navigate('add')">${ic('plus')} ${t('home_add_words')}</button>
+      <button class="btn btn-secondary" onclick="navigate('train')">${ic('target')} ${t('home_practice')}</button>
+      <button class="btn btn-secondary" onclick="navigate('vocabulary')">${ic('books')} ${t('home_vocabulary')}</button>
+      <button class="btn btn-secondary" onclick="navigate('notebook')">${ic('book-bookmark')} ${t('nav_notebook')}</button>
     </div>
     <div class="card">
       <h3 style="margin-bottom:12px;font-size:1rem">${t('home_active_lang')}</h3>

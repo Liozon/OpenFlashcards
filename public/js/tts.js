@@ -195,7 +195,7 @@ window.TTS = {
   button: function (text, langCode, extraStyle, itemId) {
     const btn = document.createElement('button');
     btn.className = 'btn-tts';
-    btn.innerHTML = '🔊';
+    btn.innerHTML = window.phIcon('speaker-high');
     btn.style.cssText = 'background:none;border:1.5px solid var(--border);border-radius:8px;' +
       'padding:4px 9px;cursor:pointer;font-size:1rem;line-height:1;color:var(--text-muted);' +
       'transition:background .15s;flex-shrink:0;' + (extraStyle || '');
@@ -212,7 +212,7 @@ window.TTS = {
   buttonSlow: function (text, langCode, extraStyle, itemId) {
     const btn = document.createElement('button');
     btn.className = 'btn-tts btn-tts-slow';
-    btn.innerHTML = '🐌';
+    btn.innerHTML = window.phIcon('spinner-gap');
     btn.style.cssText = 'background:none;border:1.5px solid var(--border);border-radius:8px;' +
       'padding:4px 9px;cursor:pointer;font-size:1rem;line-height:1;color:var(--text-muted);' +
       'transition:background .15s;flex-shrink:0;' + (extraStyle || '');

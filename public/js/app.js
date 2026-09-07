@@ -139,7 +139,7 @@ function _updateOfflineBanner(show) {
       banner.className = 'offline-banner';
 
       const msg = document.createElement('span');
-      msg.textContent = `📴 ${window.t ? t('offline_no_connection') : 'You are offline'} – ${window.t ? t('offline_readonly') : 'read-only mode'}`;
+      msg.innerHTML = phIcon('wifi-slash') + ' ' + (window.t ? t('offline_no_connection') : 'You are offline') + ' – ' + (window.t ? t('offline_readonly') : 'read-only mode');
 
       const closeBtn = document.createElement('button');
       closeBtn.className = 'offline-banner-close';
@@ -264,8 +264,149 @@ function applyTheme() {
   }
   const accent = App.config && App.config.accentColor;
   if (accent) applyAccentColor(accent);
+  updateDarkToggle();
+  setAppIconStyles();
+  applyChromeIcons();
+}
+
+function updateDarkToggle() {
+  const dark = App.config ? App.config.darkMode : true;
   const btn = document.getElementById('darkToggle');
-  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+  if (btn) btn.innerHTML = phIcon(dark ? 'sun' : 'moon');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ICON STYLE SYSTEM (emoji / phosphor icons / none)
+// PH_ICONS rows: [key, phosphorGlyph, emoji, essential, cssClass?]
+// essential → still rendered as a Phosphor icon even in "none" mode, for bare
+// icon-only buttons where text alone cannot convey the action.
+// cssClass → extra class for semantic coloring (ph-ok / ph-bad / ph-warn).
+// ─────────────────────────────────────────────────────────────────────────────
+window.PH_ICONS = [
+  // chrome / nav
+  ['hamburger', 'list', '☰', true],
+  ['sun', 'sun', '☀️', true],
+  ['moon', 'moon', '🌙', true],
+  ['house', 'house', '🏠', false],
+  ['books', 'books', '📚', false],
+  ['target', 'target', '🎯', false],
+  ['plus', 'plus', '➕', true],
+  ['book-bookmark', 'book-bookmark', '📓', false],
+  ['gear', 'gear', '⚙️', false],
+  ['password', 'password', '🔑', false],
+  ['sign-out', 'sign-out', '🚪', true],
+  ['arrows-clockwise', 'arrows-clockwise', '🔄', true],
+  ['x', 'x', '✕', true],
+  ['magnifying-glass', 'magnifying-glass', '🔍', true],
+  ['pencil-simple', 'pencil-simple', '✏️', true],
+  ['trash', 'trash', '🗑️', true],
+  ['link', 'link', '🔗', true],
+  ['export', 'export', '📄', true],
+  ['files', 'files', '📋', true],
+  ['tray-arrow-up', 'tray-arrow-up', '📤', true],
+  ['arrow-up', 'arrow-up', '⬆️', true],
+  ['arrow-down', 'arrow-down', '⬇️', true],
+  ['arrow-right', 'arrow-right', '→', false],
+  ['arrow-counter-clockwise', 'arrow-counter-clockwise', '↺', true],
+  ['caret-left', 'caret-left', '◀', true],
+  ['caret-right', 'caret-right', '▶', true],
+  ['caret-down', 'caret-down', '▾', true],
+  // vocab types
+  ['package', 'package', '📦', false],
+  ['lightning', 'lightning', '⚡', false],
+  ['palette', 'palette', '🎨', false],
+  ['wind', 'wind', '💨', false],
+  ['puzzle-piece', 'puzzle-piece', '🧩', false],
+  ['chat-circle', 'chat-circle', '💬', false],
+  ['lego', 'lego', '📝', false],
+  ['book-open', 'book-open', '📖', false],
+  ['cards', 'stack', '🃏', false],
+  // status feedback
+  ['check', 'check', '✅', true, 'ph-ok'],
+  ['x-red', 'x', '❌', true, 'ph-bad'],
+  ['check-simple', 'check', '✓', false],
+  ['x-simple', 'x', '✗', false],
+  ['fire', 'fire', '🔥', false, 'ph-warn'],
+  // train modes / controls / tts
+  ['shuffle', 'shuffle', '🎲', false],
+  ['shuffle-rand', 'shuffle', '🔀', false],
+  ['pen-nib', 'pen-nib', '✍️', false],
+  ['speaker-high', 'speaker-high', '🔊', true],
+  ['spinner-gap', 'spinner-gap', '🐌', true],
+  ['speaker-slash', 'speaker-slash', '🔇', false],
+  ['calendar-dots', 'calendar-dots', '📅', false],
+  ['pause', 'pause', '⏸', true],
+  ['play', 'play', '▶', true],
+  ['hourglass', 'hourglass', '⏳', true],
+  ['microphone', 'microphone', '🎙️', false],
+  ['cloud-arrow-down', 'cloud-arrow-down', '📥', false],
+  ['cloud', 'cloud', '☁️', false],
+  ['wifi-slash', 'wifi-slash', '📴', false],
+  ['translate', 'translate', '🌐', false],
+  ['globe', 'globe', '🌍', false],
+  ['arrows-split', 'arrows-split', '📐', false],
+  ['user-circle-check', 'user-circle-check', '🔐', false],
+  ['tag', 'tag', '🏷️', false],
+  ['warning', 'warning', '⚠️', true],
+  ['users', 'users', '👥', false],
+  ['waveform', 'waveform', '🗄️', false],
+  ['image-square', 'image-square', '🖼️', true],
+  ['list-checks', 'list-checks', '☑', true],
+  ['mailbox', 'mailbox', '📭', false],
+  ['confetti', 'confetti', '🎉', false],
+  ['repeat', 'repeat', '🔁', false],
+  ['quotes', 'quotes', '💬', false]
+];
+
+window.phIcon = function (key, style, weight) {
+  const rec = window.PH_ICONS.find(r => r[0] === key);
+  if (!rec) return '';
+  const s = style || (App.config && App.config.iconStyle) || 'emoji';
+  const w = weight || (App.config && App.config.iconWeight) || 'regular';
+  if (s === 'emoji') return rec[2];
+  if (s === 'none' && !rec[3]) return '';
+  const cls = w === 'bold' ? 'ph-bold' : w === 'fill' ? 'ph-fill' : 'ph';
+  const extra = rec[4] ? ' ' + rec[4] : '';
+  return '<i class="' + cls + ' ph-' + rec[1] + extra + '"></i>';
+};
+
+// Inject the stylesheet for the active font weight (no-op when emoji mode).
+window.ensurePhFont = function (weight) {
+  let link = document.getElementById('ph-font-css');
+  if (!link) {
+    link = document.createElement('link');
+    link.id = 'ph-font-css';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }
+  link.href = '/vendor/phosphor/' + (weight || 'regular') + '/style.css';
+};
+
+window.setAppIconStyles = function (style, weight, color) {
+  const s = style || (App.config && App.config.iconStyle) || 'emoji';
+  const w = weight || (App.config && App.config.iconWeight) || 'regular';
+  const c = color || (App.config && App.config.iconColor) || 'text';
+  ['icon-emoji', 'icon-icons', 'icon-none'].forEach(x => document.body.classList.remove(x));
+  document.body.classList.add('icon-' + s);
+  ['icon-color-accent', 'icon-color-text'].forEach(x => document.body.classList.remove(x));
+  document.body.classList.add('icon-color-' + c);
+  // Load the Phosphor stylesheet in every mode. The icon-selector preview and
+  // essential icons in "no icons" mode always need the glyph, so the @font-face
+  // must stay available; the browser only downloads the woff2 when a glyph
+  // element is actually rendered, not just because the CSS is linked.
+  ensurePhFont(w);
+};
+
+// Static chrome icons in the navbar (dark toggle is handled in updateDarkToggle).
+function applyChromeIcons() {
+  const set = (id, key) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = phIcon(key);
+  };
+  set('hamburger', 'hamburger');
+  set('syncOfflineBtn', 'arrows-clockwise');
+  set('logoutBtn', 'sign-out');
+  set('modalClose', 'x');
 }
 
 function currentLang() {
@@ -529,11 +670,11 @@ window.promptModal = function (message, opts = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────────────────────
-window.toast = function (msg, type = 'success') {
+window.toast = function (msg, type = 'success', html = false) {
   const el = document.createElement('div');
   el.className = `alert alert-${type}`;
   el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeIn .2s';
-  el.textContent = msg;
+  el[html ? 'innerHTML' : 'textContent'] = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 8000);
 };
@@ -606,7 +747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('darkToggle').addEventListener('click', async () => {
     const dark = !(App.config && App.config.darkMode);
     await saveConfig({ darkMode: dark });
-    document.getElementById('darkToggle').textContent = dark ? '☀️' : '🌙';
+    updateDarkToggle();
   });
 
   // Hamburger menu
@@ -646,7 +787,7 @@ window._triggerOfflineSync = async function () {
     toast(window.t ? t('offline_no_connection') : 'No connection', 'danger');
     return;
   }
-  btn.textContent = '⏳';
+  btn.innerHTML = phIcon('hourglass');
   btn.disabled = true;
   try {
     const targetLangs = (App.config && App.config.targetLangs) || [];
@@ -655,18 +796,18 @@ window._triggerOfflineSync = async function () {
     targetLangs.forEach(l => { configByLang[l.isoCode] = l; });
 
     await OfflineSync.fullSync(langs, configByLang, progress => {
-      if (progress.phase === 'data') btn.textContent = '📦';
-      else if (progress.phase === 'tts_gen') btn.textContent = '🎙️';
-      else if (progress.phase === 'tts_dl') btn.textContent = '📥';
+      if (progress.phase === 'data') btn.innerHTML = phIcon('package');
+      else if (progress.phase === 'tts_gen') btn.innerHTML = phIcon('microphone');
+      else if (progress.phase === 'tts_dl') btn.innerHTML = phIcon('cloud-arrow-down');
     });
-    btn.textContent = '✅';
+    btn.innerHTML = phIcon('check');
     toast(window.t ? t('offline_sync_done') : 'Sync complete ✓');
-    setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000);
+    setTimeout(() => { btn.innerHTML = phIcon('arrows-clockwise'); btn.disabled = false; }, 2000);
   } catch (err) {
     console.error('[offline sync]', err);
-    btn.textContent = '❌';
+    btn.innerHTML = phIcon('x-red');
     toast(window.t ? t('offline_sync_error') : 'Sync failed', 'danger');
-    setTimeout(() => { btn.textContent = '🔄'; btn.disabled = false; }, 2000);
+    setTimeout(() => { btn.innerHTML = phIcon('arrows-clockwise'); btn.disabled = false; }, 2000);
   }
 };
 
@@ -676,34 +817,28 @@ window._triggerOfflineSync = async function () {
 // I18N HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 function applyNavLabels() {
-  const map = {
-    navHome: 'nav_home',
-    navVocab: 'nav_vocabulary',
-    navTrain: 'nav_train',
-    navAdd: 'nav_add',
-    navNotebook: 'nav_notebook',
-    navSettings: 'nav_settings',
-    adminLink: 'nav_admin'
+  const items = {
+    navHome: ['nav_home', 'house'],
+    navVocab: ['nav_vocabulary', 'books'],
+    navTrain: ['nav_train', 'target'],
+    navAdd: ['nav_add', 'plus'],
+    navNotebook: ['nav_notebook', 'book-bookmark'],
+    navSettings: ['nav_settings', 'gear'],
+    adminLink: ['nav_admin', 'password']
   };
 
-  const icons = {
-    navHome: '🏠',
-    navVocab: '📚',
-    navTrain: '🎯',
-    navAdd: '➕',
-    navNotebook: '📓',
-    navSettings: '⚙️',
-    adminLink: '🔑'
-  };
+  const style = (App.config && App.config.iconStyle) || 'emoji';
 
-  Object.entries(map).forEach(([id, key]) => {
+  Object.entries(items).forEach(([id, [key, iconKey]]) => {
     const el = document.getElementById(id);
     if (!el) return;
 
-    const label = t(map[id]); // ta fonction de traduction
-    const icon = icons[id] || '';
-
-    el.textContent = `${icon} ${label}`;
+    const label = t(key);
+    if (style === 'emoji' || style === 'icons') {
+      el.innerHTML = phIcon(iconKey) + ' ' + label;
+    } else {
+      el.textContent = label;
+    }
   });
 
   // Admin link: only visible to admins. Always enforce this after any textContent reset.
@@ -771,7 +906,7 @@ function renderOnboarding(el) {
   el.innerHTML = `
     <div class="onboarding-screen">
       <div class="onboarding-card">
-        <div style="font-size:2.5rem;margin-bottom:8px">🃏</div>
+        <div id="onbWelcomeIcon" style="font-size:2.5rem;margin-bottom:8px">${phIcon('cards')}</div>
         <h2>${t('onb_welcome')}</h2>
         <p>${t('onb_native_q')}</p>
 
@@ -799,6 +934,32 @@ function renderOnboarding(el) {
           <div id="onbAccentSwatches" class="color-swatches"></div>
         </div>
 
+        <div class="field-group" style="margin-top:16px" id="onbIconGroup">
+          <label>${t('onb_icon_style')}</label>
+          <div class="seg-row" id="onbIconStyleSeg" role="group" aria-label="${t('onb_icon_style')}">
+            <button type="button" class="seg-btn active" data-style="emoji">${phIcon('cards', 'emoji')} ${t('onb_icon_emoji')}</button>
+            <button type="button" class="seg-btn" data-style="icons"><span id="onbPvIcons">${phIcon('cards', 'icons', 'regular')}</span> ${t('onb_icon_icons')}</button>
+            <button type="button" class="seg-btn" data-style="none" id="onbIconNoneBtn">${t('onb_icon_none')}</button>
+          </div>
+        </div>
+
+        <div class="field-group" id="onbIconWeightGroup" style="margin-top:8px;display:none">
+          <label>${t('onb_icon_weight')}</label>
+          <div class="seg-row" id="onbIconWeightSeg" role="group" aria-label="${t('onb_icon_weight')}">
+            <button type="button" class="seg-btn active" data-weight="regular" id="onbWReg">${t('onb_icon_weight_regular')}</button>
+            <button type="button" class="seg-btn" data-weight="bold" id="onbWBold">${t('onb_icon_weight_bold')}</button>
+            <button type="button" class="seg-btn" data-weight="fill" id="onbWFill">${t('onb_icon_weight_fill')}</button>
+          </div>
+        </div>
+
+        <div class="field-group" id="onbIconColorGroup" style="margin-top:8px;display:none">
+          <label>${t('onb_icon_color')}</label>
+          <div class="seg-row" id="onbIconColorSeg" role="group" aria-label="${t('onb_icon_color')}">
+            <button type="button" class="seg-btn" data-color="accent">${phIcon('cards', 'icons', 'regular')} ${t('onb_icon_color_accent')}</button>
+            <button type="button" class="seg-btn active" data-color="text">${phIcon('cards', 'icons', 'regular')} ${t('onb_icon_color_text')}</button>
+          </div>
+        </div>
+
         <div id="onbError" class="alert alert-danger hidden"></div>
         <button class="btn btn-primary btn-full" id="onbStartBtn">${t('onb_start')} →</button>
       </div>
@@ -807,6 +968,58 @@ function renderOnboarding(el) {
   let nativeLang = null;
   let accentColor = '#439b00';
   const learnLangs = {};
+  let iconStyle = 'emoji';
+  let iconWeight = 'regular';
+  let iconColor = 'text';
+
+  // Icon style / weight selection (live preview)
+  ensurePhFont('regular');
+  const onbStyleSeg = document.getElementById('onbIconStyleSeg');
+  const onbWeightGroup = document.getElementById('onbIconWeightGroup');
+  const onbWeightSeg = document.getElementById('onbIconWeightSeg');
+  const onbColorGroup = document.getElementById('onbIconColorGroup');
+  const onbColorSeg = document.getElementById('onbIconColorSeg');
+  const updateOnbWelcomeIcon = () => {
+    const w = document.getElementById('onbWelcomeIcon');
+    if (w) w.innerHTML = phIcon('cards', iconStyle, iconWeight);
+  };
+  const updateOnbPvIcons = () => {
+    const pv = document.getElementById('onbPvIcons');
+    if (pv) pv.innerHTML = phIcon('cards', 'icons', iconWeight);
+  };
+  if (onbStyleSeg) {
+    onbStyleSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        iconStyle = b.dataset.style;
+        onbStyleSeg.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('active', x === b));
+        if (onbWeightGroup) onbWeightGroup.style.display = iconStyle === 'icons' ? '' : 'none';
+        if (onbColorGroup) onbColorGroup.style.display = iconStyle === 'icons' ? '' : 'none';
+        setAppIconStyles(iconStyle, iconWeight, iconColor);
+        updateOnbWelcomeIcon();
+      });
+    });
+  }
+  if (onbWeightSeg) {
+    onbWeightSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        iconWeight = b.dataset.weight;
+        onbWeightSeg.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('active', x === b));
+        updateOnbPvIcons();
+        setAppIconStyles(iconStyle, iconWeight, iconColor);
+        updateOnbWelcomeIcon();
+      });
+    });
+  }
+  if (onbColorSeg) {
+    onbColorSeg.querySelectorAll('.seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        iconColor = b.dataset.color;
+        onbColorSeg.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('active', x === b));
+        setAppIconStyles(iconStyle, iconWeight, iconColor);
+        updateOnbWelcomeIcon();
+      });
+    });
+  }
 
   // Main (accent) color selection
   const onbAccentInput = document.getElementById('onbAccentInput');
@@ -873,6 +1086,16 @@ function renderOnboarding(el) {
           if (learnP) learnP.textContent = t('onb_learn_q');
           const onbColorLabel = document.querySelector('#onbColorGroup > label');
           if (onbColorLabel) onbColorLabel.textContent = t('onb_color');
+          const onbIconLabel = document.querySelector('#onbIconGroup > label');
+          if (onbIconLabel) onbIconLabel.textContent = t('onb_icon_style');
+          const onbWeightLabel = document.querySelector('#onbIconWeightGroup > label');
+          if (onbWeightLabel) onbWeightLabel.textContent = t('onb_icon_weight');
+          const onbIconNoneBtn = document.getElementById('onbIconNoneBtn');
+          if (onbIconNoneBtn) onbIconNoneBtn.textContent = t('onb_icon_none');
+          for (const [id, key] of [['onbWReg', 'onb_icon_weight_regular'], ['onbWBold', 'onb_icon_weight_bold'], ['onbWFill', 'onb_icon_weight_fill']]) {
+            const b = document.getElementById(id);
+            if (b) b.textContent = t(key);
+          }
           const startBtn = document.getElementById('onbStartBtn');
           if (startBtn) startBtn.textContent = `${t('onb_start')} →`;
         });
@@ -925,7 +1148,7 @@ function renderOnboarding(el) {
       if (!Object.keys(learnLangs).length) { errEl.textContent = t('onb_error_learn'); errEl.classList.remove('hidden'); return; }
 
       try {
-        await saveConfig({ nativeLang: nativeLang.code, uiLang: nativeLang.code, accentColor });
+        await saveConfig({ nativeLang: nativeLang.code, uiLang: nativeLang.code, accentColor, iconStyle, iconWeight, iconColor });
         for (const l of Object.values(learnLangs)) {
           await api('POST', '/api/languages', l);
         }

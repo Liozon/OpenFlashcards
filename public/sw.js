@@ -29,6 +29,12 @@ const STATIC_ASSETS = [
   '/js/pages/settings.js',
   '/js/pages/admin.js',
   '/js/offline-db.js',
+  '/vendor/phosphor/regular/style.css',
+  '/vendor/phosphor/regular/Phosphor.woff2',
+  '/vendor/phosphor/bold/style.css',
+  '/vendor/phosphor/bold/Phosphor-Bold.woff2',
+  '/vendor/phosphor/fill/style.css',
+  '/vendor/phosphor/fill/Phosphor-Fill.woff2',
   '/img/icons/favicon-16x16.png',
   '/img/icons/favicon-32x32.png',
   '/img/icons/icon-192x192.png',
@@ -148,7 +154,7 @@ async function idbDelete(db, store, key) {
 // ─────────────────────────────────────────────────────────────────────────────
 function isStaticAsset(url) {
   const p = url.pathname;
-  return p.startsWith('/css/') || p.startsWith('/js/') || p === '/' || p === '/index.html';
+  return p.startsWith('/css/') || p.startsWith('/js/') || p.startsWith('/vendor/') || p === '/' || p === '/index.html';
 }
 
 function isApiRead(url) {

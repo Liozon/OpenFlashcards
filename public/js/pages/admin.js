@@ -13,9 +13,9 @@ async function renderAdmin(el) {
   applyLoginLabels();
 
   el.innerHTML = `
-    <div class="page-title">🔑 ${t('admin_title')}</div>
+    <div class="page-title">${window.phIcon('password')} ${t('admin_title')}</div>
     <div class="card" style="margin-bottom:20px">
-      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">➕ ${t('admin_create')}</h2>
+      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">${window.phIcon('plus')} ${t('admin_create')}</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="createUserForm">
         <div class="field-group" style="margin:0">
           <label>${t('admin_username')}</label>
@@ -41,7 +41,7 @@ async function renderAdmin(el) {
     </div>
 
     <div class="card">
-      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">👥 ${t('admin_users')}</h2>
+      <h2 style="font-size:1rem;font-weight:800;margin-bottom:16px">${window.phIcon('users')} ${t('admin_users')}</h2>
       <div id="userTableWrap"><div class="loading-state"><div class="spinner"></div></div></div>
     </div>`;
 
@@ -91,9 +91,9 @@ async function loadUserTable() {
                 </td>
                 <td>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
-                    <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">🔑 ${t('admin_reset_pw')}</button>
-                    ${u.role !== 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="adminTtsCache('${u.id}','${esc(u.username)}')">🗄️ ${t('admin_tts_cache_btn')}</button>` : ''}
-                    ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">🗑️</button>` : ''}
+                    <button class="btn btn-sm btn-secondary" onclick="resetPassword('${u.id}','${esc(u.username)}')">${window.phIcon('password')} ${t('admin_reset_pw')}</button>
+                    ${u.role !== 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="adminTtsCache('${u.id}','${esc(u.username)}')">${window.phIcon('waveform')} ${t('admin_tts_cache_btn')}</button>` : ''}
+                    ${u.id !== App.user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${esc(u.username)}')">${window.phIcon('trash')}</button>` : ''}
                   </div>
                 </td>
               </tr>`).join('')}
@@ -143,7 +143,7 @@ window.adminTtsCache = async function (userId, username) {
     ? `${statsData.totalFiles} ${t('admin_tts_files')} · ${fmtSize(statsData.totalBytes)}`
     : t('admin_tts_cache_empty');
 
-  openModal(`🗄️ ${t('admin_tts_cache_title')} — ${username}`, `
+  openModal(`${window.phIcon('waveform')} ${t('admin_tts_cache_title')} — ${username}`, `
     <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:12px">
       ${t('admin_tts_cache_total')} : <strong>${totalStr}</strong>
     </p>
@@ -167,8 +167,8 @@ window.adminTtsCache = async function (userId, username) {
     </div>
     <div id="adminTtsCacheErr" class="alert alert-danger hidden" style="margin-top:8px"></div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">${t('common_cancel')}</button>
-     <button class="btn btn-secondary" id="adminTtsPurgeBtn" onclick="adminTtsPurge('${userId}','${username}')" ${statsData.totalFiles === 0 ? 'disabled' : ''}>🗑️ ${t('admin_tts_purge_btn')}</button>
-     <button class="btn btn-primary" id="adminTtsGenBtn" onclick="adminTtsGenerate('${userId}','${username}')">⚡ ${t('admin_tts_gen_btn')}</button>`
+     <button class="btn btn-secondary" id="adminTtsPurgeBtn" onclick="adminTtsPurge('${userId}','${username}')" ${statsData.totalFiles === 0 ? 'disabled' : ''}>${window.phIcon('trash')} ${t('admin_tts_purge_btn')}</button>
+     <button class="btn btn-primary" id="adminTtsGenBtn" onclick="adminTtsGenerate('${userId}','${username}')">${window.phIcon('lightning')} ${t('admin_tts_gen_btn')}</button>`
   );
 };
 
@@ -193,7 +193,7 @@ window.adminTtsPurge = async function (userId, username) {
 
   try {
     const r = await api('DELETE', `/admin/users/${userId}/tts-cache`);
-    toast(`🗑️ ${t('admin_tts_purged').replace('{n}', r.deleted)}`);
+    toast(window.phIcon('trash') + ' ' + t('admin_tts_purged').replace('{n}', r.deleted), 'success', true);
     closeModal();
   } catch (e) {
     const errEl = document.getElementById('adminTtsCacheErr');
@@ -268,7 +268,7 @@ window.adminTtsGenerate = async function (userId, username) {
             done = ev.done; total = ev.total;
             const pct = total > 0 ? (done / total * 100).toFixed(0) : 0;
             barEl.style.width = pct + '%';
-            labelEl.textContent = `[${ev.lang || ''}] ${ev.mode === 'slow' ? '🐌' : '🔊'} ${ev.text || ''}`;
+            labelEl.innerHTML = `${window.phIcon(ev.mode === 'slow' ? 'spinner-gap' : 'speaker-high')} [${esc(ev.lang || '')}] ${esc(ev.text || '')}`;
             countEl.textContent = `${done} / ${total}`;
           } else if (ev.type === 'done') {
             barEl.style.width = '100%';
@@ -309,7 +309,7 @@ window.createUser = async function () {
   }
   try {
     await api('POST', '/admin/users', { username, password, role });
-    okEl.textContent = `✓ "${username}" ${t('admin_created_ok')}`;
+    okEl.innerHTML = window.phIcon('check') + ' ' + esc(`"${username}" ${t('admin_created_ok')}`);
     okEl.classList.remove('hidden');
     document.getElementById('nuUsername').value = '';
     document.getElementById('nuPassword').value = '';
@@ -345,7 +345,7 @@ window.submitResetPw = async function (id) {
   try {
     await api('PUT', `/admin/users/${id}`, { password: pw });
     closeModal();
-    toast(`✓ ${t('admin_reset_ok')}`);
+    toast(window.phIcon('check') + ' ' + t('admin_reset_ok'), 'success', true);
   } catch (e) {
     errEl.textContent = e.error || t('admin_action_failed');
     errEl.classList.remove('hidden');
@@ -357,7 +357,7 @@ window.deleteUser = async function (id, username) {
   try {
     await api('DELETE', `/admin/users/${id}`);
     document.getElementById(`urow-${id}`)?.remove();
-    toast(`🗑️ ${t('admin_deleted')}`);
+    toast(window.phIcon('trash') + ' ' + t('admin_deleted'), 'success', true);
   } catch (e) { toast(e.error || t('admin_action_failed'), 'danger'); }
 };
 

@@ -58,34 +58,35 @@ async function renderVocabulary(el, params) {
   const initMastered = params.filter === 'mastered';
   const initSearch = params.search ? decodeURIComponent(params.search) : '';
 
+  const ic = window.phIcon;
   el.innerHTML = `
-    <div class="page-title">📚 ${t('vocab_title')}</div>
+    <div class="page-title">${ic('books')} ${t('vocab_title')}</div>
     <div class="vocab-controls">
       <input type="search" id="vocabSearch" class="search-input" placeholder="${t('vocab_search')}">
       <div class="type-filter" id="vocabFilter">
         <button class="type-btn ${!initFilter && !initMastered ? 'active' : ''}" data-type="">${t('vocab_all')}</button>
-        <button class="type-btn ${initFilter === 'noun' ? 'active' : ''}" data-type="noun">📦 ${t('vocab_nouns')}</button>
-        <button class="type-btn ${initFilter === 'verb' ? 'active' : ''}" data-type="verb">⚡ ${t('vocab_verbs')}</button>
-        <button class="type-btn ${initFilter === 'adjective' ? 'active' : ''}" data-type="adjective">🎨 ${t('vocab_adj')}</button>
-        <button class="type-btn ${initFilter === 'adverb' ? 'active' : ''}" data-type="adverb">💨 ${t('vocab_adv')}</button>
-        <button class="type-btn ${initFilter === 'other' ? 'active' : ''}" data-type="other">🧩 ${t('vocab_other')}</button>
-        <button class="type-btn ${initFilter === 'phrase' ? 'active' : ''}" data-type="phrase">💬 ${t('vocab_phrases')}</button>
-        <button class="type-btn ${initMastered ? 'active' : ''}" data-type="mastered">✅ ${t('vocab_mastered') || 'Maîtrisés'}</button>
+        <button class="type-btn ${initFilter === 'noun' ? 'active' : ''}" data-type="noun">${ic('package')} ${t('vocab_nouns')}</button>
+        <button class="type-btn ${initFilter === 'verb' ? 'active' : ''}" data-type="verb">${ic('lightning')} ${t('vocab_verbs')}</button>
+        <button class="type-btn ${initFilter === 'adjective' ? 'active' : ''}" data-type="adjective">${ic('palette')} ${t('vocab_adj')}</button>
+        <button class="type-btn ${initFilter === 'adverb' ? 'active' : ''}" data-type="adverb">${ic('wind')} ${t('vocab_adv')}</button>
+        <button class="type-btn ${initFilter === 'other' ? 'active' : ''}" data-type="other">${ic('puzzle-piece')} ${t('vocab_other')}</button>
+        <button class="type-btn ${initFilter === 'phrase' ? 'active' : ''}" data-type="phrase">${ic('chat-circle')} ${t('vocab_phrases')}</button>
+        <button class="type-btn ${initMastered ? 'active' : ''}" data-type="mastered">${ic('check')} ${t('vocab_mastered') || 'Maîtrisés'}</button>
       </div>
-      <button class="btn btn-sm btn-secondary" id="dupFindBtn" style="margin-top:6px;font-size:.82rem" onclick="findDuplicates()">🔍 ${t('vocab_find_duplicates')}</button>
+      <button class="btn btn-sm btn-secondary" id="dupFindBtn" style="margin-top:6px;font-size:.82rem" onclick="findDuplicates()">${ic('magnifying-glass')} ${t('vocab_find_duplicates')}</button>
       <div id="labelFilterRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center"></div>
       <div id="dupToolbar" class="hidden" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--surface-2);border-radius:12px">
         <span id="dupCount" style="font-size:.85rem;font-weight:600;color:var(--text-muted)"></span>
         <span style="font-size:.75rem;color:var(--text-faint)">${t('vocab_dup_select_hint')}</span>
-        <button class="btn btn-sm btn-primary" onclick="mergeDuplicates()" id="dupMergeBtn">🔗 ${t('vocab_dup_merge')}</button>
-        <button class="btn btn-sm btn-secondary" onclick="exitDuplicateMode()">✕ ${t('vocab_dup_exit')}</button>
+        <button class="btn btn-sm btn-primary" onclick="mergeDuplicates()" id="dupMergeBtn">${ic('link')} ${t('vocab_dup_merge')}</button>
+        <button class="btn btn-sm btn-secondary" onclick="exitDuplicateMode()">${ic('x')} ${t('vocab_dup_exit')}</button>
       </div>
     </div>
     <div id="vocabGrid" class="word-grid"></div>
     <div id="vocabEmpty" class="hidden" style="text-align:center;padding:60px 20px;color:var(--text-muted)">
-      <p style="font-size:2rem">📭</p>
+      <p style="font-size:2rem">${ic('mailbox')}</p>
       <p>${t('vocab_empty')}</p>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${t('vocab_add_first')}</button>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">${ic('plus')} ${t('vocab_add_first')}</button>
     </div>
     <div class="nb-modal-overlay hidden" id="vocabLinkModal">
       <div class="nb-modal-dialog" style="width:420px;max-width:90vw">
@@ -252,17 +253,17 @@ function renderVocabGrid() {
       const addHint = isPhrase ? t('vocab_no_phrase_found') : t('vocab_no_word_found');
 
       empty.innerHTML = `
-      <p style="font-size:2rem">🔍</p>
+      <p style="font-size:2rem">${ic('magnifying-glass')}</p>
       <p>${addHint}${searchTerm ? ' ' + searchTerm : ''}</p>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">${ic('plus')} ${addLabel}</button>
     `;
     } else {
       const isPhrase = _vocabFilter === 'phrase';
       const addLabel = isPhrase ? t('vocab_add_first_phrase') : t('vocab_add_first');
       empty.innerHTML = `
-      <p style="font-size:2rem">📭</p>
+      <p style="font-size:2rem">${ic('mailbox')}</p>
       <p>${t('vocab_empty')}</p>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">➕ ${addLabel}</button>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="navigate('add')">${ic('plus')} ${addLabel}</button>
     `;
     }
     return;
@@ -286,7 +287,8 @@ function getLabels() {
 }
 
 function buildWordCard(w) {
-  const labels = { noun: `📦 ${t('vocab_noun')}`, verb: `⚡ ${t('vocab_verb')}`, adjective: `🎨 ${t('vocab_adjective')}`, adverb: `💨 ${t('vocab_adverb')}`, other: `🧩 ${t('vocab_other')}`, phrase: `💬 ${t('vocab_phrase')}` };
+  const ic = window.phIcon;
+  const labels = { noun: `${ic('package')} ${t('vocab_noun')}`, verb: `${ic('lightning')} ${t('vocab_verb')}`, adjective: `${ic('palette')} ${t('vocab_adjective')}`, adverb: `${ic('wind')} ${t('vocab_adverb')}`, other: `${ic('puzzle-piece')} ${t('vocab_other')}`, phrase: `${ic('chat-circle')} ${t('vocab_phrase')}` };
   const isPhrase = w.type === 'phrase';
   const sep = w.article && (w.article.endsWith("'") || w.article.endsWith("\u2019")) ? '' : ' ';
   const display = isPhrase
@@ -328,22 +330,22 @@ function buildWordCard(w) {
     '</div>' +
     '<div class="word-actions">' +
     '<span id="tts-' + w.id + '"></span>' +
-    '<button class="btn btn-sm btn-secondary" onclick="' + editFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
-    '<button class="btn btn-sm btn-secondary" onclick="' + linkFn + '" title="' + t('vocab_link_notebook') + '">🔗</button>' +
-    '<button class="btn btn-sm btn-danger"    onclick="' + deleteFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="' + editFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_edit') + '">' + ic('pencil-simple') + '</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="' + linkFn + '" title="' + t('vocab_link_notebook') + '">' + ic('link') + '</button>' +
+    '<button class="btn btn-sm btn-danger"    onclick="' + deleteFn + '(\'' + w.id + '\',\'' + w.langCode + '\')" title="' + t('vocab_delete') + '">' + ic('trash') + '</button>' +
     '</div>' +
     '</div>' +
     '<div class="word-literal">' + esc(display) + '</div>' +
     '<div class="word-trans">' + esc(w.translation) + '</div>' +
     (w.definition ? '<div class="word-def">' + esc(w.definition) + '</div>' : '') +
     (mastered
-      ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
+      ? '<div class="mastered-badge">' + ic('check') + ' ' + t('vocab_mastered') + '</div>'
       : '<div class="progress-row" title="' + progress + ' / ' + maxProg + '">' +
       '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + diffPct + '%"></div></div>' +
       '<span class="progress-pct">' + diffPct + '%</span>' +
       '</div>') +
-    (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">📚 ' + esc(w.verbGroup) + '</div>' : '') +
-    (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">📐 ' + t('vocab_decl_count').replace('{n}', Object.keys(w.declensions).length) + '</div>' : '') +
+    (!isPhrase && w.verbGroup ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:4px">' + ic('books') + ' ' + esc(w.verbGroup) + '</div>' : '') +
+    (!isPhrase && w.type !== 'verb' && w.declensions && Object.keys(w.declensions).length ? '<div style="font-size:.78rem;color:var(--text-faint);margin-top:2px">' + ic('arrows-split') + ' ' + t('vocab_decl_count').replace('{n}', Object.keys(w.declensions).length) + '</div>' : '') +
     labelHtml +
     buildNotebookLinksHtml(w.notebookLinks, w.id, 'word');
 
@@ -370,7 +372,7 @@ function buildWordCard(w) {
 
     const summary = document.createElement('summary');
     summary.style.cssText = 'cursor:pointer;color:var(--text-muted);font-weight:600;font-size:.8rem';
-    summary.textContent = '⚡ ' + t('train_conjugation') + (w.infinitive ? ' — ' + w.infinitive : '');
+    summary.innerHTML = window.phIcon('lightning') + ' ' + esc(t('train_conjugation') + (w.infinitive ? ' — ' + w.infinitive : ''));
     details.appendChild(summary);
 
     const conjContent = document.createElement('div');
@@ -426,6 +428,7 @@ function buildWordCard(w) {
 }
 
 function buildPhraseCard(p) {
+  const ic = window.phIcon;
   const allLabels = getLabels();
   const phraseLabelIds = p.labels || [];
 
@@ -448,12 +451,12 @@ function buildPhraseCard(p) {
 
   div.innerHTML =
     '<div class="word-card-header">' +
-    '<span class="badge badge-phrase">💬 ' + t('vocab_phrase') + '</span>' +
+    '<span class="badge badge-phrase">' + ic('chat-circle') + ' ' + t('vocab_phrase') + '</span>' +
     '<div class="word-actions">' +
     '<span id="ptts-' + p.id + '"></span>' +
-    '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">✏️</button>' +
-    '<button class="btn btn-sm btn-secondary" onclick="vocabLinkPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_link_notebook') + '">🔗</button>' +
-    '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">🗑️️</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="editPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_edit') + '">' + ic('pencil-simple') + '</button>' +
+    '<button class="btn btn-sm btn-secondary" onclick="vocabLinkPhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_link_notebook') + '">' + ic('link') + '</button>' +
+    '<button class="btn btn-sm btn-danger"    onclick="deletePhrase(\'' + p.id + '\',\'' + p.langCode + '\')" title="' + t('vocab_delete') + '">' + ic('trash') + '</button>' +
     '</div>' +
     '</div>' +
     '<div class="word-literal" style="font-size:1rem">' + esc(displayText) + '</div>' +
@@ -465,7 +468,7 @@ function buildPhraseCard(p) {
       const pMast = pProg >= pMax;
       const pPct = Math.round((pProg / pMax) * 100);
       return pMast
-        ? '<div class="mastered-badge">✅ ' + t('vocab_mastered') + '</div>'
+        ? '<div class="mastered-badge">' + ic('check') + ' ' + t('vocab_mastered') + '</div>'
         : '<div class="progress-row" title="' + pProg + ' / ' + pMax + '">' +
         '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pPct + '%"></div></div>' +
         '<span class="progress-pct">' + pPct + '%</span>' +
@@ -504,7 +507,7 @@ function buildLabelPicker(selectedIds, containerId) {
   }).join('')}
       <button type="button" class="btn btn-sm btn-secondary"
         style="padding:2px 8px;font-size:.75rem"
-        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">➕ ${t('labels_create_new')}</button>
+        onclick="showCreateLabelInline('${containerId}-chips','${lang}')">${window.phIcon('plus')} ${t('labels_create_new')}</button>
     </div>
   </div>`;
 }
@@ -538,8 +541,8 @@ window.showCreateLabelInline = function (chipsId, lang) {
     `<span id="newLabelColorDot" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:${DEFAULT_COLOR};display:block;pointer-events:none"></span>` +
     `<input type="color" id="newLabelColorPicker" value="${DEFAULT_COLOR}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">` +
     `</span>` +
-    `<button type="button" class="btn btn-sm btn-primary" style="padding:3px 8px;font-size:.78rem" onclick="confirmCreateLabelInline('${chipsId}','${lang}')">✓</button>` +
-    `<button type="button" class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:.78rem" onclick="this.closest('.new-label-input').remove()">✕</button>`;
+    `<button type="button" class="btn btn-sm btn-primary" style="padding:3px 8px;font-size:.78rem" onclick="confirmCreateLabelInline('${chipsId}','${lang}')">${window.phIcon('check-simple')}</button>` +
+    `<button type="button" class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:.78rem" onclick="this.closest('.new-label-input').remove()">${window.phIcon('x-simple')}</button>`;
 
   chips.appendChild(wrapper);
 
@@ -805,18 +808,18 @@ window.editWord = function (id, lang) {
     <div class="field-group">
       <label>${t('add_type')} <span class="required">*</span></label>
       <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <option value="noun" ${w.type === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
-        <option value="verb" ${w.type === 'verb' ? 'selected' : ''}>⚡ ${t('vocab_verb')}</option>
-        <option value="adjective" ${w.type === 'adjective' ? 'selected' : ''}>🎨 ${t('vocab_adjective')}</option>
-        <option value="adverb" ${w.type === 'adverb' ? 'selected' : ''}>💨 ${t('vocab_adverb')}</option>
-        <option value="other" ${w.type === 'other' ? 'selected' : ''}>🧩 ${t('vocab_other')}</option>
-        <option value="phrase" ${w.type === 'phrase' ? 'selected' : ''}>💬 ${t('vocab_phrase')}</option>
+        <option value="noun" ${w.type === 'noun' ? 'selected' : ''}>${window.phIcon('package')} ${t('vocab_noun')}</option>
+        <option value="verb" ${w.type === 'verb' ? 'selected' : ''}>${window.phIcon('lightning')} ${t('vocab_verb')}</option>
+        <option value="adjective" ${w.type === 'adjective' ? 'selected' : ''}>${window.phIcon('palette')} ${t('vocab_adjective')}</option>
+        <option value="adverb" ${w.type === 'adverb' ? 'selected' : ''}>${window.phIcon('wind')} ${t('vocab_adverb')}</option>
+        <option value="other" ${w.type === 'other' ? 'selected' : ''}>${window.phIcon('puzzle-piece')} ${t('vocab_other')}</option>
+        <option value="phrase" ${w.type === 'phrase' ? 'selected' : ''}>${window.phIcon('chat-circle')} ${t('vocab_phrase')}</option>
       </select>
     </div>
     <div id="meTypeFields">
       ${_buildEditWordFields(_editWordState)}
     </div>`,
-    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetWordProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetWordProgress('${id}','${lang}')">${window.phIcon('arrow-counter-clockwise')}<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="saveWordEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -858,7 +861,7 @@ window.saveWordEdit = async function (id, lang) {
         await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
       }
       closeModal();
-      toast(`✓ ${t('vocab_updated')}`);
+      toast(window.phIcon('check') + ' ' + t('vocab_updated'), 'success', true);
       const idx = _vocabWords.findIndex(x => x.id === id);
       if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
     } catch (e) {
@@ -951,7 +954,7 @@ window.saveWordEdit = async function (id, lang) {
       await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
     }
     closeModal();
-    toast(`✓ ${t('vocab_updated')}`);
+    toast(window.phIcon('check') + ' ' + t('vocab_updated'), 'success', true);
     const idx = _vocabWords.findIndex(x => x.id === id);
     if (idx !== -1) { _vocabWords[idx] = { ..._vocabWords[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
@@ -966,7 +969,7 @@ window.confirmResetWordProgress = function (id, lang) {
     t('vocab_reset_confirm_title'),
     `<p>${t('vocab_reset_confirm_body')}</p>`,
     `<button class="btn btn-secondary" onclick="editWord('${id}','${lang}')">${t('vocab_cancel')}</button>
-     <button class="btn btn-danger" onclick="resetWordProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+     <button class="btn btn-danger" onclick="resetWordProgress('${id}','${lang}')">${window.phIcon('arrow-counter-clockwise')} ${t('vocab_reset_progress')}</button>`
   );
 };
 
@@ -986,7 +989,7 @@ window.deleteWord = async function (id, lang) {
     await api('DELETE', `/api/words/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabWords = _vocabWords.filter(w => w.id !== id);
     renderVocabGrid();
-    toast(`🗑️️ ${t('vocab_deleted')}`);
+    toast(window.phIcon('trash') + ' ' + t('vocab_deleted'), 'success', true);
   } catch (e) { toast(e.error || t('vocab_delete_error'), 'danger'); }
 };
 
@@ -1023,18 +1026,18 @@ window.editPhrase = function (id, lang) {
     <div class="field-group">
       <label>${t('add_type')} <span class="required">*</span></label>
       <select id="meType" onchange="onEditWordTypeChange()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text)">
-        <option value="phrase" ${pType === 'phrase' ? 'selected' : ''}>💬 ${t('vocab_phrase')}</option>
-        <option value="noun" ${pType === 'noun' ? 'selected' : ''}>📦 ${t('vocab_noun')}</option>
-        <option value="verb" ${pType === 'verb' ? 'selected' : ''}>⚡ ${t('vocab_verb')}</option>
-        <option value="adjective" ${pType === 'adjective' ? 'selected' : ''}>🎨 ${t('vocab_adjective')}</option>
-        <option value="adverb" ${pType === 'adverb' ? 'selected' : ''}>💨 ${t('vocab_adverb')}</option>
-        <option value="other" ${pType === 'other' ? 'selected' : ''}>🧩 ${t('vocab_other')}</option>
+        <option value="phrase" ${pType === 'phrase' ? 'selected' : ''}>${window.phIcon('chat-circle')} ${t('vocab_phrase')}</option>
+        <option value="noun" ${pType === 'noun' ? 'selected' : ''}>${window.phIcon('package')} ${t('vocab_noun')}</option>
+        <option value="verb" ${pType === 'verb' ? 'selected' : ''}>${window.phIcon('lightning')} ${t('vocab_verb')}</option>
+        <option value="adjective" ${pType === 'adjective' ? 'selected' : ''}>${window.phIcon('palette')} ${t('vocab_adjective')}</option>
+        <option value="adverb" ${pType === 'adverb' ? 'selected' : ''}>${window.phIcon('wind')} ${t('vocab_adverb')}</option>
+        <option value="other" ${pType === 'other' ? 'selected' : ''}>${window.phIcon('puzzle-piece')} ${t('vocab_other')}</option>
       </select>
     </div>
     <div id="meTypeFields">
       ${_buildEditWordFields(_editWordState)}
     </div>`,
-    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetPhraseProgress('${id}','${lang}')">↺<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
+    `<button class="btn btn-secondary btn-sm btn-reset-progress" style="color:var(--danger);border-color:var(--danger);margin-right:auto" onclick="confirmResetPhraseProgress('${id}','${lang}')">${window.phIcon('arrow-counter-clockwise')}<span class="btn-reset-text"> ${t('vocab_reset_progress')}</span></button>
      <button class="btn btn-secondary" onclick="closeModal()">${t('vocab_cancel')}</button>
      <button class="btn btn-primary" onclick="savePhraseEdit('${id}','${lang}')">${t('vocab_save')}</button>`
   );
@@ -1076,7 +1079,7 @@ window.savePhraseEdit = async function (id, lang) {
         await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
       }
       closeModal();
-      toast(`✓ ${t('vocab_phrase_updated')}`);
+      toast(window.phIcon('check') + ' ' + t('vocab_phrase_updated'), 'success', true);
       const idx = _vocabPhrases.findIndex(p => p.id === id);
       if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
     } catch (e) {
@@ -1164,7 +1167,7 @@ window.savePhraseEdit = async function (id, lang) {
       await Offline.deleteTtsCacheEntry(lang, 'spd' + Math.round(speedSlow * 100), id);
     }
     closeModal();
-    toast(`✓ ${t('vocab_phrase_updated')}`);
+    toast(window.phIcon('check') + ' ' + t('vocab_phrase_updated'), 'success', true);
     const idx = _vocabPhrases.findIndex(p => p.id === id);
     if (idx !== -1) { _vocabPhrases[idx] = { ..._vocabPhrases[idx], ...body }; renderVocabGrid(); }
   } catch (e) {
@@ -1179,7 +1182,7 @@ window.confirmResetPhraseProgress = function (id, lang) {
     t('vocab_reset_confirm_title'),
     `<p>${t('vocab_reset_confirm_body')}</p>`,
     `<button class="btn btn-secondary" onclick="editPhrase('${id}','${lang}')">${t('vocab_cancel')}</button>
-     <button class="btn btn-danger" onclick="resetPhraseProgress('${id}','${lang}')">↺ ${t('vocab_reset_progress')}</button>`
+     <button class="btn btn-danger" onclick="resetPhraseProgress('${id}','${lang}')">${window.phIcon('arrow-counter-clockwise')} ${t('vocab_reset_progress')}</button>`
   );
 };
 
@@ -1199,7 +1202,7 @@ window.deletePhrase = async function (id, lang) {
     await api('DELETE', `/api/phrases/${id}?lang=${encodeURIComponent(lang)}`);
     _vocabPhrases = _vocabPhrases.filter(p => p.id !== id);
     renderVocabGrid();
-    toast(`🗑️ ${t('vocab_deleted')}`);
+    toast(window.phIcon('trash') + ' ' + t('vocab_deleted'), 'success', true);
   } catch (e) { toast(e.error || t('vocab_delete_error'), 'danger'); }
 };
 
@@ -1212,7 +1215,7 @@ window.findDuplicates = async function () {
     const result = await api('POST', '/api/duplicates', { lang });
     const allGroups = (result.words || []).concat(result.phrases || []).concat(result.cross || []);
     if (!allGroups.length) {
-      toast('🎉 ' + t('vocab_dup_none'), 'success');
+      toast(window.phIcon('confetti') + ' ' + t('vocab_dup_none'), 'success', true);
       return;
     }
     _vocabDupGroups = result;
@@ -1275,7 +1278,7 @@ function renderDuplicates() {
     (_vocabDupGroups.cross || []).forEach(g => allGroups.push({ items: g, kind: 'cross' }));
   }
   if (!allGroups.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)"><p style="font-size:2rem">🎉</p><p>' + t('vocab_dup_none') + '</p></div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)"><p style="font-size:2rem">' + window.phIcon('confetti') + '</p><p>' + t('vocab_dup_none') + '</p></div>';
     return;
   }
   allGroups.forEach((group, gi) => {
@@ -1341,7 +1344,7 @@ function buildDuplicateGroup(items, kind, groupKey) {
   const dupText = firstItem.literal || firstItem.text || '';
   const header = document.createElement('div');
   header.style.cssText = 'font-size:.95rem;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap';
-  header.innerHTML = '<span>🔁</span><span>' + esc(dupText) + '</span><span style="font-size:.78rem;color:var(--text-faint);font-weight:400">(' + items.length + ' ' + t('vocab_dup_items') + ')</span>';
+  header.innerHTML = '<span>' + window.phIcon('repeat') + '</span><span>' + esc(dupText) + '</span><span style="font-size:.78rem;color:var(--text-faint);font-weight:400">(' + items.length + ' ' + t('vocab_dup_items') + ')</span>';
   container.appendChild(header);
 
   const fields = ['type', 'literal', 'translation', 'definition', 'article', 'conjugation', 'declensions', 'verbGroup'];
@@ -1385,7 +1388,8 @@ function buildDuplicateGroup(items, kind, groupKey) {
     hdr.style.cssText = 'font-weight:600;font-size:.75rem;text-align:center;padding:4px 6px;border-radius:6px 6px 0 0';
     const tType = item.type || 'phrase';
     const typeLabels = { noun: t('vocab_noun'), verb: t('vocab_verb'), adjective: t('vocab_adjective'), adverb: t('vocab_adverb'), other: t('vocab_other'), phrase: t('vocab_phrase') };
-    const typeIcon = { noun: '📦', verb: '⚡', adjective: '🎨', adverb: '💨', other: '🧩', phrase: '💬' }[tType] || '📝';
+    const typeKeys = { noun: 'package', verb: 'lightning', adjective: 'palette', adverb: 'wind', other: 'puzzle-piece', phrase: 'chat-circle' };
+    const typeIcon = window.phIcon(typeKeys[tType] || 'lego');
     hdr.innerHTML = typeIcon + ' ' + (typeLabels[tType] || tType) + ' <span style="color:var(--text-muted)">#' + (ci + 1) + '</span>';
     gridEl.appendChild(hdr);
   });
@@ -1461,7 +1465,7 @@ function buildDuplicateGroup(items, kind, groupKey) {
   const mergeBtn = document.createElement('button');
   mergeBtn.className = 'btn btn-sm btn-primary';
   mergeBtn.style.cssText = 'margin-top:12px';
-  mergeBtn.innerHTML = '🔗 ' + t('vocab_dup_merge_group');
+  mergeBtn.innerHTML = window.phIcon('link') + ' ' + t('vocab_dup_merge_group');
   mergeBtn.onclick = function () { mergeGroup(groupKey, items, kind); };
   container.appendChild(mergeBtn);
 
@@ -1533,7 +1537,7 @@ window.mergeGroup = async function (groupKey, items, kind) {
       fieldMap,
       labels
     });
-    toast('🔗 ' + t('vocab_dup_merged').replace('{n}', result.deleted), 'success');
+    toast(window.phIcon('link') + ' ' + t('vocab_dup_merged').replace('{n}', result.deleted), 'success', true);
     await refreshDataAndExitDup();
   } catch (e) {
     toast(e.error || t('common_error'), 'danger');
@@ -1577,7 +1581,7 @@ window.mergeDuplicates = async function () {
   }
 
   if (totalDeleted) {
-    toast('🔗 ' + t('vocab_dup_merged').replace('{n}', totalDeleted), 'success');
+    toast(window.phIcon('link') + ' ' + t('vocab_dup_merged').replace('{n}', totalDeleted), 'success', true);
     await refreshDataAndExitDup();
   } else {
     toast(t('vocab_dup_nothing_selected'), 'warning');
@@ -1626,8 +1630,8 @@ function buildNotebookLinksHtml(links, vocabId, vocabType) {
   return '<div class="vocab-notebook-links">' +
     links.map(l =>
       '<span class="vocab-notebook-link" onclick="navigateToNotebookPage(\'' + esc(l.pageId) + '\')" title="' + esc(l.sectionName || '') + ' / ' + esc(l.pageName) + '">' +
-      '📄 ' + esc(l.pageName) +
-      '<span class="vocab-notebook-link-del" onclick="event.stopPropagation();unlinkVocabPage(\'' + esc(vocabId) + '\',\'' + esc(vocabType) + '\',\'' + esc(l.pageId) + '\')">✕</span>' +
+      window.phIcon('files') + ' ' + esc(l.pageName) +
+      '<span class="vocab-notebook-link-del" onclick="event.stopPropagation();unlinkVocabPage(\'' + esc(vocabId) + '\',\'' + esc(vocabType) + '\',\'' + esc(l.pageId) + '\')">' + window.phIcon('x') + '</span>' +
       '</span>'
     ).join('') +
     '</div>';
@@ -1701,7 +1705,7 @@ function renderVocabLinkResults() {
 
   el.innerHTML = allPages.map(item => `
     <div class="vocab-link-page-item ${item.linked ? 'linked' : ''}" data-page-id="${item.pageId}">
-      <span class="vocab-link-page-check">${item.linked ? '✓' : ''}</span>
+      <span class="vocab-link-page-check">${item.linked ? window.phIcon('check-simple') : ''}</span>
       <span class="vocab-link-page-section">${esc(item.sectionName)}</span>
       <span class="vocab-link-page-name">${esc(item.pageName)}</span>
     </div>
