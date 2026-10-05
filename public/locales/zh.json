@@ -463,6 +463,26 @@
   "notebook_expand_panel": "展开面板",
   "notebook_unlink_confirm": "删除此词汇链接？",
   "notebook_delete_selected": "删除所选",
-  "notebook_delete_selected_confirm": "您将要删除 {n} 个词汇链接"
+  "notebook_delete_selected_confirm": "您将要删除 {n} 个词汇链接",
+  "nav_exam": "测验",
+  "exam_title": "测验",
+  "exam_count_label": "题目数量",
+  "exam_lang_all": "所有语言",
+  "exam_start": "开始测验",
+  "exam_listen_match": "聆听每个声音，然后点击右侧对应的答案",
+  "exam_correct": "正确！",
+  "exam_wrong": "错误！",
+  "exam_next": "下一题",
+  "exam_results_title": "测验结果",
+  "exam_correct_count": "正确",
+  "exam_wrong_count": "错误",
+  "exam_best_score": "最佳成绩",
+  "exam_restart": "重新开始",
+  "exam_back_home": "返回主页",
+  "exam_history": "测验记录",
+  "exam_configure_prompt": "设置您的测验，然后点击开始",
+  "exam_type_word": "单选题",
+  "exam_type_phrase": "句子",
+  "exam_type_writing": "拼写",
+  "exam_type_audio": "听力"
 }
-

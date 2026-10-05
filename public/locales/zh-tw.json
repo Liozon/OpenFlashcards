@@ -463,6 +463,26 @@
   "notebook_expand_panel": "展開面板",
   "notebook_unlink_confirm": "刪除此詞彙連結？",
   "notebook_delete_selected": "刪除所選",
-  "notebook_delete_selected_confirm": "您將要刪除 {n} 個詞彙連結"
+  "notebook_delete_selected_confirm": "您將要刪除 {n} 個詞彙連結",
+  "nav_exam": "測驗",
+  "exam_title": "測驗",
+  "exam_count_label": "題目數量",
+  "exam_lang_all": "所有語言",
+  "exam_start": "開始測驗",
+  "exam_listen_match": "聆聽每個聲音，然後點選右側相對應的答案",
+  "exam_correct": "正確！",
+  "exam_wrong": "錯誤！",
+  "exam_next": "下一題",
+  "exam_results_title": "測驗結果",
+  "exam_correct_count": "正確",
+  "exam_wrong_count": "錯誤",
+  "exam_best_score": "最佳成績",
+  "exam_restart": "重新開始",
+  "exam_back_home": "返回首頁",
+  "exam_history": "測驗記錄",
+  "exam_configure_prompt": "設定您的測驗，然後點擊開始",
+  "exam_type_word": "單選題",
+  "exam_type_phrase": "句子",
+  "exam_type_writing": "拼寫",
+  "exam_type_audio": "聽力"
 }
-

@@ -14,6 +14,7 @@ async function renderHome(el) {
     <div class="quick-actions">
       <button class="btn btn-primary" onclick="navigate('add')">${ic('plus')} ${t('home_add_words')}</button>
       <button class="btn btn-secondary" onclick="navigate('train')">${ic('target')} ${t('home_practice')}</button>
+      <button class="btn btn-secondary" onclick="navigate('exam')">${ic('clipboard-text')} ${t('nav_exam')}</button>
       <button class="btn btn-secondary" onclick="navigate('vocabulary')">${ic('books')} ${t('home_vocabulary')}</button>
       <button class="btn btn-secondary" onclick="navigate('notebook')">${ic('book-bookmark')} ${t('nav_notebook')}</button>
     </div>
@@ -42,6 +43,13 @@ async function renderHome(el) {
       const nb = await api('GET', '/api/notebook/' + encodeURIComponent(lang));
       notebookPages = (nb.sections || []).reduce((sum, s) => sum + (s.pages || []).length, 0);
     } catch { }
+    // Exam best score (from user config, legacy localStorage as fallback)
+    let examBest = null;
+    try {
+      examBest = (App.config && App.config.examBest && App.config.examBest[lang]) ||
+        JSON.parse(localStorage.getItem('exam_best_' + lang));
+    } catch { }
+    const examLabel = t('exam_best_score');
     const statCards = [
       { value: stats.totalWords, label: t('home_total_words'), onClick: "navigate('vocabulary', {})" },
       { value: stats.totalPhrases, label: t('home_phrases'), onClick: "navigate('vocabulary', {filter:'phrase'})" },
@@ -51,13 +59,14 @@ async function renderHome(el) {
       { value: stats.byType.adjective || 0, label: t('home_adj'), onClick: "navigate('vocabulary', {filter:'adjective'})" },
       { value: stats.byType.adverb || 0, label: t('home_adv'), onClick: "navigate('vocabulary', {filter:'adverb'})" },
       { value: stats.byType.other || 0, label: t('home_other'), onClick: "navigate('vocabulary', {filter:'other'})" },
-      { value: notebookPages, label: t('home_notebook'), onClick: 'navigate(\'notebook\')' }
+      { value: notebookPages, label: t('home_notebook'), onClick: 'navigate(\'notebook\')' },
+      { value: examBest ? examBest.percentage : 0, display: examBest ? examBest.percentage + '%' : '0%', label: examLabel, onClick: 'navigate(\'exam\')' }
     ];
     const shown = (App.config && App.config.hideZeroStats) ? statCards.filter(c => c.value > 0) : statCards;
     document.getElementById('statsGrid').innerHTML = shown.length
       ? shown.map(c =>
-          '<div class="stat-card stat-card-clickable" onclick="' + c.onClick + '"><div class="stat-number">' + c.value + '</div><div class="stat-label">' + c.label + '</div></div>'
-        ).join('')
+        '<div class="stat-card stat-card-clickable" onclick="' + c.onClick + '"><div class="stat-number">' + (c.display !== undefined ? c.display : c.value) + '</div><div class="stat-label">' + c.label + '</div></div>'
+      ).join('')
       : '<p style="color:var(--text-muted)">' + t('home_stats_empty') + '</p>';
   } catch {
     document.getElementById('statsGrid').innerHTML = '<p style="color:var(--text-muted)">' + t('home_stats_error') + '</p>';

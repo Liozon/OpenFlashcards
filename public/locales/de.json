@@ -463,6 +463,26 @@
   "notebook_expand_panel": "Bedienfeld erweitern",
   "notebook_unlink_confirm": "Diese Vokabelverknüpfung entfernen?",
   "notebook_delete_selected": "Ausgewählte löschen",
-  "notebook_delete_selected_confirm": "Sie sind dabei, {n} Vokabelverknüpfung(en) zu löschen"
+  "notebook_delete_selected_confirm": "Sie sind dabei, {n} Vokabelverknüpfung(en) zu löschen",
+  "nav_exam": "Prüfung",
+  "exam_title": "Prüfung",
+  "exam_count_label": "Anzahl der Fragen",
+  "exam_lang_all": "Alle Sprachen",
+  "exam_start": "Prüfung starten",
+  "exam_listen_match": "Hören Sie sich jeden Ton an und tippen Sie danach auf die passende Antwort rechts",
+  "exam_correct": "Richtig!",
+  "exam_wrong": "Falsch!",
+  "exam_next": "Weiter",
+  "exam_results_title": "Prüfungsergebnisse",
+  "exam_correct_count": "richtig",
+  "exam_wrong_count": "falsch",
+  "exam_best_score": "Beste Punktzahl",
+  "exam_restart": "Neu starten",
+  "exam_back_home": "Zurück zur Startseite",
+  "exam_history": "Prüfungsverlauf",
+  "exam_configure_prompt": "Konfigurieren Sie Ihre Prüfung und klicken Sie auf Start",
+  "exam_type_word": "Mehrfachauswahl",
+  "exam_type_phrase": "Satz",
+  "exam_type_writing": "Schreiben",
+  "exam_type_audio": "Hören"
 }
-
