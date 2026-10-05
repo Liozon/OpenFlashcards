@@ -8,14 +8,14 @@ FROM node:20-alpine
 # Metadata
 LABEL org.opencontainers.image.title="OpenFlashcards"
 LABEL org.opencontainers.image.description="A lightweight, responsive web application for language learning with flashcards, progress and TTS"
-LABEL org.opencontainers.image.version="2026.8.1"
+LABEL org.opencontainers.image.version="2026.10.1"
 
 # Working directory
 WORKDIR /app
 
 # Install dependencies first (layer cache)
 COPY package.json ./
-RUN npm install --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy application code
 COPY src/     ./src/
