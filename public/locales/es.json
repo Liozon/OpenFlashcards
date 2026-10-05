@@ -463,6 +463,26 @@
   "notebook_expand_panel": "Expandir panel",
   "notebook_unlink_confirm": "¿Eliminar este enlace de vocabulario?",
   "notebook_delete_selected": "Eliminar seleccionados",
-  "notebook_delete_selected_confirm": "Está a punto de eliminar {n} enlace(s) de vocabulario"
+  "notebook_delete_selected_confirm": "Está a punto de eliminar {n} enlace(s) de vocabulario",
+  "nav_exam": "Examen",
+  "exam_title": "Examen",
+  "exam_count_label": "Número de preguntas",
+  "exam_lang_all": "Todos los idiomas",
+  "exam_start": "Comenzar examen",
+  "exam_listen_match": "Escucha cada sonido y toca la respuesta correspondiente a la derecha",
+  "exam_correct": "¡Correcto!",
+  "exam_wrong": "¡Incorrecto!",
+  "exam_next": "Siguiente",
+  "exam_results_title": "Resultados del examen",
+  "exam_correct_count": "correctas",
+  "exam_wrong_count": "incorrectas",
+  "exam_best_score": "Mejor puntuación",
+  "exam_restart": "Reiniciar",
+  "exam_back_home": "Volver al inicio",
+  "exam_history": "Historial de exámenes",
+  "exam_configure_prompt": "Configura tu examen y haz clic en Comenzar",
+  "exam_type_word": "Opción múltiple",
+  "exam_type_phrase": "Frase",
+  "exam_type_writing": "Escritura",
+  "exam_type_audio": "Audición"
 }
-

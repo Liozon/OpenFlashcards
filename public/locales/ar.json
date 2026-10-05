@@ -463,6 +463,26 @@
   "notebook_expand_panel": "Expand panel",
   "notebook_unlink_confirm": "Remove this vocabulary link?",
   "notebook_delete_selected": "Delete selected",
-  "notebook_delete_selected_confirm": "You are about to delete {n} vocabulary link(s)"
+  "notebook_delete_selected_confirm": "You are about to delete {n} vocabulary link(s)",
+  "nav_exam": "امتحان",
+  "exam_title": "امتحان",
+  "exam_count_label": "عدد الأسئلة",
+  "exam_lang_all": "كل اللغات",
+  "exam_start": "ابدأ الامتحان",
+  "exam_listen_match": "استمع إلى كل صوت ثم اختر الإجابة المطابقة على اليمين",
+  "exam_correct": "صحيح!",
+  "exam_wrong": "خطأ!",
+  "exam_next": "التالي",
+  "exam_results_title": "نتائج الامتحان",
+  "exam_correct_count": "صحيحة",
+  "exam_wrong_count": "خاطئة",
+  "exam_best_score": "أفضل نتيجة",
+  "exam_restart": "إعادة",
+  "exam_back_home": "العودة إلى الرئيسية",
+  "exam_history": "سجل الامتحانات",
+  "exam_configure_prompt": "اضبط الامتحان ثم اضغط على ابدأ",
+  "exam_type_word": "اختيار من متعدد",
+  "exam_type_phrase": "جملة",
+  "exam_type_writing": "كتابة",
+  "exam_type_audio": "استماع"
 }
-

@@ -303,6 +303,7 @@ window.PH_ICONS = [
   ['link', 'link', '🔗', true],
   ['export', 'export', '📄', true],
   ['files', 'files', '📋', true],
+  ['clipboard-text', 'files', '📋', false],
   ['tray-arrow-up', 'tray-arrow-up', '📤', true],
   ['arrow-up', 'arrow-up', '⬆️', true],
   ['arrow-down', 'arrow-down', '⬇️', true],
@@ -476,6 +477,7 @@ window.navigate = function (page, params, _fromPopState) {
     vocabulary: renderVocabulary,
     add: renderAdd,
     train: renderTrain,
+    exam: renderExam,
     settings: renderSettings,
     admin: renderAdmin,
     notebook: renderNotebook
@@ -507,7 +509,7 @@ function getPageFromHash() {
   if (hash && hash.startsWith('#/')) {
     const [pathPart, queryPart] = hash.slice(2).split('?');
     const page = pathPart.split('/')[0];
-    if (['home', 'vocabulary', 'add', 'train', 'settings', 'admin', 'notebook'].includes(page)) {
+    if (['home', 'vocabulary', 'add', 'train', 'exam', 'settings', 'admin', 'notebook'].includes(page)) {
       return page;
     }
   }
@@ -821,6 +823,7 @@ function applyNavLabels() {
     navHome: ['nav_home', 'house'],
     navVocab: ['nav_vocabulary', 'books'],
     navTrain: ['nav_train', 'target'],
+    navExam: ['nav_exam', 'clipboard-text'],
     navAdd: ['nav_add', 'plus'],
     navNotebook: ['nav_notebook', 'book-bookmark'],
     navSettings: ['nav_settings', 'gear'],
@@ -847,7 +850,7 @@ function applyNavLabels() {
 
   // Language tools: hidden for admin users (admins only manage users)
   const isAdmin = App.user && App.user.role === 'admin';
-  ['navHome', 'navVocab', 'navAdd', 'navTrain', 'navNotebook'].forEach(id => {
+  ['navHome', 'navVocab', 'navAdd', 'navTrain', 'navExam', 'navNotebook'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? 'none' : '';
   });

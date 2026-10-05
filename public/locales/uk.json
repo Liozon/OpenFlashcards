@@ -463,6 +463,26 @@
   "notebook_expand_panel": "Розгорнути панель",
   "notebook_unlink_confirm": "Видалити це посилання на словниковий запас?",
   "notebook_delete_selected": "Видалити вибране",
-  "notebook_delete_selected_confirm": "Ви збираєтеся видалити {n} посилань на словниковий запас"
+  "notebook_delete_selected_confirm": "Ви збираєтеся видалити {n} посилань на словниковий запас",
+  "nav_exam": "Іспит",
+  "exam_title": "Іспит",
+  "exam_count_label": "Кількість питань",
+  "exam_lang_all": "Усі мови",
+  "exam_start": "Почати іспит",
+  "exam_listen_match": "Послухайте кожен звук і торкніться відповідної відповіді праворуч",
+  "exam_correct": "Правильно!",
+  "exam_wrong": "Неправильно!",
+  "exam_next": "Далі",
+  "exam_results_title": "Результати іспиту",
+  "exam_correct_count": "правильно",
+  "exam_wrong_count": "неправильно",
+  "exam_best_score": "Найкращий результат",
+  "exam_restart": "Перезапустити",
+  "exam_back_home": "На головну",
+  "exam_history": "Історія іспитів",
+  "exam_configure_prompt": "Налаштуйте іспит і натисніть «Почати»",
+  "exam_type_word": "Множинний вибір",
+  "exam_type_phrase": "Речення",
+  "exam_type_writing": "Письмо",
+  "exam_type_audio": "Аудіювання"
 }
-
