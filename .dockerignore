@@ -6,4 +6,4 @@ npm-debug.log
 data/
 config/
 README.md
-build-and-export.sh
+script/build-and-export.sh
