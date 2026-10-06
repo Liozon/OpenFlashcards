@@ -10,7 +10,7 @@
  *   - Dockerfile          → LABEL org.opencontainers.image.version
  *   - public/sw.js            → const CACHE_VERSION (format: ofc-v<version>)
  *   - public/service-worker.js → const SW_VERSION (format: ofc-v<version>)
- *   - build-and-export.sh → ARCHIVE filename
+ *   - scripts/build-and-export.sh → ARCHIVE filename
  *   - public/index.html   → version placeholder in footer
  *
  * Usage:
@@ -70,8 +70,8 @@ updateFile('public/service-worker.js', src =>
     )
 );
 
-// ── build-and-export.sh ──────────────────────────────────────────────────────
-updateFile('build-and-export.sh', src =>
+// ── scripts/build-and-export.sh ─────────────────────────────────────────────────
+updateFile('scripts/build-and-export.sh', src =>
     src.replace(
         /^(BASE="Docker\.OpenFlashcards\.v)[^"]*(")/m,
         `$1${version}$2`
