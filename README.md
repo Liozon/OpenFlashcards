@@ -167,6 +167,7 @@ node src/server.js
 git clone https://github.com/Liozon/OpenFlashcards.git
 cd OpenFlashcards
 npm install
+cd scripts/
 chmod +x build-and-export.sh
 ./build-and-export.sh
 # This creates `Docker.OpenFlashcards.vlatest.tar.gz`.
