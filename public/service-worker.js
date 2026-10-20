@@ -1,7 +1,7 @@
 /* service-worker.js – OpenFlashcards offline support v3 */
 'use strict';
 
-const SW_VERSION = 'ofc-v2026.10.1';
+const SW_VERSION = 'ofc-v2026.10.2';
 const STATIC_CACHE = SW_VERSION + '-static';
 
 const PRECACHE_URLS = [
