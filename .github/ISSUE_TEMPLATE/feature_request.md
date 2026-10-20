@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Suggest an idea to help us improve OpenFlashcards
 title: 'REQUEST - '
 labels: enhancement
 assignees: Liozon
