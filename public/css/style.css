@@ -1141,6 +1141,10 @@ img {
   justify-content: center;
 }
 
+.auto-flip-front {
+  transform: rotateY(0deg);
+}
+
 .auto-flip-back {
   transform: rotateY(180deg);
 }

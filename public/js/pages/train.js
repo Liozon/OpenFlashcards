@@ -1655,8 +1655,6 @@ function _fitAutoCardText() {
     display.style.fontSize = '';
     display.style.maxHeight = '';
     display.style.overflow = '';
-    face.style.maxHeight = '';
-    face.style.overflowY = '';
     if (face.scrollHeight <= availHeight) return;
     let fontRem = (parseFloat(getComputedStyle(display).fontSize) || (2.4 * rootFs)) / rootFs;
     let guards = 0;
@@ -1666,8 +1664,11 @@ function _fitAutoCardText() {
       guards++;
     }
     if (face.scrollHeight > availHeight) {
-      face.style.maxHeight = availHeight + 'px';
-      face.style.overflowY = 'hidden';
+      const otherChildren = Array.from(face.children).reduce((sum, el) => {
+        return el === display ? sum : sum + el.offsetHeight + 8;
+      }, 0);
+      display.style.maxHeight = Math.max(0, availHeight - otherChildren - 20) + 'px';
+      display.style.overflow = 'hidden';
     }
   });
 }
