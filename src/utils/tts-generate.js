@@ -1,6 +1,7 @@
 'use strict';
 // Shared TTS buffer generation helper (used by api.js and admin.js)
 // Tries Google TTS first for speed ≤ 1.0, falls back to Edge TTS.
+// For speed > 1.0 uses Edge TTS, falling back to Google at 1.0x if Edge fails.
 
 const https = require('https');
 
@@ -57,28 +58,25 @@ function loadMsEdgeTTS() {
   return { MsEdgeTTS: _MsEdgeTTS, OUTPUT_FORMAT: _OUTPUT_FORMAT };
 }
 
-async function bufferTTS(text, langCode, speed) {
+function fetchGoogle(text, langCode, speed) {
+  const sp  = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
+  const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' +
+    encodeURIComponent(langCode.toLowerCase()) + '&q=' + encodeURIComponent(text) +
+    '&client=tw-ob' + sp;
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
+      if (r.statusCode !== 200) return reject(new Error('Google TTS HTTP ' + r.statusCode));
+      const chunks = [];
+      r.on('data', c => chunks.push(c));
+      r.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+async function fetchEdge(text, langCode, speed) {
   const lc = langCode.toLowerCase();
-
-  if (speed <= 1.0) {
-    try {
-      const sp  = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
-      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' +
-        encodeURIComponent(lc) + '&q=' + encodeURIComponent(text) +
-        '&client=tw-ob' + sp;
-      return await new Promise((resolve, reject) => {
-        const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-          if (r.statusCode !== 200) return reject(new Error('Google TTS HTTP ' + r.statusCode));
-          const chunks = [];
-          r.on('data', c => chunks.push(c));
-          r.on('end', () => resolve(Buffer.concat(chunks)));
-        });
-        req.on('error', reject);
-        req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
-      });
-    } catch { /* fall through */ }
-  }
-
   const voice = EDGE_TTS_VOICES[lc] || EDGE_TTS_VOICES[lc.split('-')[0]] || null;
   if (!voice) throw new Error('No edge-tts voice for: ' + langCode);
   const { MsEdgeTTS, OUTPUT_FORMAT } = loadMsEdgeTTS();
@@ -91,6 +89,19 @@ async function bufferTTS(text, langCode, speed) {
     audioStream.on('end', () => resolve(Buffer.concat(chunks)));
     audioStream.on('error', reject);
   });
+}
+
+async function bufferTTS(text, langCode, speed) {
+  if (speed > 1.0) {
+    try {
+      return await fetchEdge(text, langCode, speed);
+    } catch (err) {
+      console.warn('[TTS] Edge failed at ' + speed + 'x, falling back to Google at 1.0x:', err.message);
+      try { return await fetchGoogle(text, langCode, 1.0); } catch { throw err; }
+    }
+  }
+  try { return await fetchGoogle(text, langCode, speed); }
+  catch { return fetchEdge(text, langCode, speed); }
 }
 
 module.exports = { bufferTTS, EDGE_TTS_VOICES, wordDisplay };
