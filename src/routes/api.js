@@ -372,13 +372,13 @@ async function edgeTTS(text, langCode, speed, res) {
 // ── Shared: generate TTS audio for one text, return a Buffer ─────────────────
 // Used by both GET /api/tts (live play) and POST /api/tts/generate (batch cache).
 // Tries Google first for speed ≤ 1.0, falls back to Edge TTS on failure.
-// For speed > 1.0 uses Edge TTS directly.
+// For speed > 1.0 uses Edge TTS, falling back to Google at 1.0x if Edge fails.
 // Creates a fresh MsEdgeTTS instance each call — Edge's WS is stateless per request.
 async function bufferTTS(text, langCode, speed) {
-  function fetchGoogle() {
+  function fetchGoogle(playbackSpeed = speed) {
     return new Promise((resolve, reject) => {
       const https = require('https');
-      const sp = speed !== 1.0 ? '&ttsspeed=' + speed.toFixed(2) : '';
+      const sp = playbackSpeed !== 1.0 ? '&ttsspeed=' + playbackSpeed.toFixed(2) : '';
       const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' +
         encodeURIComponent(langCode) + '&q=' + encodeURIComponent(text) +
         '&client=tw-ob' + sp;
@@ -413,7 +413,14 @@ async function bufferTTS(text, langCode, speed) {
     });
   }
 
-  if (speed > 1.0) return fetchEdge();
+  if (speed > 1.0) {
+    try {
+      return await fetchEdge();
+    } catch (err) {
+      console.warn('[TTS] Edge failed at ' + speed + 'x, falling back to Google at 1.0x:', err.message);
+      try { return await fetchGoogle(1.0); } catch { throw err; }
+    }
+  }
   try { return await fetchGoogle(); }
   catch { return fetchEdge(); }
 }
