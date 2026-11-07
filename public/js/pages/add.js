@@ -283,9 +283,9 @@ if (!window._autoTranslateVersions) window._autoTranslateVersions = {};
 let _lastEditedField = null;
 
 function _getTranslateLangs() {
-  const uiLang = (App.config && App.config.uiLang) || 'en';
+  const nativeLang = (App.config && App.config.nativeLang) || (App.config && App.config.uiLang) || 'en';
   const targetLang = currentLang();
-  return { uiLang, targetLang };
+  return { nativeLang, targetLang };
 }
 
 async function _translateGoogle(text, src, tgt) {
@@ -420,14 +420,14 @@ function _scheduleWordTranslate() {
 
   window._autoTranslateTimers[id] = setTimeout(async () => {
     try {
-      const { uiLang, targetLang } = _getTranslateLangs();
+      const { nativeLang, targetLang } = _getTranslateLangs();
       let sourceText, srcLang, tgtLang, targetId;
       if (_lastEditedField === 'wTranslation') {
         sourceText = document.getElementById('wTranslation')?.value.trim();
-        srcLang = uiLang; tgtLang = targetLang; targetId = 'wLiteral';
+        srcLang = nativeLang; tgtLang = targetLang; targetId = 'wLiteral';
       } else if (_lastEditedField === 'wLiteral') {
         sourceText = document.getElementById('wLiteral')?.value.trim();
-        srcLang = targetLang; tgtLang = uiLang; targetId = 'wTranslation';
+        srcLang = targetLang; tgtLang = nativeLang; targetId = 'wTranslation';
       } else {
         return;
       }
@@ -459,14 +459,14 @@ function _schedulePhraseTranslate() {
 
   window._autoTranslateTimers[id] = setTimeout(async () => {
     try {
-      const { uiLang, targetLang } = _getTranslateLangs();
+      const { nativeLang, targetLang } = _getTranslateLangs();
       let sourceText, srcLang, tgtLang, targetId;
       if (_lastEditedField === 'pTranslation') {
         sourceText = document.getElementById('pTranslation')?.value.trim();
-        srcLang = uiLang; tgtLang = targetLang; targetId = 'pText';
+        srcLang = nativeLang; tgtLang = targetLang; targetId = 'pText';
       } else if (_lastEditedField === 'pText') {
         sourceText = document.getElementById('pText')?.value.trim();
-        srcLang = targetLang; tgtLang = uiLang; targetId = 'pTranslation';
+        srcLang = targetLang; tgtLang = nativeLang; targetId = 'pTranslation';
       } else {
         return;
       }

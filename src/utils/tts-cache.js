@@ -158,4 +158,30 @@ function deleteItemAllSpeeds(userId, langCode, itemId) {
   return count;
 }
 
-module.exports = { getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds };
+/**
+ * Delete only cached translation audio (files ending in `_trans.mp3`) for a
+ * user + language, across all speed buckets. Used when the user switches their
+ * native language: the old translation audio is no longer reachable.
+ * Returns the number of files deleted.
+ */
+function purgeTranslationCache(userId, langCode) {
+  const basePath = path.join(DATA_DIR, userId, 'tts', langCode);
+  let count = 0;
+  if (!fs.existsSync(basePath)) return count;
+
+  for (const speedDir of fs.readdirSync(basePath, { withFileTypes: true })) {
+    if (!speedDir.isDirectory()) continue;
+    const spdPath = path.join(basePath, speedDir.name);
+    for (const f of fs.readdirSync(spdPath)) {
+      if (f.endsWith('_trans.mp3')) {
+        try { fs.unlinkSync(path.join(spdPath, f)); count++; } catch {}
+      }
+    }
+    try {
+      if (fs.readdirSync(spdPath).length === 0) fs.rmdirSync(spdPath);
+    } catch {}
+  }
+  return count;
+}
+
+module.exports = { getCached, saveCachedBuffer, pipeToCache, purgeCache, purgeTranslationCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds };

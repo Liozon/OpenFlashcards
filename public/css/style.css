@@ -1339,6 +1339,13 @@ img {
   border-bottom: 2px solid var(--border);
 }
 
+.settings-hint {
+  margin-top: 8px;
+  font-size: .82rem;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+
 .lang-chips {
   display: flex;
   flex-wrap: wrap;
