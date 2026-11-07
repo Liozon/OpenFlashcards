@@ -240,6 +240,15 @@ self.addEventListener('fetch', event => {
 
   // ── 2. TTS audio: serve from TTS cache if available ─────────────────────
   if (isTtsRequest(url)) {
+    // nocache=1 → on-the-fly preview. Never read from or write to Cache Storage.
+    if (url.searchParams.get('nocache') === '1') {
+      event.respondWith(
+        fetch(event.request).catch(() => new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503, headers: { 'Content-Type': 'application/json' }
+        }))
+      );
+      return;
+    }
     event.respondWith(
       caches.open(TTS_CACHE).then(async cache => {
         const cached = await cache.match(event.request);
