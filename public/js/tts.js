@@ -33,6 +33,17 @@ window.TTS = {
     return url;
   },
 
+  // Build a preview URL that bypasses the disk cache entirely (no read, no write).
+  // Used by on-the-fly preview buttons (e.g. the Add page) which must never
+  // persist audio in the user's TTS cache.
+  _previewUrl: function (text, langCode) {
+    const speed = TTS._getSpeed(langCode, 'normal');
+    return '/api/tts?lang=' + encodeURIComponent(langCode) +
+      '&q=' + encodeURIComponent(text) +
+      '&speed=' + speed.toFixed(2) +
+      '&nocache=1';
+  },
+
   // Deterministic client-side pseudo-ID from text (matches server-side textHash fallback)
   _textId: function (text) {
     // Simple djb2 hash → hex string (good enough for URL, not a security primitive)
@@ -181,6 +192,15 @@ window.TTS = {
     return TTS._play(url, () => TTS._webSpeech(text, lang, true));
   },
 
+  // Play text once, generated on the fly (normal speed).
+  // NEVER reads or writes the TTS disk cache and never touches OfflineDB.
+  speakPreview: function (text, langCode) {
+    if (!text) return null;
+    const lang = langCode || 'fr';
+    const url = TTS._previewUrl(text, lang);
+    return TTS._play(url, () => TTS._webSpeech(text, lang, false));
+  },
+
   // Fallback Web Speech API
   _webSpeech: function (text, langCode, slow) {
     if (!window.speechSynthesis) return;
@@ -221,6 +241,29 @@ window.TTS = {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       TTS.speakSlow(text, langCode, itemId);
+    });
+    return btn;
+  },
+
+  // Create a clickable 🔊 preview button that generates audio on the fly and
+  // never persists it. textOrGetter may be a string or a function returning the
+  // text to speak (so the button always reads the current field value).
+  buttonPreview: function (textOrGetter, langCode, extraStyle) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-tts btn-tts-preview';
+    btn.innerHTML = window.phIcon('speaker-high');
+    btn.style.cssText = 'background:none;border:1.5px solid var(--border);border-radius:8px;' +
+      'padding:4px 9px;cursor:pointer;font-size:1rem;line-height:1;color:var(--text-muted);' +
+      'transition:background .15s;flex-shrink:0;' + (extraStyle || '');
+    btn.addEventListener('mouseenter', () => btn.style.background = 'var(--surface-2)');
+    btn.addEventListener('mouseleave', () => btn.style.background = 'none');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const raw = typeof textOrGetter === 'function' ? textOrGetter() : textOrGetter;
+      const text = String(raw || '').trim();
+      if (!text) return;
+      TTS.speakPreview(text, langCode);
     });
     return btn;
   },

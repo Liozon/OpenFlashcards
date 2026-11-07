@@ -206,6 +206,8 @@ function renderAdd(el) {
     });
   }
 
+  // TTS preview buttons for learned-language fields only (never native fields).
+  _attachAddPageTtsButtons(lang, pronouns);
 
   ['wLiteral', 'wTranslation', 'wDefinition', 'wArticle'].forEach(id => {
     const el2 = document.getElementById(id);
@@ -228,7 +230,7 @@ function renderAdd(el) {
       window._addAutoTranslate = autoToggle.checked;
       localStorage.setItem('add_auto_translate', autoToggle.checked);
       if (App.config) App.config.autoTranslate = autoToggle.checked;
-      try { saveConfig({ autoTranslate: autoToggle.checked }); } catch {}
+      try { saveConfig({ autoTranslate: autoToggle.checked }); } catch { }
       if (autoToggle.checked) {
         _triggerAutoTranslate();
       } else {
@@ -249,7 +251,7 @@ function renderAdd(el) {
       window._addSuggestions = sugToggle.checked;
       localStorage.setItem('add_suggestions', sugToggle.checked);
       if (App.config) App.config.suggestions = sugToggle.checked;
-      try { saveConfig({ suggestions: sugToggle.checked }); } catch {}
+      try { saveConfig({ suggestions: sugToggle.checked }); } catch { }
       if (sugToggle.checked) {
         _triggerAutoTranslate();
       } else {
@@ -274,6 +276,55 @@ function renderAdd(el) {
       _lastEditedField = id;
       _schedulePhraseTranslate();
     });
+  });
+}
+
+// ── TTS preview buttons (learned-language fields only) ───────────────────────
+// Adds an on-the-fly 🔊 button next to a field. The button reads the live input
+// value at click time; audio is generated with nocache=1 and never persisted.
+function _addTtsPreviewButton(input, lang, getText, inline, buttonStyle) {
+  if (!input || typeof TTS === 'undefined' || !TTS.buttonPreview) return;
+  const btn = TTS.buttonPreview(getText, lang, buttonStyle);
+  if (inline) {
+    input.insertAdjacentElement('afterend', btn);
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'add-tts-row';
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:' +
+    (input.tagName === 'TEXTAREA' ? 'flex-start' : 'center');
+  input.parentNode.insertBefore(wrap, input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(input);
+  wrap.appendChild(btn);
+}
+
+function _attachAddPageTtsButtons(lang, pronouns) {
+  if (!lang) return;
+
+  ['wLiteral', 'pText'].forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    _addTtsPreviewButton(input, lang, () => (input.value || '').trim());
+  });
+
+  // Conjugation forms (target language): speak pronoun + form.
+  document.querySelectorAll('input[id^="conj_"]').forEach(input => {
+    const m = /^conj_(\d+)_(\d+)$/.exec(input.id);
+    const rawPronoun = m ? String((pronouns || [])[Number(m[2])] || '').trim() : '';
+    // Don't read generic fallback labels like "1sg"/"3pl" aloud.
+    const pronoun = /^\d+(sg|pl)$/i.test(rawPronoun) ? '' : rawPronoun;
+    _addTtsPreviewButton(input, lang, () => {
+      const form = (input.value || '').trim();
+      if (!form) return '';
+      return pronoun ? pronoun + ' ' + form : form;
+    }, true, 'padding:2px 6px;font-size:.78rem');
+  });
+
+  // Declension values (target language).
+  document.querySelectorAll('input[id^="decl_"]').forEach(input => {
+    _addTtsPreviewButton(input, lang, () => (input.value || '').trim());
   });
 }
 
@@ -310,24 +361,24 @@ async function _translateGoogle(text, src, tgt) {
 
 function _langToCountry(lang) {
   const map = {
-    af:'za', sq:'al', am:'et', ar:'sa', hy:'am', az:'az', eu:'es',
-    be:'by', bn:'bd', bs:'ba', bg:'bg', ca:'es', ceb:'ph',
-    zh:'cn', 'zh-tw':'tw', co:'fr', hr:'hr', cs:'cz', da:'dk',
-    nl:'nl', en:'gb', eo:'eo', et:'ee', fi:'fi', fr:'fr',
-    fy:'nl', gl:'es', ka:'ge', de:'de', el:'gr', gu:'in',
-    ht:'ht', ha:'ng', haw:'us', he:'il', hi:'in', hmn:'la',
-    hu:'hu', is:'is', ig:'ng', id:'id', ga:'ie', it:'it',
-    ja:'jp', jv:'id', kn:'in', kk:'kz', km:'kh', rw:'rw',
-    ko:'kr', ku:'iq', ky:'kg', lo:'la', la:'va', lv:'lv',
-    lt:'lt', lb:'lu', mk:'mk', mg:'mg', ms:'my', ml:'in',
-    mt:'mt', mi:'nz', mr:'in', mn:'mn', my:'mm', ne:'np',
-    no:'no', ny:'mw', or:'in', ps:'af', fa:'ir', pl:'pl',
-    pt:'pt', pa:'in', ro:'ro', ru:'ru', sm:'ws', gd:'gb',
-    sr:'rs', st:'ls', sn:'zw', sd:'pk', si:'lk', sk:'sk',
-    sl:'si', so:'so', es:'es', su:'id', sw:'tz', sv:'se',
-    tl:'ph', tg:'tj', ta:'in', tt:'ru', te:'in', th:'th',
-    tr:'tr', tk:'tm', uk:'ua', ur:'pk', ug:'cn', uz:'uz',
-    vi:'vn', cy:'gb', xh:'za', yi:'il', yo:'ng', zu:'za'
+    af: 'za', sq: 'al', am: 'et', ar: 'sa', hy: 'am', az: 'az', eu: 'es',
+    be: 'by', bn: 'bd', bs: 'ba', bg: 'bg', ca: 'es', ceb: 'ph',
+    zh: 'cn', 'zh-tw': 'tw', co: 'fr', hr: 'hr', cs: 'cz', da: 'dk',
+    nl: 'nl', en: 'gb', eo: 'eo', et: 'ee', fi: 'fi', fr: 'fr',
+    fy: 'nl', gl: 'es', ka: 'ge', de: 'de', el: 'gr', gu: 'in',
+    ht: 'ht', ha: 'ng', haw: 'us', he: 'il', hi: 'in', hmn: 'la',
+    hu: 'hu', is: 'is', ig: 'ng', id: 'id', ga: 'ie', it: 'it',
+    ja: 'jp', jv: 'id', kn: 'in', kk: 'kz', km: 'kh', rw: 'rw',
+    ko: 'kr', ku: 'iq', ky: 'kg', lo: 'la', la: 'va', lv: 'lv',
+    lt: 'lt', lb: 'lu', mk: 'mk', mg: 'mg', ms: 'my', ml: 'in',
+    mt: 'mt', mi: 'nz', mr: 'in', mn: 'mn', my: 'mm', ne: 'np',
+    no: 'no', ny: 'mw', or: 'in', ps: 'af', fa: 'ir', pl: 'pl',
+    pt: 'pt', pa: 'in', ro: 'ro', ru: 'ru', sm: 'ws', gd: 'gb',
+    sr: 'rs', st: 'ls', sn: 'zw', sd: 'pk', si: 'lk', sk: 'sk',
+    sl: 'si', so: 'so', es: 'es', su: 'id', sw: 'tz', sv: 'se',
+    tl: 'ph', tg: 'tj', ta: 'in', tt: 'ru', te: 'in', th: 'th',
+    tr: 'tr', tk: 'tm', uk: 'ua', ur: 'pk', ug: 'cn', uz: 'uz',
+    vi: 'vn', cy: 'gb', xh: 'za', yi: 'il', yo: 'ng', zu: 'za'
   };
   return map[lang] || lang;
 }
@@ -445,7 +496,7 @@ function _scheduleWordTranslate() {
       if (suggestions.length) {
         _showSuggestions(_lastEditedField, suggestions, sourceText);
       }
-    } catch {}
+    } catch { }
   }, 500);
 }
 
@@ -484,8 +535,14 @@ function _schedulePhraseTranslate() {
       if (suggestions.length) {
         _showSuggestions(_lastEditedField, suggestions, sourceText);
       }
-    } catch {}
+    } catch { }
   }, 500);
+}
+
+// Overlays are inserted after the field row wrapper (when one exists) so the
+// TTS preview button doesn't end up inside the translation-variants block.
+function _addFieldOverlayAnchor(el) {
+  return el.closest('.add-tts-row') || el;
 }
 
 function _clearOverlays(fieldId) {
@@ -548,7 +605,8 @@ function _showSuggestions(fieldId, suggestions, srcText) {
     return '<span class="ats-word" data-word="' + esc(s) + '" data-field="' + fieldId + '">' + _highlightMatch(s, srcText) + '</span>';
   }).join('');
 
-  el.parentNode.insertBefore(container, el.nextSibling);
+  const anchor = _addFieldOverlayAnchor(el);
+  anchor.parentNode.insertBefore(container, anchor.nextSibling);
 
   container.querySelectorAll('.ats-word').forEach(span => {
     span.addEventListener('click', function () {
@@ -588,7 +646,8 @@ function _applyTranslation(targetId, main, alternatives) {
       '<span class="atv-word" data-word="' + esc(w) + '" data-target="' + targetId + '">' + esc(w) + '</span>';
   }).join('');
 
-  el.parentNode.insertBefore(container, el.nextSibling);
+  const anchor = _addFieldOverlayAnchor(el);
+  anchor.parentNode.insertBefore(container, anchor.nextSibling);
 
   container.querySelectorAll('.atv-word').forEach(span => {
     span.addEventListener('click', function () {
@@ -620,7 +679,8 @@ function _applyPhraseTranslation(targetId, main, alternatives) {
       '<span class="atv-word" data-word="' + esc(w) + '" data-target="' + targetId + '">' + esc(w) + '</span>';
   }).join('');
 
-  el.parentNode.insertBefore(container, el.nextSibling);
+  const anchor = _addFieldOverlayAnchor(el);
+  anchor.parentNode.insertBefore(container, anchor.nextSibling);
 
   container.querySelectorAll('.atv-word').forEach(span => {
     span.addEventListener('click', function () {
