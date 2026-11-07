@@ -46,7 +46,7 @@ const {
   getNotebook, saveNotebook, imagesDir
 } = require('../utils/storage');
 const {
-  getCached, saveCachedBuffer, pipeToCache, purgeCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
+  getCached, saveCachedBuffer, pipeToCache, purgeCache, purgeTranslationCache, cacheStats, textHash, deleteItem, deleteItemAllSpeeds
 } = require('../utils/tts-cache');
 const { bufferTTS: _sharedBufferTTS, EDGE_TTS_VOICES: _sharedVoices, wordDisplay } = require('../utils/tts-generate');
 
@@ -503,6 +503,14 @@ router.delete('/tts/cache/item', (req, res) => {
   const numSpeed = parseFloat(speed);
   if (isNaN(numSpeed)) return res.status(400).json({ error: 'invalid speed' });
   const deleted = deleteItem(userId(req), lang, numSpeed, id);
+  res.json({ ok: true, deleted });
+});
+
+// DELETE /api/tts/cache/translations?lang=fr  – purge only translation audio for a language
+router.delete('/tts/cache/translations', (req, res) => {
+  const { lang } = req.query;
+  if (!lang) return res.status(400).json({ error: 'lang required' });
+  const deleted = purgeTranslationCache(userId(req), lang);
   res.json({ ok: true, deleted });
 });
 
