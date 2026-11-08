@@ -9,6 +9,7 @@ FROM node:20-alpine
 LABEL org.opencontainers.image.title="OpenFlashcards"
 LABEL org.opencontainers.image.description="A lightweight, responsive web application for language learning with flashcards, progress and TTS"
 LABEL org.opencontainers.image.version="2026.11.1"
+LABEL org.opencontainers.image.source="https://github.com/Liozon/OpenFlashcards"
 
 # Working directory
 WORKDIR /app
