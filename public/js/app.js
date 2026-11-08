@@ -27,6 +27,44 @@ window.api = async function (method, path, body) {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SOUND EFFECTS
+// ─────────────────────────────────────────────────────────────────────────────
+const _soundEffectCache = Object.create(null);
+
+// Returns a cached, preloaded Audio element for /sounds/<name>.wav. Reusing the
+// same element lets callers read metadata (e.g. duration) and avoids a new
+// network request every time an effect is played.
+window.getSoundEffect = function (name) {
+  if (!name) return null;
+  if (!_soundEffectCache[name]) {
+    const audio = new Audio('/sounds/' + name + '.wav');
+    audio.preload = 'auto';
+    audio.load();
+    _soundEffectCache[name] = audio;
+  }
+  return _soundEffectCache[name];
+};
+
+window.playSoundEffect = function (name) {
+  const audio = window.getSoundEffect(name);
+  if (!audio) return null;
+  try { audio.pause(); } catch { }
+  try { audio.currentTime = 0; } catch { }
+  const played = audio.play();
+  if (played && typeof played.catch === 'function') played.catch(() => { });
+  return audio;
+};
+
+window.stopSoundEffect = function (name) {
+  const audio = _soundEffectCache[name];
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch { }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 async function checkAuth() {

@@ -23,6 +23,37 @@ let _examMatchAllCorrect = true;
 
 const _EXAM_STORAGE_KEY = 'exam_history';
 
+// ── Victory celebration ──────────────────────────────────────────────────────
+const _EXAM_VICTORY_SOUND = 'victory';
+const _EXAM_VICTORY_FALLBACK_MS = 6000;
+let _examVictoryDurationMs = 0;
+
+function _examPreloadVictorySound() {
+  if (!window.getSoundEffect) return;
+  const audio = window.getSoundEffect(_EXAM_VICTORY_SOUND);
+  if (!audio) return;
+  const readDuration = function () {
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      _examVictoryDurationMs = audio.duration * 1000;
+    }
+  };
+  readDuration();
+  audio.addEventListener('loadedmetadata', readDuration, { once: true });
+}
+
+function _examCelebrate() {
+  if (window.TTS && TTS.stop) TTS.stop();
+  let durationMs = _examVictoryDurationMs;
+  const audio = window.playSoundEffect ? window.playSoundEffect(_EXAM_VICTORY_SOUND) : null;
+  if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+    durationMs = audio.duration * 1000;
+  }
+  if (!durationMs) durationMs = _EXAM_VICTORY_FALLBACK_MS;
+
+  // Keep the confetti falling for the full audio, then fade it out over 2s.
+  _fireConfetti({ durationMs: durationMs + 2000, fadeMs: 2000, force: true });
+}
+
 // ── Shuffle helper ────────────────────────────────────────────────────────────
 function _examShuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -287,6 +318,8 @@ window.adjustExamCount = function (delta) {
 window.startExam = async function () {
   _examSessionStarted = true;
   TTS.unlock();
+  if (window.stopSoundEffect) window.stopSoundEffect(_EXAM_VICTORY_SOUND);
+  _examPreloadVictorySound();
   const startRow = document.getElementById('examStartRow');
   if (startRow) startRow.style.display = 'none';
   const panel = document.getElementById('examSettingsPanel');
@@ -1091,11 +1124,15 @@ function _examCheckComboConfetti() {
   }
 }
 
-function _fireConfetti() {
-  if (App.config && App.config.showConfetti === false) return;
+function _fireConfetti(options) {
+  const opts = options || {};
+  if (!opts.force && App.config && App.config.showConfetti === false) return;
 
   const colors = ['#439b00', '#ff4b4b', '#ffc800', '#1cb0f6', '#9b59b6', '#e67e22', '#2ecc71', '#e74c3c', '#3498db'];
-  const count = 150;
+  const count = opts.count || 150;
+  const duration = Math.max(250, opts.durationMs || 3000);
+  const fadeMs = Math.min(duration, Math.max(0, opts.fadeMs != null ? opts.fadeMs : duration * 0.45));
+  const sustainMs = duration - fadeMs;
 
   const canvas = document.createElement('canvas');
   canvas.className = 'confetti-canvas';
@@ -1106,8 +1143,8 @@ function _fireConfetti() {
   const ctx = canvas.getContext('2d');
   const particles = [];
 
-  for (let i = 0; i < count; i++) {
-    particles.push({
+  function makeParticle() {
+    return {
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height - canvas.height,
       w: Math.random() * 10 + 5,
@@ -1116,27 +1153,54 @@ function _fireConfetti() {
       vx: Math.random() * 4 - 2,
       vy: Math.random() * 3 + 2,
       rot: Math.random() * 360,
-      rotSpd: Math.random() * 10 - 5,
-      opacity: 1
-    });
+      rotSpd: Math.random() * 10 - 5
+    };
   }
 
-  let frame = 0;
-  const maxFrames = 180;
-  const fadeStart = maxFrames * 0.55;
+  function respawn(p) {
+    p.x = Math.random() * canvas.width;
+    p.y = -20 - Math.random() * 120;
+    p.w = Math.random() * 10 + 5;
+    p.h = Math.random() * 6 + 3;
+    p.color = colors[Math.floor(Math.random() * colors.length)];
+    p.vx = Math.random() * 4 - 2;
+    p.vy = Math.random() * 3 + 2;
+    p.rot = Math.random() * 360;
+    p.rotSpd = Math.random() * 10 - 5;
+  }
 
-  function animate() {
+  for (let i = 0; i < count; i++) {
+    particles.push(makeParticle());
+  }
+
+  const start = performance.now();
+  let lastTime = start;
+
+  function animate(now) {
+    const elapsed = Math.max(0, now - start);
+    const dt = Math.min(50, Math.max(0, now - lastTime)) / 16.6667;
+    lastTime = now;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let alive = false;
+
+    const fadeProgress = elapsed > sustainMs
+      ? Math.min(1, (elapsed - sustainMs) / Math.max(1, fadeMs))
+      : 0;
+    const alpha = 1 - fadeProgress;
+
     for (const p of particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.05;
-      p.rot += p.rotSpd;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 0.05 * dt;
+      p.rot += p.rotSpd * dt;
+
+      // Keep the celebration populated while the sound plays. During the final
+      // fade phase particles are no longer recycled and simply fall away.
+      if (elapsed < sustainMs && (p.y > canvas.height + 20 || p.x < -40 || p.x > canvas.width + 40)) {
+        respawn(p);
+      }
+
       if (p.y < canvas.height + 20) {
-        alive = true;
-        const t = Math.max(0, Math.min(1, (frame - fadeStart) / (maxFrames - fadeStart)));
-        const alpha = 1 - t;
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot * Math.PI / 180);
@@ -1146,14 +1210,14 @@ function _fireConfetti() {
         ctx.restore();
       }
     }
-    if (alive && frame < maxFrames) {
-      frame++;
+
+    if (elapsed < duration) {
       requestAnimationFrame(animate);
     } else {
       canvas.remove();
     }
   }
-  animate();
+  requestAnimationFrame(animate);
 }
 
 window.examNext = function () {
@@ -1207,6 +1271,10 @@ function _examRenderResults() {
     '</div>';
 
   _examSaveHistory({ date: new Date().toISOString(), total, correct: _examCorrect, wrong: _examWrong, lang });
+
+  // Always finish an exam with the victory sound + confetti, even if the
+  // 10-streak combo confetti setting is disabled.
+  _examCelebrate();
 }
 
 // ── Distractors ───────────────────────────────────────────────────────────────

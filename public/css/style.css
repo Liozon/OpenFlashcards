@@ -3962,9 +3962,13 @@ body.icon-none .ph-fill.ph-warn {
 
 /* "Colorful" icon mode (iconColor: accent): icons follow the accent color
    everywhere EXCEPT on surfaces that already use an accent-tinted background
-   (active nav, primary buttons, active seg buttons, etc.) where the icon must
-   keep the surface's text color to stay readable.
-   Semantic .ph-ok/.ph-bad/.ph-warn are excluded so meaning colors are kept. */
+   (active nav, buttons, active seg buttons, etc.) where the icon must keep the
+   surface's text color to stay readable.
+   Semantic .ph-ok/.ph-bad/.ph-warn are excluded from the accent rule so their
+   meaning colors are kept in normal surfaces. Inside solid buttons they must
+   also inherit the button text color: a green check on a green primary button
+   (or an accent-colored icon on a red danger button) would be unreadable.
+   Secondary buttons keep the colorful icon behavior. */
 body.icon-icons.icon-color-accent .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn) {
@@ -3977,9 +3981,18 @@ body.icon-icons.icon-color-accent .nav-link.active .ph-fill:not(.ph-ok):not(.ph-
 body.icon-icons.icon-color-accent .active .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .active .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .active .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
-body.icon-icons.icon-color-accent .btn-primary .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
-body.icon-icons.icon-color-accent .btn-primary .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
-body.icon-icons.icon-color-accent .btn-primary .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph.ph-ok,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-bold.ph-ok,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-fill.ph-ok,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph.ph-bad,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-bold.ph-bad,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-fill.ph-bad,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph.ph-warn,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-bold.ph-warn,
+body.icon-icons.icon-color-accent .btn:not(.btn-secondary) .ph-fill.ph-warn,
 body.icon-icons.icon-color-accent .nb-tb-btn .ph:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .nb-tb-btn .ph-bold:not(.ph-ok):not(.ph-bad):not(.ph-warn),
 body.icon-icons.icon-color-accent .nb-tb-btn .ph-fill:not(.ph-ok):not(.ph-bad):not(.ph-warn),

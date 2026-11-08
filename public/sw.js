@@ -26,9 +26,11 @@ const STATIC_ASSETS = [
   '/js/pages/vocabulary.js',
   '/js/pages/add.js',
   '/js/pages/train.js',
+  '/js/pages/exam.js',
   '/js/pages/settings.js',
   '/js/pages/admin.js',
   '/js/offline-db.js',
+  '/sounds/victory.wav',
   '/vendor/phosphor/regular/style.css',
   '/vendor/phosphor/regular/Phosphor.woff2',
   '/vendor/phosphor/bold/style.css',
@@ -154,7 +156,8 @@ async function idbDelete(db, store, key) {
 // ─────────────────────────────────────────────────────────────────────────────
 function isStaticAsset(url) {
   const p = url.pathname;
-  return p.startsWith('/css/') || p.startsWith('/js/') || p.startsWith('/vendor/') || p === '/' || p === '/index.html';
+  return p.startsWith('/css/') || p.startsWith('/js/') || p.startsWith('/vendor/') ||
+    p.startsWith('/sounds/') || p === '/' || p === '/index.html';
 }
 
 function isApiRead(url) {
